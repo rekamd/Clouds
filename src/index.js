@@ -14,7 +14,7 @@ camera.lookAt(0, 0, 0);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-controls.autoRotate = true;
+//controls.autoRotate = true;
 controls.listenToKeyEvents(window);
 
 const cloud = new Cloud({
@@ -28,7 +28,9 @@ const cloud = new Cloud({
   shadowSteps: 16, // orig: 8, but too noisy
   cloudLength: 16,
   shadowLength: 4, // orig: 2, but too dark
-  noise: false,
+  noise: false, // orig: false
+  turbulence: 0.25,
+  shift: false,
 });
 
 const handleResize = () => {
@@ -38,7 +40,9 @@ const handleResize = () => {
   cloud.setSize(window.innerWidth * dpr, window.innerHeight * dpr);
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  cloud.render(renderer, camera);
+  if (!cloud.isAnimated()) {
+    cloud.render(renderer, camera);
+  }
 };
 handleResize();
 window.addEventListener("resize", handleResize);
@@ -58,7 +62,9 @@ controls.addEventListener("change", () => {
   lastPolarAngle = polarAngle;
   lastAzimuthalAngle = azimuthalAngle;
 
-  cloud.render(renderer, camera);
+  if (!cloud.isAnimated()) {
+    cloud.render(renderer, camera);
+  }
 });
 
 console.log("Starting scene...");
@@ -74,4 +80,7 @@ renderer.setAnimationLoop((time) => {
   let timeSeconds = time / 1000.0;
   //console.log("time (s):" + timeSeconds);
   cloud.time = timeSeconds;
+  if (cloud.isAnimated()) {
+    cloud.render(renderer, camera);
+  }
 });

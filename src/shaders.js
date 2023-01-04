@@ -46,7 +46,9 @@ export const fragmentShader = /* glsl */ `
   uniform mat4 projectionMatrixInverse;
   uniform mat4 viewMatrixInverse;
   uniform float uTime;
-  uniform bool uRegress;
+  uniform bool uNoise;
+  uniform float uTurbulence;
+  uniform bool uShift;
 
   float cloudDepth(vec3 position) {
     float ellipse = 1.0 - length(position * uCloudSize);
@@ -56,12 +58,12 @@ export const fragmentShader = /* glsl */ `
   }
 
   // https://shaderbits.com/blog/creating-volumetric-ray-marcher
-  vec4 cloudMarch(float jitter, vec3 position, vec3 ray) {
+  vec4 cloudMarch(float jitter, float turbulence, vec3 position, vec3 ray) {
     float stepLength = uCloudLength / uCloudSteps;
     float shadowStepLength = uShadowLength / uShadowSteps;
 
     vec3 lightDirection = normalize(uSunPosition);
-    vec3 cloudPosition = position + ray * jitter * stepLength;
+    vec3 cloudPosition = position + ray * turbulence * stepLength;
 
     vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
 
@@ -97,15 +99,17 @@ export const fragmentShader = /* glsl */ `
     vec4 point = projectionMatrixInverse * vec4(uv * 2.0 - 1.0, -1.0, 1.0);
     vec3 ray = (viewMatrixInverse * vec4(point.xyz, 0)).xyz;
 
-    float jitter = uRegress ? hash(uv.x + uv.y * 50.0 + uTime) : 0.0;
-    //float jitter = hash(uv.x + uv.y * 50.0 + uTime);
+    float jitter = uNoise ? hash(uv.x + uv.y * 50.0 + uTime) : 0.0;
+    //float jitter = uNoise ? sin(uTime) : 0.0; //hash(uv.x + uv.y * 50.0 + uTime) : 0.0;
+    //float turbulence = uTurbulence ? sin(uTime) + cos(uTime) : 0.0;
+    float turbulence = fract(uTime * uTurbulence);
 
-    vec4 color = cloudMarch(jitter, uCameraPosition, ray);    
+    vec4 color = cloudMarch(jitter, turbulence, uCameraPosition, ray);    
     float t = mod(uTime, 60.0);
     //gl_FragColor = vec4(t / 60.0, 1.0, 1.0, 1.0);
     //gl_FragColor = vec4(1.0,0.0,0.0,1.0);
-    //vec3 skyColor = uSkyColor;
-    vec3 skyColor = vec3(t / 60.0, 1.0, 1.0);
+    vec3 skyColor = uSkyColor;
+    //vec3 skyColor = vec3(t / 60.0, 1.0, 1.0);
     
     gl_FragColor = vec4(color.rgb + skyColor * color.a, 1.0);
   }

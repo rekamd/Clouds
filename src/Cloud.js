@@ -12,7 +12,9 @@ class Cloud extends FullScreenQuad {
     shadowSteps = 8,
     cloudLength = 16,
     shadowLength = 2,
-    regress = false,
+    noise = false,
+    turbulence = 0.0,
+    shift = false,
   } = {}) {
     const material = new THREE.ShaderMaterial({
       uniforms: {
@@ -49,8 +51,14 @@ class Cloud extends FullScreenQuad {
         uTime: {
           value: 0,
         },
-        uRegress: {
-          value: regress,
+        uNoise: {
+          value: noise,
+        },
+        uTurbulence: {
+          value: turbulence,
+        },
+        uShift: {
+          value: shift,
         },
         projectionMatrixInverse: {
           value: null,
@@ -77,12 +85,12 @@ class Cloud extends FullScreenQuad {
     return this.material.uniforms.uSkyColor.value;
   }
 
-  get regress() {
-    return this.material.uniforms.uRegress.value;
+  get noise() {
+    return this.material.uniforms.uNoise.value;
   }
 
-  set regress(value) {
-    this.material.uniforms.uRegress.value = value;
+  set noise(value) {
+    this.material.uniforms.uNoise.value = value;
   }
 
   get time() {
@@ -95,6 +103,14 @@ class Cloud extends FullScreenQuad {
 
   setSize(width, height) {
     this.material.uniforms.uResolution.value.set(width, height);
+  }
+
+  isAnimated() {
+    return (
+      this.material.uniforms.uNoise.value ||
+      this.material.uniforms.uTurbulence.value > 0 ||
+      this.material.uniforms.uShift.value
+    );
   }
 
   render(renderer, camera) {
