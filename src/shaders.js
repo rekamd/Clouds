@@ -2,6 +2,7 @@
 export const fbm = /* glsl */ `
   mat3 m = mat3(0.00, 0.80, 0.60, -0.80, 0.36, -0.48, -0.60, -0.48, 0.64);
   float hash(float n) {
+    // Todo: parameterize constant here
     return fract(sin(n) * 43758.5453);
   }
 
@@ -13,6 +14,7 @@ export const fbm = /* glsl */ `
 
     float n = p.x + p.y * 57.0 + 113.0 * p.z;
 
+    // Todo: noise function constants can be used for different looks
     float res = mix(mix(mix(hash(n + 0.0), hash(n + 1.0), f.x),
                         mix(hash(n + 57.0), hash(n + 58.0), f.x), f.y),
                     mix(mix(hash(n + 113.0), hash(n + 114.0), f.x),
@@ -50,15 +52,15 @@ export const fragmentShader = /* glsl */ `
   uniform float uTurbulence;
   uniform bool uShift;
 
-  float cloudDepth(vec3 position) {
-    float ellipse = 1.0 - length(position * uCloudSize);
+  float cloudDepth(vec3 position, vec3 cloudSize) {
+    float ellipse = 1.0 - length(position * cloudSize);
     float cloud = ellipse + fbm(position) * 2.2;
 
     return min(max(0.0, cloud), 1.0);
   }
 
   // https://shaderbits.com/blog/creating-volumetric-ray-marcher
-  vec4 cloudMarch(float jitter, float turbulence, vec3 position, vec3 ray) {
+  vec4 cloudMarch(float jitter, float turbulence, vec3 cloudSize, vec3 position, vec3 ray) {
     float stepLength = uCloudLength / uCloudSteps;
     float shadowStepLength = uShadowLength / uShadowSteps;
 
@@ -68,16 +70,16 @@ export const fragmentShader = /* glsl */ `
     vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
 
     for (float i = 0.0; i < uCloudSteps; i++) {
-      if (color.a < 0.1) break;
+      if (color.a < 0.1) break; // Todo: avoid if in shader
 
-      float depth = cloudDepth(cloudPosition);
-      if (depth > 0.001) {
+      float depth = cloudDepth(cloudPosition, cloudSize);
+      if (depth > 0.001) { // Todo: avoid if in shader
         vec3 lightPosition = cloudPosition + lightDirection * jitter * shadowStepLength;
 
         float shadow = 0.0;
         for (float s = 0.0; s < uShadowSteps; s++) {
           lightPosition += lightDirection * shadowStepLength;
-          shadow += cloudDepth(lightPosition);
+          shadow += cloudDepth(lightPosition, cloudSize);
         }
         shadow = exp((-shadow / uShadowSteps) * 3.0);
 
@@ -111,13 +113,24 @@ export const fragmentShader = /* glsl */ `
     cloudShift = mod(cloudShift, skyCutoff*2.0);
     vec3 cloudShiftDirection = vec3(1,0,0);
     cloudPos += (cloudShift - skyCutoff) * cloudShiftDirection;
-    vec4 color = cloudMarch(jitter, turbulence, cloudPos, ray);    
-    float t = mod(uTime, 60.0);
+    vec4 color1 = cloudMarch(jitter, turbulence, uCloudSize, cloudPos, ray);   
+    vec4 color2 = cloudMarch(jitter, turbulence, uCloudSize * vec3(1.5,2.0,1.5), cloudPos + vec3(3.0,-3.0,-1), ray);
+    //float t = mod(uTime, 60.0);
     //gl_FragColor = vec4(t / 60.0, 1.0, 1.0, 1.0);
     //gl_FragColor = vec4(1.0,0.0,0.0,1.0);
     vec3 skyColor = uSkyColor;
     //vec3 skyColor = vec3(t / 60.0, 1.0, 1.0);
     
-    gl_FragColor = vec4(color.rgb + skyColor * color.a, 1.0);
+    //gl_FragColor = vec4(color.rgb + skyColor * color.a, 1.0);
+    // two clouds option 1:
+    //gl_FragColor = vec4(color1.rgb * (1.0-color1.a) + color2.rgb * (1.0-color2.a) + skyColor * min((color1.a + color2.a)/2.0, 1.0), 1.0);
+    // two clouds option 2:
+    //gl_FragColor = vec4(color1.rgb * (1.0-color1.a) + color2.rgb * (1.0-color2.a) + skyColor * min(color1.a + color2.a, 1.0), 1.0);
+    // two clouds option 3 (same as above):
+    //gl_FragColor = vec4(color1.rgb + color2.rgb + skyColor * min(color1.a + color2.a, 1.0), 1.0);
+    // two clouds option 4 (linear interpolation; todo: what if the clouds overlap? could do CSG style: choose color of cloud which is denser):
+    gl_FragColor = mix(vec4(color1.rgb + skyColor * color1.a, 1.0), vec4(color2.rgb + skyColor * color2.a, 1.0), color1.a);
+    
+    // Note: approach likely faster and easier to render properly if we work the multiple cloud support into the cloudMarch function.
   }
 `;
