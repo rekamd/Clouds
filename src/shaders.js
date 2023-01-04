@@ -102,8 +102,11 @@ export const fragmentShader = /* glsl */ `
 
     vec4 color = cloudMarch(jitter, uCameraPosition, ray);    
     float t = mod(uTime, 60.0);
-    gl_FragColor = vec4(t / 60.0, 1.0, 1.0, 1.0);
+    //gl_FragColor = vec4(t / 60.0, 1.0, 1.0, 1.0);
     //gl_FragColor = vec4(1.0,0.0,0.0,1.0);
-    gl_FragColor = vec4(color.rgb + uSkyColor * color.a, 1.0);
+    //vec3 skyColor = uSkyColor;
+    vec3 skyColor = vec3(t / 60.0, 1.0, 1.0);
+    
+    gl_FragColor = vec4(color.rgb + skyColor * color.a, 1.0);
   }
 `;

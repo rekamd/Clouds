@@ -13,19 +13,21 @@ camera.position.set(-4.0, -5.5, 8.0);
 camera.lookAt(0, 0, 0);
 
 const controls = new OrbitControls(camera, renderer.domElement);
-//controls.enableDamping = true;
+controls.enableDamping = true;
 controls.autoRotate = true;
 controls.listenToKeyEvents(window);
 
 const cloud = new Cloud({
   cloudSize: new THREE.Vector3(0.5, 1.0, 0.5),
   sunPosition: new THREE.Vector3(1.0, 2.0, 1.0),
-  cloudColor: new THREE.Color(0xeabf6b),
-  skyColor: new THREE.Color(0x337fff),
+  cloudColor: new THREE.Color(0xeabf6b), //"rgb(234, 191, 107)"
+  //cloudColor: new THREE.Color("rgb(234, 191, 107)"),
+  skyColor: new THREE.Color(0x337fff), //"rgb(51, 127, 255)"
+  //skyColor: new THREE.Color("rgb(51, 127, 255)"),
   cloudSteps: 48,
-  shadowSteps: 8,
+  shadowSteps: 16, // orig: 8, but too noisy
   cloudLength: 16,
-  shadowLength: 2,
+  shadowLength: 4, // orig: 2, but too dark
   noise: false,
 });
 

@@ -102,7 +102,7 @@ class Cloud extends FullScreenQuad {
     this.material.uniforms.projectionMatrixInverse.value =
       camera.projectionMatrixInverse;
     this.material.uniforms.viewMatrixInverse.value = camera.matrixWorld;
-    console.log("rendering...");
+    //console.log("rendering...");
     super.render(renderer);
   }
 }
