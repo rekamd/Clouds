@@ -104,7 +104,14 @@ export const fragmentShader = /* glsl */ `
     //float turbulence = uTurbulence ? sin(uTime) + cos(uTime) : 0.0;
     float turbulence = fract(uTime * uTurbulence);
 
-    vec4 color = cloudMarch(jitter, turbulence, uCameraPosition, ray);    
+    vec3 cloudPos = uCameraPosition;
+    float shiftSpeed = 1.0;
+    float skyCutoff = 25.0;
+    float cloudShift = shiftSpeed * uTime;
+    cloudShift = mod(cloudShift, skyCutoff*2.0);
+    vec3 cloudShiftDirection = vec3(1,0,0);
+    cloudPos += (cloudShift - skyCutoff) * cloudShiftDirection;
+    vec4 color = cloudMarch(jitter, turbulence, cloudPos, ray);    
     float t = mod(uTime, 60.0);
     //gl_FragColor = vec4(t / 60.0, 1.0, 1.0, 1.0);
     //gl_FragColor = vec4(1.0,0.0,0.0,1.0);

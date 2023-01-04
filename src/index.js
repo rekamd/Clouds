@@ -28,8 +28,8 @@ const cloud = new Cloud({
   shadowSteps: 16, // orig: 8, but too noisy
   cloudLength: 16,
   shadowLength: 4, // orig: 2, but too dark
-  noise: false, // orig: false
-  turbulence: 0.25,
+  noise: true, // orig: false
+  turbulence: 0.05,
   shift: false,
 });
 
