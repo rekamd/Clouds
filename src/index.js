@@ -4,7 +4,7 @@ import Cloud from "./Cloud";
 
 const renderer = new THREE.WebGLRenderer({
   antialias: true,
-  powerPreference: "high-performance"
+  powerPreference: "high-performance",
 });
 document.body.appendChild(renderer.domElement);
 
@@ -13,7 +13,9 @@ camera.position.set(-4.0, -5.5, 8.0);
 camera.lookAt(0, 0, 0);
 
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
+//controls.enableDamping = true;
+controls.autoRotate = true;
+controls.listenToKeyEvents(window);
 
 const cloud = new Cloud({
   cloudSize: new THREE.Vector3(0.5, 1.0, 0.5),
@@ -24,7 +26,7 @@ const cloud = new Cloud({
   shadowSteps: 8,
   cloudLength: 16,
   shadowLength: 2,
-  noise: false
+  noise: false,
 });
 
 const handleResize = () => {
@@ -57,7 +59,17 @@ controls.addEventListener("change", () => {
   cloud.render(renderer, camera);
 });
 
+console.log("Starting scene...");
+
 renderer.setAnimationLoop((time) => {
-  controls.update();
-  cloud.time = time / 1000;
+  // Note: controls.update() needs to be called after every manual update to the camera position
+  // Also required if controls.enableDamping or controls.autoRotate are set to true.
+  // See https://threejs.org/docs/?q=orbit#examples/en/controls/OrbitControls
+  if (controls.autoRotate || controls.enableDamping) {
+    controls.update();
+  }
+
+  let timeSeconds = time / 1000.0;
+  //console.log("time (s):" + timeSeconds);
+  cloud.time = timeSeconds;
 });

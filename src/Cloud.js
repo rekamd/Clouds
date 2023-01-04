@@ -12,54 +12,54 @@ class Cloud extends FullScreenQuad {
     shadowSteps = 8,
     cloudLength = 16,
     shadowLength = 2,
-    regress = false
+    regress = false,
   } = {}) {
     const material = new THREE.ShaderMaterial({
       uniforms: {
         uCloudSize: {
-          value: cloudSize
+          value: cloudSize,
         },
         uSunPosition: {
-          value: sunPosition
+          value: sunPosition,
         },
         uCameraPosition: {
-          value: new THREE.Vector3()
+          value: new THREE.Vector3(),
         },
         uCloudColor: {
-          value: cloudColor
+          value: cloudColor,
         },
         uSkyColor: {
-          value: skyColor
+          value: skyColor,
         },
         uCloudSteps: {
-          value: cloudSteps
+          value: cloudSteps,
         },
         uShadowSteps: {
-          value: shadowSteps
+          value: shadowSteps,
         },
         uCloudLength: {
-          value: cloudLength
+          value: cloudLength,
         },
         uShadowLength: {
-          value: shadowLength
+          value: shadowLength,
         },
         uResolution: {
-          value: new THREE.Vector2()
+          value: new THREE.Vector2(),
         },
         uTime: {
-          value: 0
+          value: 0,
         },
         uRegress: {
-          value: regress
+          value: regress,
         },
         projectionMatrixInverse: {
-          value: null
+          value: null,
         },
         viewMatrixInverse: {
-          value: null
-        }
+          value: null,
+        },
       },
-      fragmentShader
+      fragmentShader,
     });
 
     super(material);
@@ -90,7 +90,7 @@ class Cloud extends FullScreenQuad {
   }
 
   set time(value) {
-    return (this.material.uniforms.uTime.value = value);
+    this.material.uniforms.uTime.value = value;
   }
 
   setSize(width, height) {
@@ -102,6 +102,7 @@ class Cloud extends FullScreenQuad {
     this.material.uniforms.projectionMatrixInverse.value =
       camera.projectionMatrixInverse;
     this.material.uniforms.viewMatrixInverse.value = camera.matrixWorld;
+    console.log("rendering...");
     super.render(renderer);
   }
 }

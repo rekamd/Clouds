@@ -1,10 +1,11 @@
 {
-  "name": "webgl-clouds",
+  "name": "Clouds",
   "version": "1.0.0",
-  "description": "A study on fractal brownian motion and raymarching to compose volumetric clouds in rela-time.",
+  "description": "",
   "main": "index.html",
   "scripts": {
     "start": "parcel index.html --open",
+    "start-test": "parcel index-test.html --open",
     "build": "parcel build index.html"
   },
   "dependencies": {
@@ -17,6 +18,5 @@
   },
   "resolutions": {
     "@babel/preset-env": "7.13.8"
-  },
-  "keywords": ["threejs", "clouds"]
+  }
 }

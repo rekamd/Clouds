@@ -98,8 +98,12 @@ export const fragmentShader = /* glsl */ `
     vec3 ray = (viewMatrixInverse * vec4(point.xyz, 0)).xyz;
 
     float jitter = uRegress ? hash(uv.x + uv.y * 50.0 + uTime) : 0.0;
+    //float jitter = hash(uv.x + uv.y * 50.0 + uTime);
 
-    vec4 color = cloudMarch(jitter, uCameraPosition, ray);
+    vec4 color = cloudMarch(jitter, uCameraPosition, ray);    
+    float t = mod(uTime, 60.0);
+    gl_FragColor = vec4(t / 60.0, 1.0, 1.0, 1.0);
+    //gl_FragColor = vec4(1.0,0.0,0.0,1.0);
     gl_FragColor = vec4(color.rgb + uSkyColor * color.a, 1.0);
   }
 `;
