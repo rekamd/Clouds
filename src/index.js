@@ -22,8 +22,8 @@ const cloud = new Cloud({
   sunPosition: new THREE.Vector3(1.0, 2.0, 1.0),
   cloudColor: new THREE.Color(0xeabf6b), //"rgb(234, 191, 107)"
   //cloudColor: new THREE.Color("rgb(234, 191, 107)"),
-  skyColor: new THREE.Color(0x337fff), //"rgb(51, 127, 255)"
-  //skyColor: new THREE.Color("rgb(51, 127, 255)"),
+  //skyColor: new THREE.Color(0x337fff), //"rgb(51, 127, 255)"
+  skyColor: new THREE.Color("rgb(0, 0, 0)"),
   cloudSteps: 48,
   shadowSteps: 16, // orig: 8, but too noisy
   cloudLength: 16,
