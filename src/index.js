@@ -4,7 +4,7 @@ import Cloud from "./Cloud";
 
 const renderer = new THREE.WebGLRenderer({
   antialias: true,
-  powerPreference: "high-performance"
+  powerPreference: "high-performance",
 });
 document.body.appendChild(renderer.domElement);
 
@@ -14,17 +14,23 @@ camera.lookAt(0, 0, 0);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
+//controls.autoRotate = true;
+controls.listenToKeyEvents(window);
 
 const cloud = new Cloud({
   cloudSize: new THREE.Vector3(0.5, 1.0, 0.5),
   sunPosition: new THREE.Vector3(1.0, 2.0, 1.0),
-  cloudColor: new THREE.Color(0xeabf6b),
-  skyColor: new THREE.Color(0x337fff),
+  cloudColor: new THREE.Color(0xeabf6b), //"rgb(234, 191, 107)"
+  //cloudColor: new THREE.Color("rgb(234, 191, 107)"),
+  skyColor: new THREE.Color(0x337fff), //"rgb(51, 127, 255)"
+  //skyColor: new THREE.Color("rgb(51, 127, 255)"),
   cloudSteps: 48,
-  shadowSteps: 8,
+  shadowSteps: 16, // orig: 8, but too noisy
   cloudLength: 16,
-  shadowLength: 2,
-  noise: false
+  shadowLength: 4, // orig: 2, but too dark
+  noise: true, // orig: false
+  turbulence: 0.05,
+  shift: false,
 });
 
 const handleResize = () => {
@@ -34,7 +40,9 @@ const handleResize = () => {
   cloud.setSize(window.innerWidth * dpr, window.innerHeight * dpr);
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  cloud.render(renderer, camera);
+  if (!cloud.isAnimated()) {
+    cloud.render(renderer, camera);
+  }
 };
 handleResize();
 window.addEventListener("resize", handleResize);
@@ -54,10 +62,25 @@ controls.addEventListener("change", () => {
   lastPolarAngle = polarAngle;
   lastAzimuthalAngle = azimuthalAngle;
 
-  cloud.render(renderer, camera);
+  if (!cloud.isAnimated()) {
+    cloud.render(renderer, camera);
+  }
 });
 
+console.log("Starting scene...");
+
 renderer.setAnimationLoop((time) => {
-  controls.update();
-  cloud.time = time / 1000;
+  // Note: controls.update() needs to be called after every manual update to the camera position
+  // Also required if controls.enableDamping or controls.autoRotate are set to true.
+  // See https://threejs.org/docs/?q=orbit#examples/en/controls/OrbitControls
+  if (controls.autoRotate || controls.enableDamping) {
+    controls.update();
+  }
+
+  let timeSeconds = time / 1000.0;
+  //console.log("time (s):" + timeSeconds);
+  cloud.time = timeSeconds;
+  if (cloud.isAnimated()) {
+    cloud.render(renderer, camera);
+  }
 });
