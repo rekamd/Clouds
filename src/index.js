@@ -1,4 +1,6 @@
 import * as THREE from "three";
+import GUI from "lil-gui";
+
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Cloud from "./Cloud";
 
@@ -17,7 +19,7 @@ controls.enableDamping = true;
 //controls.autoRotate = true;
 controls.listenToKeyEvents(window);
 
-const cloud = new Cloud({
+let cloud = new Cloud({
   cloudSize: new THREE.Vector3(0.5, 1.0, 0.5),
   sunPosition: new THREE.Vector3(1.0, 2.0, 1.0),
   cloudColor: new THREE.Color(0xeabf6b), //"rgb(234, 191, 107)"
@@ -32,6 +34,21 @@ const cloud = new Cloud({
   turbulence: 0.05,
   shift: false,
 });
+
+let gui = new GUI();
+gui.add(cloud, "turbulence").min(0).max(2).step(0.01);
+/*
+params = { pixelSize: 6, normalEdgeStrength: .3, depthEdgeStrength: .4, pixelAlignedPanning: true };
+gui.add( params, 'pixelSize' ).min( 1 ).max( 16 ).step( 1 )
+  .onChange( () => {
+
+    renderPixelatedPass.setPixelSize( params.pixelSize );
+
+  } );
+gui.add( renderPixelatedPass, 'normalEdgeStrength' ).min( 0 ).max( 2 ).step( .05 );
+gui.add( renderPixelatedPass, 'depthEdgeStrength' ).min( 0 ).max( 1 ).step( .05 );
+gui.add( params, 'pixelAlignedPanning' );
+*/
 
 const handleResize = () => {
   const dpr = Math.min(window.devicePixelRatio, 2);
