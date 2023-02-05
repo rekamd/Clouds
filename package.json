@@ -8,7 +8,8 @@
     "build": "parcel build index.html"
   },
   "dependencies": {
-    "parcel-bundler": "^1.6.1",
-    "three": "0.124.1"
+    "lil-gui": "~0.0.0",
+    "three": "0.126.1",
+    "parcel-bundler": "^1.6.1"
   }
 }

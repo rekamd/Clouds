@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { FullScreenQuad } from "three/examples/jsm/postprocessing/Pass";
 import { fragmentShader } from "./shaders";
 
+// Todo: derive here from Pass as in https://github.com/mrdoob/three.js/blob/dev/examples/jsm/postprocessing/RenderPixelatedPass.js
 class Cloud extends FullScreenQuad {
   constructor({
     cloudSize = new THREE.Vector3(0.5, 1.0, 0.5),
@@ -91,6 +92,14 @@ class Cloud extends FullScreenQuad {
 
   set noise(value) {
     this.material.uniforms.uNoise.value = value;
+  }
+
+  set turbulence(value) {
+    this.material.uniforms.uTurbulence.value = value;
+  }
+
+  get turbulence() {
+    return this.material.uniforms.uTurbulence.value;
   }
 
   get time() {
