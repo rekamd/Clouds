@@ -86,6 +86,18 @@ class Cloud extends FullScreenQuad {
     return this.material.uniforms.uSkyColor.value;
   }
 
+  set skyColor(value) {
+    this.material.uniforms.uSkyColor.value = value;
+  }
+
+  get cloudColor() {
+    return this.material.uniforms.uCloudColor.value;
+  }
+
+  set cloudColor(value) {
+    this.material.uniforms.uCloudColor.value = value;
+  }
+
   get noise() {
     return this.material.uniforms.uNoise.value;
   }
