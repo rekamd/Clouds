@@ -19,12 +19,17 @@ controls.enableDamping = true;
 //controls.autoRotate = true;
 controls.listenToKeyEvents(window);
 
+let params = {
+  skyColor: 0x337fff,
+  cloudColor: 0xeabf6b,
+};
+
 let cloud = new Cloud({
   cloudSize: new THREE.Vector3(0.5, 1.0, 0.5),
   sunPosition: new THREE.Vector3(1.0, 2.0, 1.0),
-  cloudColor: new THREE.Color(0xeabf6b), //"rgb(234, 191, 107)"
+  cloudColor: new THREE.Color(params.cloudColor), //"rgb(234, 191, 107)"
   //cloudColor: new THREE.Color("rgb(234, 191, 107)"),
-  skyColor: new THREE.Color(0x337fff), //"rgb(51, 127, 255)"
+  skyColor: new THREE.Color(params.skyColor), //"rgb(51, 127, 255)"
   //skyColor: new THREE.Color("rgb(51, 127, 255)"),
   cloudSteps: 48,
   shadowSteps: 16, // orig: 8, but too noisy
@@ -36,7 +41,15 @@ let cloud = new Cloud({
 });
 
 let gui = new GUI();
+gui.add(cloud, "noise");
 gui.add(cloud, "turbulence").min(0).max(2).step(0.01);
+gui.addColor(params, "skyColor").onChange((value) => {
+  cloud.skyColor = new THREE.Color(value);
+});
+gui.addColor(params, "cloudColor").onChange((value) => {
+  cloud.cloudColor = new THREE.Color(value);
+});
+
 /*
 params = { pixelSize: 6, normalEdgeStrength: .3, depthEdgeStrength: .4, pixelAlignedPanning: true };
 gui.add( params, 'pixelSize' ).min( 1 ).max( 16 ).step( 1 )
