@@ -2,6 +2,8 @@ import * as THREE from "three";
 import GUI from "lil-gui";
 
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
+
 import Cloud from "./Cloud";
 
 const renderer = new THREE.WebGLRenderer({
@@ -9,6 +11,8 @@ const renderer = new THREE.WebGLRenderer({
   powerPreference: "high-performance",
 });
 document.body.appendChild(renderer.domElement);
+
+//const composer = new EffectComposer(renderer);
 
 const camera = new THREE.PerspectiveCamera(70);
 camera.position.set(-4.0, -5.5, 8.0);
@@ -24,7 +28,7 @@ let params = {
   cloudColor: 0xeabf6b,
 };
 
-let cloud = new Cloud({
+let cloud = new Cloud(camera, {
   cloudSize: new THREE.Vector3(0.5, 1.0, 0.5),
   sunPosition: new THREE.Vector3(1.0, 2.0, 1.0),
   cloudColor: new THREE.Color(params.cloudColor), //"rgb(234, 191, 107)"
@@ -93,7 +97,7 @@ controls.addEventListener("change", () => {
   lastAzimuthalAngle = azimuthalAngle;
 
   if (!cloud.isAnimated()) {
-    cloud.render(renderer, camera);
+    render();
   }
 });
 
@@ -111,6 +115,19 @@ renderer.setAnimationLoop((time) => {
   //console.log("time (s):" + timeSeconds);
   cloud.time = timeSeconds;
   if (cloud.isAnimated()) {
-    cloud.render(renderer, camera);
+    render();
   }
 });
+
+let composer = new EffectComposer(renderer);
+composer.addPass(cloud);
+
+let useComposer = true;
+
+function render() {
+  if (useComposer) {
+    composer.render();
+  } else {
+    cloud.doRender(renderer);
+  }
+}

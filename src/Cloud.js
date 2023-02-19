@@ -1,22 +1,26 @@
 import * as THREE from "three";
-import { FullScreenQuad } from "three/examples/jsm/postprocessing/Pass";
+import { Pass, FullScreenQuad } from "three/examples/jsm/postprocessing/Pass";
 import { fragmentShader } from "./shaders";
 
-// Todo: derive here from Pass as in https://github.com/mrdoob/three.js/blob/dev/examples/jsm/postprocessing/RenderPixelatedPass.js
-class Cloud extends FullScreenQuad {
-  constructor({
-    cloudSize = new THREE.Vector3(0.5, 1.0, 0.5),
-    sunPosition = new THREE.Vector3(1.0, 2.0, 1.0),
-    cloudColor = new THREE.Color(0xeabf6b),
-    skyColor = new THREE.Color(0x337fff),
-    cloudSteps = 48,
-    shadowSteps = 8,
-    cloudLength = 16,
-    shadowLength = 2,
-    noise = false,
-    turbulence = 0.0,
-    shift = false,
-  } = {}) {
+class Cloud extends Pass {
+  constructor(
+    camera,
+    {
+      cloudSize = new THREE.Vector3(0.5, 1.0, 0.5),
+      sunPosition = new THREE.Vector3(1.0, 2.0, 1.0),
+      cloudColor = new THREE.Color(0xeabf6b),
+      skyColor = new THREE.Color(0x337fff),
+      cloudSteps = 48,
+      shadowSteps = 8,
+      cloudLength = 16,
+      shadowLength = 2,
+      noise = false,
+      turbulence = 0.0,
+      shift = false,
+    } = {}
+  ) {
+    super();
+
     const material = new THREE.ShaderMaterial({
       uniforms: {
         uCloudSize: {
@@ -71,7 +75,12 @@ class Cloud extends FullScreenQuad {
       fragmentShader,
     });
 
-    super(material);
+    this.camera = camera;
+    this.fsQuad = new FullScreenQuad(material);
+  }
+
+  get material() {
+    return this.fsQuad.material;
   }
 
   get cloudSize() {
@@ -134,13 +143,27 @@ class Cloud extends FullScreenQuad {
     );
   }
 
-  render(renderer, camera) {
-    this.material.uniforms.uCameraPosition.value.copy(camera.position);
+  doRender(renderer) {
+    this.material.uniforms.uCameraPosition.value.copy(this.camera.position);
     this.material.uniforms.projectionMatrixInverse.value =
-      camera.projectionMatrixInverse;
-    this.material.uniforms.viewMatrixInverse.value = camera.matrixWorld;
-    //console.log("rendering...");
-    super.render(renderer);
+      this.camera.projectionMatrixInverse;
+    this.material.uniforms.viewMatrixInverse.value = this.camera.matrixWorld;
+
+    this.fsQuad.render(renderer);
+  }
+
+  render(renderer, writeBuffer) {
+    //console.log("render pass call...");
+    if (this.renderToScreen) {
+      renderer.setRenderTarget(null);
+    } else {
+      renderer.setRenderTarget(writeBuffer);
+      if (this.clear) {
+        renderer.clear();
+      }
+    }
+
+    this.doRender(renderer);
   }
 }
 
