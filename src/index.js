@@ -21,7 +21,6 @@ camera.lookAt(0, 0, 0);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 //controls.autoRotate = true;
-controls.listenToKeyEvents(window);
 
 let params = {
   skyColor: 0x337fff,
