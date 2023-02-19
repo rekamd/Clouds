@@ -76,7 +76,7 @@ class Cloud extends Pass {
     });
 
     this.camera = camera;
-    this.fsQuad = new FullScreenQuad(material);
+    this.fsQuad = new Pass.FullScreenQuad(material);
   }
 
   get material() {
