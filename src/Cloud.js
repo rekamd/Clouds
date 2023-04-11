@@ -21,7 +21,7 @@ class Cloud extends Pass {
   ) {
     super();
 
-    const cloudMaterial = new THREE.ShaderMaterial({
+    this.cloudMaterial = new THREE.ShaderMaterial({
       uniforms: {
         uCloudSize: {
           value: cloudSize,
@@ -76,12 +76,18 @@ class Cloud extends Pass {
     });
 
     this.camera = camera;
-    this.cloudFullScreenQuad = new Pass.FullScreenQuad(cloudMaterial);
+    this.cloudFullScreenQuad = new Pass.FullScreenQuad(this.cloudMaterial);
+    //this.passThroughMaterial = this.createPassThroughMaterial();
+    //this.passThroughFullScreenQuad = new Pass.FullScreenQuad();
     //this.cloudFullScreenQuad = new Pass.FullScreenQuad(this.createPassThroughMaterial());
+    this.passThroughMaterial = this.createPassThroughMaterial();
+    this.passThroughFullScreenQuad = new Pass.FullScreenQuad(
+      this.passThroughMaterial
+    );
   }
 
   get material() {
-    return this.cloudFullScreenQuad.material;
+    return this.cloudMaterial;
   }
 
   get cloudSize() {
@@ -156,19 +162,16 @@ class Cloud extends Pass {
   }
 
   doRender(renderer) {
-    this.material.uniforms.uCameraPosition.value.copy(
-      this.camera.position
-    );
+    this.material.uniforms.uCameraPosition.value.copy(this.camera.position);
     this.material.uniforms.projectionMatrixInverse.value =
       this.camera.projectionMatrixInverse;
-    this.material.uniforms.viewMatrixInverse.value =
-      this.camera.matrixWorld;
+    this.material.uniforms.viewMatrixInverse.value = this.camera.matrixWorld;
 
     this.cloudFullScreenQuad.render(renderer);
   }
 
   render(renderer, writeBuffer) {
-    console.log("render pass call...");
+    //console.log("render pass call...");
     if (this.renderToScreen) {
       renderer.setRenderTarget(null);
     } else {
@@ -182,7 +185,7 @@ class Cloud extends Pass {
   }
 
   createPassThroughMaterial() {
-    return new ShaderMaterial({
+    return new THREE.ShaderMaterial({
       uniforms: {
         tDiffuse: { value: null },
       },
