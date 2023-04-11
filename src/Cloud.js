@@ -77,9 +77,6 @@ class Cloud extends Pass {
 
     this.camera = camera;
     this.cloudFullScreenQuad = new Pass.FullScreenQuad(this.cloudMaterial);
-    //this.passThroughMaterial = this.createPassThroughMaterial();
-    //this.passThroughFullScreenQuad = new Pass.FullScreenQuad();
-    //this.cloudFullScreenQuad = new Pass.FullScreenQuad(this.createPassThroughMaterial());
     this.passThroughMaterial = this.createPassThroughMaterial();
     this.passThroughFullScreenQuad = new Pass.FullScreenQuad(
       this.passThroughMaterial
