@@ -81,6 +81,10 @@ class Cloud extends Pass {
     this.passThroughFullScreenQuad = new Pass.FullScreenQuad(
       this.passThroughMaterial
     );
+
+    this.cloudRenderTarget = new THREE.WebGLRenderTarget();
+    this.cloudRenderTarget.texture.minFilter = THREE.NearestFilter;
+    this.cloudRenderTarget.texture.magFilter = THREE.NearestFilter;
   }
 
   get material() {
@@ -145,6 +149,7 @@ class Cloud extends Pass {
 
   setSize(width, height) {
     this.material.uniforms.uResolution.value.set(width, height);
+    this.cloudRenderTarget.setSize(width, height);
   }
 
   isAnimated() {
@@ -168,17 +173,31 @@ class Cloud extends Pass {
   }
 
   render(renderer, writeBuffer) {
-    //console.log("render pass call...");
+    console.log("render pass call...");
+    this.material.uniforms.uCameraPosition.value.copy(this.camera.position);
+    this.material.uniforms.projectionMatrixInverse.value =
+      this.camera.projectionMatrixInverse;
+    this.material.uniforms.viewMatrixInverse.value = this.camera.matrixWorld;
+
+    renderer.setRenderTarget(this.cloudRenderTarget);
+    this.cloudFullScreenQuad.render(renderer);
+
+    const uniforms = this.passThroughMaterial.uniforms;
+    uniforms.tDiffuse.value = this.cloudRenderTarget.texture;
+
     if (this.renderToScreen) {
+      console.log("render to screen");
       renderer.setRenderTarget(null);
     } else {
+      console.log("render to buffer");
       renderer.setRenderTarget(writeBuffer);
       if (this.clear) {
         renderer.clear();
       }
     }
 
-    this.doRender(renderer);
+    this.passThroughFullScreenQuad.render(renderer);
+    //this.doRender(renderer);
   }
 
   createPassThroughMaterial() {
@@ -199,7 +218,7 @@ class Cloud extends Pass {
 
 				void main() {
 					vec4 texel = texture2D( tDiffuse, vUv );
-					gl_FragColor = texel * Strength;
+					gl_FragColor = texel;
 				}
 			`,
     });
