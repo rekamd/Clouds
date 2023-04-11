@@ -21,7 +21,7 @@ class Cloud extends Pass {
   ) {
     super();
 
-    const material = new THREE.ShaderMaterial({
+    const cloudMaterial = new THREE.ShaderMaterial({
       uniforms: {
         uCloudSize: {
           value: cloudSize,
@@ -76,11 +76,12 @@ class Cloud extends Pass {
     });
 
     this.camera = camera;
-    this.fsQuad = new Pass.FullScreenQuad(material);
+    this.cloudFullScreenQuad = new Pass.FullScreenQuad(cloudMaterial);
+    //this.cloudFullScreenQuad = new Pass.FullScreenQuad(this.createPassThroughMaterial());
   }
 
   get material() {
-    return this.fsQuad.material;
+    return this.cloudFullScreenQuad.material;
   }
 
   get cloudSize() {
@@ -105,6 +106,14 @@ class Cloud extends Pass {
 
   set cloudColor(value) {
     this.material.uniforms.uCloudColor.value = value;
+  }
+
+  get shift() {
+    return this.material.uniforms.uShift.value;
+  }
+
+  set shift(value) {
+    this.material.uniforms.uShift.value = value;
   }
 
   get noise() {
@@ -136,24 +145,30 @@ class Cloud extends Pass {
   }
 
   isAnimated() {
+    //console.log("noise:" + this.material.uniforms.uNoise.value);
+    //console.log("turbulence:" + this.material.uniforms.uTurbulence.value);
+    //console.log("shift:" + this.material.uniforms.uShift.value);
     return (
       this.material.uniforms.uNoise.value ||
-      this.material.uniforms.uTurbulence.value > 0 ||
+      this.material.uniforms.uTurbulence.value > 0.0 ||
       this.material.uniforms.uShift.value
     );
   }
 
   doRender(renderer) {
-    this.material.uniforms.uCameraPosition.value.copy(this.camera.position);
+    this.material.uniforms.uCameraPosition.value.copy(
+      this.camera.position
+    );
     this.material.uniforms.projectionMatrixInverse.value =
       this.camera.projectionMatrixInverse;
-    this.material.uniforms.viewMatrixInverse.value = this.camera.matrixWorld;
+    this.material.uniforms.viewMatrixInverse.value =
+      this.camera.matrixWorld;
 
-    this.fsQuad.render(renderer);
+    this.cloudFullScreenQuad.render(renderer);
   }
 
   render(renderer, writeBuffer) {
-    //console.log("render pass call...");
+    console.log("render pass call...");
     if (this.renderToScreen) {
       renderer.setRenderTarget(null);
     } else {
@@ -164,6 +179,30 @@ class Cloud extends Pass {
     }
 
     this.doRender(renderer);
+  }
+
+  createPassThroughMaterial() {
+    return new ShaderMaterial({
+      uniforms: {
+        tDiffuse: { value: null },
+      },
+      vertexShader: /* glsl */ `
+				varying vec2 vUv;
+				void main() {
+					vUv = uv;
+					gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+				}
+			`,
+      fragmentShader: /* glsl */ `
+				uniform sampler2D tDiffuse;
+				varying vec2 vUv;
+
+				void main() {
+					vec4 texel = texture2D( tDiffuse, vUv );
+					gl_FragColor = texel * Strength;
+				}
+			`,
+    });
   }
 }
 

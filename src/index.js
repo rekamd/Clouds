@@ -12,8 +12,6 @@ const renderer = new THREE.WebGLRenderer({
 });
 document.body.appendChild(renderer.domElement);
 
-//const composer = new EffectComposer(renderer);
-
 const camera = new THREE.PerspectiveCamera(70);
 camera.position.set(-4.0, -5.5, 8.0);
 camera.lookAt(0, 0, 0);
@@ -40,10 +38,16 @@ let cloud = new Cloud(camera, {
   shadowLength: 4, // orig: 2, but too dark
   noise: true, // orig: false
   turbulence: 0.05,
-  shift: false,
+  shift: true,
 });
 
+let composer = new EffectComposer(renderer);
+composer.addPass(cloud);
+
+let useComposer = true;
+
 let gui = new GUI();
+gui.add(cloud, "shift");
 gui.add(cloud, "noise");
 gui.add(cloud, "turbulence").min(0).max(2).step(0.01);
 gui.addColor(params, "skyColor").onChange((value) => {
@@ -70,11 +74,13 @@ const handleResize = () => {
   const dpr = Math.min(window.devicePixelRatio, 2);
   renderer.setPixelRatio(dpr);
   renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setPixelRatio(dpr);
+  composer.setSize(window.innerWidth, window.innerHeight);
   cloud.setSize(window.innerWidth * dpr, window.innerHeight * dpr);
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   if (!cloud.isAnimated()) {
-    cloud.render(renderer, camera);
+    render();
   }
 };
 handleResize();
@@ -113,15 +119,11 @@ renderer.setAnimationLoop((time) => {
   let timeSeconds = time / 1000.0;
   //console.log("time (s):" + timeSeconds);
   cloud.time = timeSeconds;
+  //console.log("animated:" + cloud.isAnimated());
   if (cloud.isAnimated()) {
     render();
   }
 });
-
-let composer = new EffectComposer(renderer);
-composer.addPass(cloud);
-
-let useComposer = true;
 
 function render() {
   if (useComposer) {

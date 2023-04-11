@@ -107,7 +107,7 @@ export const fragmentShader = /* glsl */ `
     float turbulence = fract(uTime * uTurbulence);
 
     vec3 cloudPos = uCameraPosition;
-    float shiftSpeed = 1.0;
+    float shiftSpeed = uShift ? 1.0 : 0.0;
     float skyCutoff = 25.0;
     float cloudShift = shiftSpeed * uTime;
     cloudShift = mod(cloudShift, skyCutoff*2.0);
