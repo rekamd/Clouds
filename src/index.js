@@ -6,6 +6,7 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import Stats from "three/examples/jsm/libs/stats.module.js";
 
 import Cloud from "./Cloud";
+import { Timer } from "./Timer.js";
 
 let stats = new Stats();
 document.body.appendChild(stats.dom);
@@ -24,12 +25,17 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 //controls.autoRotate = true;
 
+//let clock = new THREE.Clock();
+let timer = new Timer();
+timer.enableFixedDelta();
+
 let params = {
   skyColor: 0x337fff,
   cloudColor: 0xeabf6b,
   uniformPixels: true,
   lastTouchedPixelID: 0,
   pause: false,
+  lastTime: 0,
 };
 
 let cloud = new Cloud(camera, {
@@ -55,13 +61,13 @@ composer.addPass(cloud);
 
 let gui = new GUI();
 gui.add(params, "pause").onChange((value) => {
-  renderer.setAnimationLoop(
-    value
-      ? null
-      : (time) => {
-          doAnimate(time);
-        }
-  );
+  /*
+  if (value) {
+    clock.stop();
+  } else {
+    clock.start();
+  }
+  */
 });
 
 gui.add(cloud, "shift").min(0).max(10).step(0.01);
@@ -145,13 +151,7 @@ controls.addEventListener("change", () => {
 
 console.log("Starting scene...");
 
-//let clock = new THREE.Clock();
-
-//function animate() {
-//  requestAnimationFrame(animate);
-//}
-
-function doAnimate(time) {
+function doAnimate(ms) {
   // Note: controls.update() needs to be called after every manual update to the camera position
   // Also required if controls.enableDamping or controls.autoRotate are set to true.
   // See https://threejs.org/docs/?q=orbit#examples/en/controls/OrbitControls
@@ -159,7 +159,7 @@ function doAnimate(time) {
     controls.update();
   }
 
-  let timeSeconds = time / 1000.0;
+  let timeSeconds = ms / 1000.0;
   //console.log("time (s):" + timeSeconds);
   cloud.time = timeSeconds;
   //console.log("animated:" + cloud.isAnimated());
@@ -168,14 +168,25 @@ function doAnimate(time) {
   }
 }
 
-renderer.setAnimationLoop((time) => {
-  doAnimate(time);
-});
-
 function render() {
   stats.begin();
   composer.render();
   stats.end();
 }
 
-//animate();
+//renderer.setAnimationLoop((time) => {
+//  doAnimate(time);
+//});
+
+function animate() {
+  requestAnimationFrame(animate);
+  //let time = clock.getElapsedTime();
+  if (!params.pause) {
+    timer.update();
+  }
+  let time = timer.getElapsed();
+  //console.log("time:" + time);
+  doAnimate(time * 1000);
+}
+
+animate();
