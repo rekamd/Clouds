@@ -39,6 +39,7 @@ let cloud = new Cloud(camera, {
   noise: true, // orig: false
   turbulence: 0.05,
   shift: true,
+  pixelSize: 1,
 });
 
 let composer = new EffectComposer(renderer);
@@ -56,6 +57,7 @@ gui.addColor(params, "skyColor").onChange((value) => {
 gui.addColor(params, "cloudColor").onChange((value) => {
   cloud.cloudColor = new THREE.Color(value);
 });
+gui.add(cloud, "pixelSize").min(1).max(16).step(1);
 
 /*
 params = { pixelSize: 6, normalEdgeStrength: .3, depthEdgeStrength: .4, pixelAlignedPanning: true };

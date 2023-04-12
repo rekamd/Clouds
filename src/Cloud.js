@@ -17,6 +17,7 @@ class Cloud extends Pass {
       noise = false,
       turbulence = 0.0,
       shift = false,
+      pixelSize = 1,
     } = {}
   ) {
     super();
@@ -75,6 +76,8 @@ class Cloud extends Pass {
       fragmentShader,
     });
 
+    this.resolution = new THREE.Vector2();
+    this.pixelMultiplier = pixelSize;
     this.camera = camera;
     this.cloudFullScreenQuad = new Pass.FullScreenQuad(this.cloudMaterial);
     this.passThroughMaterial = this.createPassThroughMaterial();
@@ -147,9 +150,25 @@ class Cloud extends Pass {
     this.material.uniforms.uTime.value = value;
   }
 
+  set pixelSize(value) {
+    this.pixelMultiplier = value;
+    this.setSize(this.resolution.x, this.resolution.y);
+  }
+
+  get pixelSize() {
+    return this.pixelMultiplier;
+  }
+
   setSize(width, height) {
-    this.material.uniforms.uResolution.value.set(width, height);
-    this.cloudRenderTarget.setSize(width, height);
+    this.resolution.set(width, height);
+    this.material.uniforms.uResolution.value.set(
+      width / this.pixelSize,
+      height / this.pixelSize
+    );
+    this.cloudRenderTarget.setSize(
+      width / this.pixelSize,
+      height / this.pixelSize
+    );
   }
 
   isAnimated() {
@@ -161,15 +180,6 @@ class Cloud extends Pass {
       this.material.uniforms.uTurbulence.value > 0.0 ||
       this.material.uniforms.uShift.value
     );
-  }
-
-  doRender(renderer) {
-    this.material.uniforms.uCameraPosition.value.copy(this.camera.position);
-    this.material.uniforms.projectionMatrixInverse.value =
-      this.camera.projectionMatrixInverse;
-    this.material.uniforms.viewMatrixInverse.value = this.camera.matrixWorld;
-
-    this.cloudFullScreenQuad.render(renderer);
   }
 
   render(renderer, writeBuffer) {
@@ -197,7 +207,6 @@ class Cloud extends Pass {
     }
 
     this.passThroughFullScreenQuad.render(renderer);
-    //this.doRender(renderer);
   }
 
   createPassThroughMaterial() {
