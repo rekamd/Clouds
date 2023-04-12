@@ -29,6 +29,7 @@ let params = {
   cloudColor: 0xeabf6b,
   uniformPixels: true,
   lastTouchedPixelID: 0,
+  pause: false,
 };
 
 let cloud = new Cloud(camera, {
@@ -44,7 +45,7 @@ let cloud = new Cloud(camera, {
   shadowLength: 4, // orig: 2, but too dark
   noise: false,
   turbulence: 0.05,
-  shift: true,
+  shift: 1.0,
   pixelWidth: 1,
   pixelHeight: 1,
 });
@@ -53,7 +54,17 @@ let composer = new EffectComposer(renderer);
 composer.addPass(cloud);
 
 let gui = new GUI();
-gui.add(cloud, "shift");
+gui.add(params, "pause").onChange((value) => {
+  renderer.setAnimationLoop(
+    value
+      ? null
+      : (time) => {
+          doAnimate(time);
+        }
+  );
+});
+
+gui.add(cloud, "shift").min(0).max(10).step(0.01);
 gui.add(cloud, "noise");
 gui.add(cloud, "turbulence").min(0).max(2).step(0.01);
 gui.addColor(params, "skyColor").onChange((value) => {
@@ -96,19 +107,6 @@ gui.add(params, "uniformPixels").onChange((value) => {
   }
 });
 
-/*
-params = { pixelSize: 6, normalEdgeStrength: .3, depthEdgeStrength: .4, pixelAlignedPanning: true };
-gui.add( params, 'pixelSize' ).min( 1 ).max( 16 ).step( 1 )
-  .onChange( () => {
-
-    renderPixelatedPass.setPixelSize( params.pixelSize );
-
-  } );
-gui.add( renderPixelatedPass, 'normalEdgeStrength' ).min( 0 ).max( 2 ).step( .05 );
-gui.add( renderPixelatedPass, 'depthEdgeStrength' ).min( 0 ).max( 1 ).step( .05 );
-gui.add( params, 'pixelAlignedPanning' );
-*/
-
 const handleResize = () => {
   const dpr = Math.min(window.devicePixelRatio, 2);
   renderer.setPixelRatio(dpr);
@@ -147,7 +145,13 @@ controls.addEventListener("change", () => {
 
 console.log("Starting scene...");
 
-renderer.setAnimationLoop((time) => {
+//let clock = new THREE.Clock();
+
+//function animate() {
+//  requestAnimationFrame(animate);
+//}
+
+function doAnimate(time) {
   // Note: controls.update() needs to be called after every manual update to the camera position
   // Also required if controls.enableDamping or controls.autoRotate are set to true.
   // See https://threejs.org/docs/?q=orbit#examples/en/controls/OrbitControls
@@ -162,6 +166,10 @@ renderer.setAnimationLoop((time) => {
   if (cloud.isAnimated()) {
     render();
   }
+}
+
+renderer.setAnimationLoop((time) => {
+  doAnimate(time);
 });
 
 function render() {
@@ -169,3 +177,5 @@ function render() {
   composer.render();
   stats.end();
 }
+
+//animate();

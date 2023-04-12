@@ -16,7 +16,7 @@ class Cloud extends Pass {
       shadowLength = 2,
       noise = false,
       turbulence = 0.0,
-      shift = false,
+      shift = 1.0,
       pixelWidth = 1,
       pixelHeight = 1,
     } = {}

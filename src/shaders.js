@@ -50,7 +50,7 @@ export const fragmentShader = /* glsl */ `
   uniform float uTime;
   uniform bool uNoise;
   uniform float uTurbulence;
-  uniform bool uShift;
+  uniform float uShift;
 
   float cloudDepth(vec3 position, vec3 cloudSize) {
     float ellipse = 1.0 - length(position * cloudSize);
@@ -107,7 +107,7 @@ export const fragmentShader = /* glsl */ `
     float turbulence = fract(uTime * uTurbulence);
 
     vec3 cloudPos = uCameraPosition;
-    float shiftSpeed = uShift ? 1.0 : 0.0;
+    float shiftSpeed = uShift;
     float skyCutoff = 25.0;
     float cloudShift = shiftSpeed * uTime;
     cloudShift = mod(cloudShift, skyCutoff*2.0);
