@@ -67,16 +67,17 @@ gui
   .onChange(() => {
     if (params.uniformPixels) {
       cloud.pixelHeight = cloud.pixelWidth;
-
-    }ui
+    }
   });
 
 gui
   .add(cloud, "pixelHeight")
   .min(1)
-
-    }  });;
-();
+  .max(32)
+  .step(1)
+  .onChange(() => {
+    if (params.uniformPixels) {
+      cloud.pixelWidth = cloud.pixelHeight;
     }
   });
 gui.add(params, "uniformPixels");
