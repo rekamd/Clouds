@@ -193,7 +193,7 @@ class Cloud extends Pass {
   }
 
   render(renderer, writeBuffer) {
-    console.log("render pass call...");
+    //console.log("render pass call...");
     this.material.uniforms.uCameraPosition.value.copy(this.camera.position);
     this.material.uniforms.projectionMatrixInverse.value =
       this.camera.projectionMatrixInverse;
@@ -206,10 +206,10 @@ class Cloud extends Pass {
     uniforms.tDiffuse.value = this.cloudRenderTarget.texture;
 
     if (this.renderToScreen) {
-      console.log("render to screen");
+      //console.log("render to screen");
       renderer.setRenderTarget(null);
     } else {
-      console.log("render to buffer");
+      //console.log("render to buffer");
       renderer.setRenderTarget(writeBuffer);
       if (this.clear) {
         renderer.clear();
