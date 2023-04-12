@@ -23,6 +23,7 @@ controls.enableDamping = true;
 let params = {
   skyColor: 0x337fff,
   cloudColor: 0xeabf6b,
+  uniformPixels: true,
 };
 
 let cloud = new Cloud(camera, {
@@ -36,10 +37,11 @@ let cloud = new Cloud(camera, {
   shadowSteps: 16, // orig: 8, but too noisy
   cloudLength: 16,
   shadowLength: 4, // orig: 2, but too dark
-  noise: true, // orig: false
+  noise: false,
   turbulence: 0.05,
   shift: true,
-  pixelSize: 1,
+  pixelWidth: 1,
+  pixelHeight: 1,
 });
 
 let composer = new EffectComposer(renderer);
@@ -57,7 +59,27 @@ gui.addColor(params, "skyColor").onChange((value) => {
 gui.addColor(params, "cloudColor").onChange((value) => {
   cloud.cloudColor = new THREE.Color(value);
 });
-gui.add(cloud, "pixelSize").min(1).max(16).step(1);
+gui
+  .add(cloud, "pixelWidth")
+  .min(1)
+  .max(32)
+  .step(1)
+  .onChange(() => {
+    if (params.uniformPixels) {
+      cloud.pixelHeight = cloud.pixelWidth;
+
+    }ui
+  });
+
+gui
+  .add(cloud, "pixelHeight")
+  .min(1)
+
+    }  });;
+();
+    }
+  });
+gui.add(params, "uniformPixels");
 
 /*
 params = { pixelSize: 6, normalEdgeStrength: .3, depthEdgeStrength: .4, pixelAlignedPanning: true };

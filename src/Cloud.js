@@ -17,7 +17,8 @@ class Cloud extends Pass {
       noise = false,
       turbulence = 0.0,
       shift = false,
-      pixelSize = 1,
+      pixelWidth = 1,
+      pixelHeight = 1,
     } = {}
   ) {
     super();
@@ -77,7 +78,7 @@ class Cloud extends Pass {
     });
 
     this.resolution = new THREE.Vector2();
-    this.pixelMultiplier = pixelSize;
+    this.pixelMultiplier = [pixelWidth, pixelHeight];
     this.camera = camera;
     this.cloudFullScreenQuad = new Pass.FullScreenQuad(this.cloudMaterial);
     this.passThroughMaterial = this.createPassThroughMaterial();
@@ -150,24 +151,33 @@ class Cloud extends Pass {
     this.material.uniforms.uTime.value = value;
   }
 
-  set pixelSize(value) {
-    this.pixelMultiplier = value;
+  set pixelWidth(value) {
+    this.pixelMultiplier[0] = value;
     this.setSize(this.resolution.x, this.resolution.y);
   }
 
-  get pixelSize() {
-    return this.pixelMultiplier;
+  get pixelWidth() {
+    return this.pixelMultiplier[0];
+  }
+
+  set pixelHeight(value) {
+    this.pixelMultiplier[1] = value;
+    this.setSize(this.resolution.x, this.resolution.y);
+  }
+
+  get pixelHeight() {
+    return this.pixelMultiplier[1];
   }
 
   setSize(width, height) {
     this.resolution.set(width, height);
     this.material.uniforms.uResolution.value.set(
-      width / this.pixelSize,
-      height / this.pixelSize
+      width / this.pixelMultiplier[0],
+      height / this.pixelMultiplier[1]
     );
     this.cloudRenderTarget.setSize(
-      width / this.pixelSize,
-      height / this.pixelSize
+      width / this.pixelMultiplier[0],
+      height / this.pixelMultiplier[1]
     );
   }
 
