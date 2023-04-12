@@ -3,8 +3,12 @@ import GUI from "lil-gui";
 
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
+import Stats from "three/examples/jsm/libs/stats.module.js";
 
 import Cloud from "./Cloud";
+
+let stats = new Stats();
+document.body.appendChild(stats.dom);
 
 const renderer = new THREE.WebGLRenderer({
   antialias: true,
@@ -24,6 +28,7 @@ let params = {
   skyColor: 0x337fff,
   cloudColor: 0xeabf6b,
   uniformPixels: true,
+  lastTouchedPixelID: 0,
 };
 
 let cloud = new Cloud(camera, {
@@ -47,8 +52,6 @@ let cloud = new Cloud(camera, {
 let composer = new EffectComposer(renderer);
 composer.addPass(cloud);
 
-let useComposer = true;
-
 let gui = new GUI();
 gui.add(cloud, "shift");
 gui.add(cloud, "noise");
@@ -62,9 +65,11 @@ gui.addColor(params, "cloudColor").onChange((value) => {
 gui
   .add(cloud, "pixelWidth")
   .min(1)
-  .max(32)
+  .max(64)
   .step(1)
+  .listen()
   .onChange(() => {
+    params.lastTouchedPixelID = 0;
     if (params.uniformPixels) {
       cloud.pixelHeight = cloud.pixelWidth;
     }
@@ -73,14 +78,23 @@ gui
 gui
   .add(cloud, "pixelHeight")
   .min(1)
-  .max(32)
+  .max(64)
   .step(1)
+  .listen()
   .onChange(() => {
+    params.lastTouchedPixelID = 1;
     if (params.uniformPixels) {
       cloud.pixelWidth = cloud.pixelHeight;
     }
   });
-gui.add(params, "uniformPixels");
+gui.add(params, "uniformPixels").onChange((value) => {
+  if (value) {
+    const sizes = [cloud.pixelWidth, cloud.pixelHeight];
+    //console.log("max size:" + size);
+    cloud.pixelWidth = sizes[params.lastTouchedPixelID];
+    cloud.pixelHeight = sizes[params.lastTouchedPixelID];
+  }
+});
 
 /*
 params = { pixelSize: 6, normalEdgeStrength: .3, depthEdgeStrength: .4, pixelAlignedPanning: true };
@@ -151,9 +165,7 @@ renderer.setAnimationLoop((time) => {
 });
 
 function render() {
-  if (useComposer) {
-    composer.render();
-  } else {
-    cloud.doRender(renderer);
-  }
+  stats.begin();
+  composer.render();
+  stats.end();
 }
