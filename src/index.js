@@ -54,6 +54,7 @@ let cloud = new Cloud(camera, {
   shift: 1.0,
   pixelWidth: 1,
   pixelHeight: 1,
+  UVTest: false,
 });
 
 let composer = new EffectComposer(renderer);
@@ -112,6 +113,7 @@ gui.add(params, "uniformPixels").onChange((value) => {
     cloud.pixelHeight = sizes[params.lastTouchedPixelID];
   }
 });
+gui.add(cloud, "UVTest");
 
 const handleResize = () => {
   const dpr = Math.min(window.devicePixelRatio, 2);

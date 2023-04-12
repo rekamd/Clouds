@@ -19,6 +19,7 @@ class Cloud extends Pass {
       shift = 1.0,
       pixelWidth = 1,
       pixelHeight = 1,
+      UVTest = false,
     } = {}
   ) {
     super();
@@ -77,6 +78,7 @@ class Cloud extends Pass {
       fragmentShader,
     });
 
+    this.UVTest = UVTest;
     this.resolution = new THREE.Vector2();
     this.pixelMultiplier = [pixelWidth, pixelHeight];
     this.camera = camera;
@@ -204,6 +206,7 @@ class Cloud extends Pass {
 
     const uniforms = this.passThroughMaterial.uniforms;
     uniforms.tDiffuse.value = this.cloudRenderTarget.texture;
+    uniforms.uUVTest.value = this.UVTest;
 
     if (this.renderToScreen) {
       //console.log("render to screen");
@@ -223,6 +226,7 @@ class Cloud extends Pass {
     return new THREE.ShaderMaterial({
       uniforms: {
         tDiffuse: { value: null },
+        uUVTest: { value: false },
       },
       vertexShader: /* glsl */ `
 				varying vec2 vUv;
@@ -233,10 +237,13 @@ class Cloud extends Pass {
 			`,
       fragmentShader: /* glsl */ `
 				uniform sampler2D tDiffuse;
+        uniform bool uUVTest;
 				varying vec2 vUv;
 
 				void main() {
 					vec4 texel = texture2D( tDiffuse, vUv );
+          texel.r += float(uUVTest) * vUv.x;
+          texel.g += float(uUVTest) * vUv.y;
 					gl_FragColor = texel;
 				}
 			`,
