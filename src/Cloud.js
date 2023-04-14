@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { Pass, FullScreenQuad } from "three/examples/jsm/postprocessing/Pass";
 import { fragmentShader } from "./shaders";
+import { Tiles } from "./Tiles.js";
 
 class Cloud extends Pass {
   constructor(
@@ -78,12 +79,14 @@ class Cloud extends Pass {
       fragmentShader,
     });
 
+    this.tiles = new Tiles();
     this.UVTest = UVTest;
     this.resolution = new THREE.Vector2();
     this.pixelMultiplier = [pixelWidth, pixelHeight];
     this.camera = camera;
     this.cloudFullScreenQuad = new Pass.FullScreenQuad(this.cloudMaterial);
     this.passThroughMaterial = this.createPassThroughMaterial();
+    this.passThroughMaterial.uniforms.tTiles.value = this.tiles.texture;
     this.passThroughFullScreenQuad = new Pass.FullScreenQuad(
       this.passThroughMaterial
     );
@@ -226,6 +229,7 @@ class Cloud extends Pass {
     return new THREE.ShaderMaterial({
       uniforms: {
         tDiffuse: { value: null },
+        tTiles: { value: null },
         uUVTest: { value: false },
       },
       vertexShader: /* glsl */ `
@@ -237,14 +241,18 @@ class Cloud extends Pass {
 			`,
       fragmentShader: /* glsl */ `
 				uniform sampler2D tDiffuse;
+        uniform sampler2D tTiles;
         uniform bool uUVTest;
 				varying vec2 vUv;
 
 				void main() {
 					vec4 texel = texture2D( tDiffuse, vUv );
+          // todo: here need to look up with correct scale, based on how large the pixels are
+          vec4 tile = texture2D( tTiles, vUv);
           texel.r += float(uUVTest) * vUv.x;
           texel.g += float(uUVTest) * vUv.y;
-					gl_FragColor = texel;
+					gl_FragColor = mix(texel, tile, 0.2);
+          //gl_FragColor = mix(texel, tile, 0.0);
 				}
 			`,
     });
