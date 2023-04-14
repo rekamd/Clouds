@@ -1,3 +1,4 @@
+// THREE.Clock replacement, from https://github.com/mrdoob/three.js/pull/17912
 class Timer {
   constructor() {
     this._previousTime = 0;
