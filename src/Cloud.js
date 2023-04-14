@@ -176,14 +176,11 @@ class Cloud extends Pass {
 
   setSize(width, height) {
     this.resolution.set(width, height);
-    this.material.uniforms.uResolution.value.set(
-      width / this.pixelMultiplier[0],
-      height / this.pixelMultiplier[1]
-    );
-    this.cloudRenderTarget.setSize(
-      width / this.pixelMultiplier[0],
-      height / this.pixelMultiplier[1]
-    );
+    const resX = width / this.pixelMultiplier[0];
+    const resY = height / this.pixelMultiplier[1];
+    this.material.uniforms.uResolution.value.set(resX, resY);
+    this.passThroughMaterial.uniforms.uResolution.value.set(resX, resY);
+    this.cloudRenderTarget.setSize(resX, resY);
   }
 
   isAnimated() {
@@ -231,6 +228,7 @@ class Cloud extends Pass {
         tDiffuse: { value: null },
         tTiles: { value: null },
         uUVTest: { value: false },
+        uResolution: { value: new THREE.Vector2() },
       },
       vertexShader: /* glsl */ `
 				varying vec2 vUv;
@@ -243,12 +241,13 @@ class Cloud extends Pass {
 				uniform sampler2D tDiffuse;
         uniform sampler2D tTiles;
         uniform bool uUVTest;
+        uniform vec2 uResolution;
 				varying vec2 vUv;
 
 				void main() {
 					vec4 texel = texture2D( tDiffuse, vUv );
           // todo: here need to look up with correct scale, based on how large the pixels are
-          vec4 tile = texture2D( tTiles, vUv);
+          vec4 tile = texture2D( tTiles, vUv * uResolution);
           texel.r += float(uUVTest) * vUv.x;
           texel.g += float(uUVTest) * vUv.y;
 					gl_FragColor = mix(texel, tile, 0.2);
