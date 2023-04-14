@@ -52,8 +52,9 @@ let cloud = new Cloud(camera, {
   noise: false,
   turbulence: 0.05,
   shift: 1.0,
-  pixelWidth: 1,
-  pixelHeight: 1,
+  pixelWidth: 20,
+  pixelHeight: 20,
+  blur: false,
   UVTest: false,
 });
 
@@ -113,6 +114,7 @@ gui.add(params, "uniformPixels").onChange((value) => {
     cloud.pixelHeight = sizes[params.lastTouchedPixelID];
   }
 });
+gui.add(cloud, "blur");
 gui.add(cloud, "UVTest");
 
 const handleResize = () => {

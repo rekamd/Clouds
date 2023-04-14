@@ -20,6 +20,7 @@ class Cloud extends Pass {
       shift = 1.0,
       pixelWidth = 1,
       pixelHeight = 1,
+      blur = false,
       UVTest = false,
     } = {}
   ) {
@@ -92,8 +93,26 @@ class Cloud extends Pass {
     );
 
     this.cloudRenderTarget = new THREE.WebGLRenderTarget();
-    this.cloudRenderTarget.texture.minFilter = THREE.NearestFilter;
-    this.cloudRenderTarget.texture.magFilter = THREE.NearestFilter;
+    const filter = blur ? THREE.LinearFilter : THREE.NearestFilter;
+    this.cloudRenderTarget.texture.minFilter = filter;
+    this.cloudRenderTarget.texture.magFilter = filter;
+  }
+
+  set blur(value) {
+    if (this.blur != value) {
+      const filter = value ? THREE.LinearFilter : THREE.NearestFilter;
+      // After initial use, the texture can not be changed. Need to create a new one
+      // In this case, need to recreate the entire render target.
+      this.cloudRenderTarget.dispose();
+      this.cloudRenderTarget = new THREE.WebGLRenderTarget();
+      this.cloudRenderTarget.texture.minFilter = filter;
+      this.cloudRenderTarget.texture.magFilter = filter;
+      this.setSize(this.resolution.x, this.resolution.y);
+    }
+  }
+
+  get blur() {
+    return this.cloudRenderTarget.texture.minFilter == THREE.LinearFilter;
   }
 
   get material() {
