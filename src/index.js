@@ -74,7 +74,7 @@ gui.add(params, "pause").onChange((value) => {
 
 gui.add(cloud, "shift").min(0).max(10).step(0.01);
 gui.add(cloud, "noise");
-gui.add(cloud, "turbulence").min(0).max(2).step(0.01);
+gui.add(cloud, "turbulence").min(0).max(10).step(0.01);
 gui.addColor(params, "skyColor").onChange((value) => {
   cloud.skyColor = new THREE.Color(value);
 });
