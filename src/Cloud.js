@@ -87,7 +87,9 @@ class Cloud extends Pass {
     this.camera = camera;
     this.cloudFullScreenQuad = new Pass.FullScreenQuad(this.cloudMaterial);
     this.passThroughMaterial = this.createPassThroughMaterial();
-    this.passThroughMaterial.uniforms.tTiles.value = this.tiles.texture;
+    this.passThroughMaterial.uniforms.tTiles.value = this.tiles.tileTexture;
+    this.passThroughMaterial.uniforms.tTileAtlas.value =
+      this.tiles.tileTextureAtlas;
     this.passThroughFullScreenQuad = new Pass.FullScreenQuad(
       this.passThroughMaterial
     );
@@ -246,6 +248,7 @@ class Cloud extends Pass {
       uniforms: {
         tDiffuse: { value: null },
         tTiles: { value: null },
+        tTileAtlas: { value: null },
         uUVTest: { value: false },
         uResolution: { value: new THREE.Vector2() },
       },
@@ -259,17 +262,36 @@ class Cloud extends Pass {
       fragmentShader: /* glsl */ `
 				uniform sampler2D tDiffuse;
         uniform sampler2D tTiles;
+        uniform sampler2D tTileAtlas;
         uniform bool uUVTest;
         uniform vec2 uResolution;
 				varying vec2 vUv;
 
 				void main() {
 					vec4 texel = texture2D( tDiffuse, vUv );
-          // todo: here need to look up with correct scale, based on how large the pixels are
-          vec4 tile = texture2D( tTiles, vUv * uResolution);
+          
+          // compute brightness of texel
+          //float luminance = (texel.r + texel.g + texel.b) / 3.0;
+          //float luminance = 0.2126*texel.r + 0.7152*texel.g + 0.0722*texel.b;
+          float luminance = 0.299*texel.r + 0.587*texel.g + 0.114*texel.b;
+          //float luminance = sqrt( 0.299*texel.r*texel.r + 0.587*texel.g*texel.g + 0.114*texel.b*texel.b );
+
+          vec2 uvLookup = vUv * uResolution;
+          int tileCount = 32;
+          uvLookup.x /= float(tileCount);
+          float maxCoordX = 1.0 / float(tileCount);
+          uvLookup.x = mod(uvLookup.x, maxCoordX);
+          //int tileIndex = 3;
+          int tileIndex = int(mod((1.0-luminance) * float(tileCount), float(tileCount)));
+          uvLookup.x += float(tileIndex) * maxCoordX;
+
+          //vec4 tile = texture2D( tTiles, vUv * uResolution);
+          vec4 tile = texture2D( tTileAtlas, uvLookup);
+
           texel.r += float(uUVTest) * vUv.x;
           texel.g += float(uUVTest) * vUv.y;
-					gl_FragColor = mix(texel, tile, 0.2);
+					gl_FragColor = mix(texel, tile, 0.5);
+          //gl_FragColor = mix(texel, tile, 1.0);
           //gl_FragColor = mix(texel, tile, 0.0);
 				}
 			`,
