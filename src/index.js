@@ -83,9 +83,9 @@ gui.addColor(params, "cloudColor").onChange((value) => {
 });
 gui
   .add(cloud, "pixelWidth")
-  .min(1)
+  .min(2)
   .max(64)
-  .step(1)
+  .step(2)
   .listen()
   .onChange(() => {
     params.lastTouchedPixelID = 0;
@@ -96,9 +96,9 @@ gui
 
 gui
   .add(cloud, "pixelHeight")
-  .min(1)
+  .min(2)
   .max(64)
-  .step(1)
+  .step(2)
   .listen()
   .onChange(() => {
     params.lastTouchedPixelID = 1;
