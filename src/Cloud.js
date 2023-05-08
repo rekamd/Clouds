@@ -268,7 +268,10 @@ class Cloud extends Pass {
 				varying vec2 vUv;
 
 				void main() {
-					vec4 texel = texture2D( tDiffuse, vUv );
+          vec2 pixelFrac = 1.0 / uResolution;
+          vec2 pixelCoord = floor(vUv / pixelFrac);
+          vec2 texelLookup = pixelCoord * pixelFrac + 0.5 * pixelFrac;
+					vec4 texel = texture2D( tDiffuse, texelLookup );
           
           // compute brightness of texel
           //float luminance = (texel.r + texel.g + texel.b) / 3.0;
@@ -292,6 +295,7 @@ class Cloud extends Pass {
           texel.g += float(uUVTest) * vUv.y;
 					gl_FragColor = mix(texel, tile, 0.5);
           //gl_FragColor = mix(texel, tile, 1.0);
+          //gl_FragColor = mix(texel, tile, 0.0);
           //gl_FragColor = mix(texel, tile, 0.0);
 				}
 			`,
