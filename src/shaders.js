@@ -60,11 +60,10 @@ export const fragmentShader = /* glsl */ `
   }
 
   // https://shaderbits.com/blog/creating-volumetric-ray-marcher
-  vec4 cloudMarch(float jitter, float turbulence, vec3 cloudSize, vec3 position, vec3 ray) {
+  vec4 cloudMarch(float jitter, float turbulence, vec3 cloudSize, vec3 position, vec3 lightDirection, vec3 ray) {
     float stepLength = uCloudLength / uCloudSteps;
     float shadowStepLength = uShadowLength / uShadowSteps;
 
-    vec3 lightDirection = normalize(uSunPosition);
     vec3 cloudPosition = position + ray * turbulence * stepLength;
 
     vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
@@ -102,6 +101,8 @@ export const fragmentShader = /* glsl */ `
     vec2 uv = gl_FragCoord.xy / uResolution;
     vec4 point = projectionMatrixInverse * vec4(uv * 2.0 - 1.0, -1.0, 1.0);
     vec3 ray = (viewMatrixInverse * vec4(point.xyz, 0)).xyz;
+    
+    vec4 eyeDir = viewMatrixInverse * normalize(vec4(point.xy, -1, 0.0));  
 
     // Noise / jitter:
     float jitter = uNoise ? hash(uv.x + uv.y * 50.0 + uTime) : 0.0;
@@ -126,6 +127,8 @@ export const fragmentShader = /* glsl */ `
     // some attempt of overlaying sin and cos which leads to some forward/reverse effect
     //float turbulence = (1.0 + sin(uTime) * cos(uTime)) * uTurbulence;
       
+    vec3 lightDir = normalize(uSunPosition);
+          
     vec3 cloudPos = uCameraPosition;
     float shiftSpeed = uShift;
     float skyCutoff = 25.0;
@@ -133,25 +136,44 @@ export const fragmentShader = /* glsl */ `
     cloudShift = mod(cloudShift, skyCutoff*2.0);
     vec3 cloudShiftDirection = vec3(1,0,0);
     cloudPos += (cloudShift - skyCutoff) * cloudShiftDirection;
-    vec4 color1 = cloudMarch(jitter, turbulence, uCloudSize, cloudPos, ray);   
-    vec4 color2 = cloudMarch(jitter, turbulence, uCloudSize * vec3(1.5,2.0,1.5), cloudPos + vec3(3.0,-3.0,-1), ray);
+    vec4 color1 = cloudMarch(jitter, turbulence, uCloudSize, cloudPos, lightDir, ray);   
+    vec4 color2 = cloudMarch(jitter, turbulence, uCloudSize * vec3(1.5,2.0,1.5), cloudPos + vec3(3.0,-3.0,-1), lightDir, ray);
     //float t = mod(uTime, 60.0);
     //gl_FragColor = vec4(t / 60.0, 1.0, 1.0, 1.0);
     //gl_FragColor = vec4(1.0,0.0,0.0,1.0);
-    vec3 skyColor = uSkyColor;
-    //vec3 skyColor = vec3(t / 60.0, 1.0, 1.0);
     
-    //gl_FragColor = vec4(color.rgb + skyColor * color.a, 1.0);
+    // uniform sky color
+    //vec3 skyColor = uSkyColor;
+   
+    // sky gradient
+    float heightFactor = 0.5;
+    vec3 skyColor = uSkyColor - heightFactor * ray.y * vec3(1.0,0.5,1.0) + 0.3*vec3(0.5);
+    // sun center
+    float sunIntensity = clamp( dot(lightDir, eyeDir.xyz), 0.0, 1.0 );    
+    //skyColor = 0.5 * point.xyz + vec3(1,1,1);
+    //skyColor = 0.5 * eyeDir.xyz + vec3(1,1,1);
+    skyColor += 0.8 * vec3(1.0, 0.6, 0.1) * pow(sunIntensity, 6.0 );
+
+    //col = col*(1.0-res.w) + res.xyz;       
+    
+    vec4 finalColor;
+    //finalColor = vec4(color.rgb + skyColor * color.a, 1.0);
     // two clouds option 1:
-    //gl_FragColor = vec4(color1.rgb * (1.0-color1.a) + color2.rgb * (1.0-color2.a) + skyColor * min((color1.a + color2.a)/2.0, 1.0), 1.0);
+    //finalColor = vec4(color1.rgb * (1.0-color1.a) + color2.rgb * (1.0-color2.a) + skyColor * min((color1.a + color2.a)/2.0, 1.0), 1.0);
     // two clouds option 2:
-    //gl_FragColor = vec4(color1.rgb * (1.0-color1.a) + color2.rgb * (1.0-color2.a) + skyColor * min(color1.a + color2.a, 1.0), 1.0);
+    //finalColor = vec4(color1.rgb * (1.0-color1.a) + color2.rgb * (1.0-color2.a) + skyColor * min(color1.a + color2.a, 1.0), 1.0);
     // two clouds option 3 (same as above):
-    //gl_FragColor = vec4(color1.rgb + color2.rgb + skyColor * min(color1.a + color2.a, 1.0), 1.0);
+    //finalColor = vec4(color1.rgb + color2.rgb + skyColor * min(color1.a + color2.a, 1.0), 1.0);
     // two clouds option 4 (linear interpolation; todo: what if the clouds overlap? could do CSG style: choose color of cloud which is denser):
-    gl_FragColor = mix(vec4(color1.rgb + skyColor * color1.a, 1.0), vec4(color2.rgb + skyColor * color2.a, 1.0), color1.a);
-    
+    finalColor = mix(vec4(color1.rgb + skyColor * color1.a, 1.0), vec4(color2.rgb + skyColor * color2.a, 1.0), color1.a);
+
     // Note: approach likely faster and easier to render properly if we work the multiple cloud support into the cloudMarch function.
+    
+    // sun glare        
+    finalColor += 1.4 * vec4(0.2, 0.08, 0.04, 1) * pow(sunIntensity, 8.0 );  
+        
+    gl_FragColor = finalColor;
+
     //gl_FragColor = vec4(1,0,0,1);
   }
 `;
