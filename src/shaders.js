@@ -68,12 +68,14 @@ export const fragmentShader = /* glsl */ `
     vec3 cloudPosition = position + ray * turbulence * stepLength;
 
     vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
-
+    const float k_alphaThreshold = 0.0;
     for (float i = 0.0; i < uCloudSteps; i++) {
-      if (color.a < 0.1) break; // Todo: avoid if in shader
+      if (color.a < k_alphaThreshold) break;
 
       float depth = cloudDepth(cloudPosition, cloudSize);
-      if (depth > 0.001) { // Todo: avoid if in shader
+      const float k_DepthThreshold = 0.001;
+      float depthTest = float(depth > k_DepthThreshold);
+      if (depth > k_DepthThreshold) {
         vec3 lightPosition = cloudPosition + lightDirection * jitter * shadowStepLength;
 
         float shadow = 0.0;
@@ -101,11 +103,29 @@ export const fragmentShader = /* glsl */ `
     vec4 point = projectionMatrixInverse * vec4(uv * 2.0 - 1.0, -1.0, 1.0);
     vec3 ray = (viewMatrixInverse * vec4(point.xyz, 0)).xyz;
 
+    // Noise / jitter:
     float jitter = uNoise ? hash(uv.x + uv.y * 50.0 + uTime) : 0.0;
-    //float jitter = uNoise ? sin(uTime) : 0.0; //hash(uv.x + uv.y * 50.0 + uTime) : 0.0;
-    //float turbulence = uTurbulence ? sin(uTime) + cos(uTime) : 0.0;
-    float turbulence = fract(uTime * uTurbulence);
 
+    // Turbulence:
+    // Todo: could mix two sin or two fruct turbulences which are shifted by 50%,
+    // or overlay one cos and one sin turbulence to create a proper loop without reset or reverse effects.
+
+    // This below works fine but for values larger zero the clouds eventually disappear and never reappear
+    // and the whole effect is view angle dependent (turbulence is a shift along the sun ray)
+    //float turbulence = uTime * uTurbulence;
+
+    // this below works fine but the the fract function causes a sort of "reset" effect at certain moments
+    // and the turbulence is still view-angle dependent.
+    float turbulence = fract(uTime * uTurbulence); /* * optionalTurbulenceStrength */;
+
+    // this below didn't work. The sin function causes a sort of "reverse" effect which looks unnatural
+    // Idea was to reform the clouds eventually, but they reform in reverse which makes no sense.
+    //float turbulenceSpeed = 10.0;
+    //float turbulence = sin((uTime * turbulenceSpeed)) * uTurbulence;
+
+    // some attempt of overlaying sin and cos which leads to some forward/reverse effect
+    //float turbulence = (1.0 + sin(uTime) * cos(uTime)) * uTurbulence;
+      
     vec3 cloudPos = uCameraPosition;
     float shiftSpeed = uShift;
     float skyCutoff = 25.0;
@@ -132,5 +152,6 @@ export const fragmentShader = /* glsl */ `
     gl_FragColor = mix(vec4(color1.rgb + skyColor * color1.a, 1.0), vec4(color2.rgb + skyColor * color2.a, 1.0), color1.a);
     
     // Note: approach likely faster and easier to render properly if we work the multiple cloud support into the cloudMarch function.
+    //gl_FragColor = vec4(1,0,0,1);
   }
 `;

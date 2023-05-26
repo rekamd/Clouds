@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { Pass, FullScreenQuad } from "three/examples/jsm/postprocessing/Pass";
 import { fragmentShader } from "./shaders";
+import { Tiles } from "./Tiles.js";
 
 class Cloud extends Pass {
   constructor(
@@ -19,6 +20,7 @@ class Cloud extends Pass {
       shift = 1.0,
       pixelWidth = 1,
       pixelHeight = 1,
+      blur = false,
       UVTest = false,
     } = {}
   ) {
@@ -78,19 +80,41 @@ class Cloud extends Pass {
       fragmentShader,
     });
 
+    this.tiles = new Tiles();
     this.UVTest = UVTest;
     this.resolution = new THREE.Vector2();
     this.pixelMultiplier = [pixelWidth, pixelHeight];
     this.camera = camera;
     this.cloudFullScreenQuad = new Pass.FullScreenQuad(this.cloudMaterial);
     this.passThroughMaterial = this.createPassThroughMaterial();
+    this.passThroughMaterial.uniforms.tTiles.value = this.tiles.tileTexture;
+    this.passThroughMaterial.uniforms.tTileAtlas.value =
+      this.tiles.tileTextureAtlas;
     this.passThroughFullScreenQuad = new Pass.FullScreenQuad(
       this.passThroughMaterial
     );
 
     this.cloudRenderTarget = new THREE.WebGLRenderTarget();
-    this.cloudRenderTarget.texture.minFilter = THREE.NearestFilter;
-    this.cloudRenderTarget.texture.magFilter = THREE.NearestFilter;
+    const filter = blur ? THREE.LinearFilter : THREE.NearestFilter;
+    this.cloudRenderTarget.texture.minFilter = filter;
+    this.cloudRenderTarget.texture.magFilter = filter;
+  }
+
+  set blur(value) {
+    if (this.blur != value) {
+      const filter = value ? THREE.LinearFilter : THREE.NearestFilter;
+      // After initial use, the texture can not be changed. Need to create a new one
+      // In this case, need to recreate the entire render target.
+      this.cloudRenderTarget.dispose();
+      this.cloudRenderTarget = new THREE.WebGLRenderTarget();
+      this.cloudRenderTarget.texture.minFilter = filter;
+      this.cloudRenderTarget.texture.magFilter = filter;
+      this.setSize(this.resolution.x, this.resolution.y);
+    }
+  }
+
+  get blur() {
+    return this.cloudRenderTarget.texture.minFilter == THREE.LinearFilter;
   }
 
   get material() {
@@ -173,14 +197,11 @@ class Cloud extends Pass {
 
   setSize(width, height) {
     this.resolution.set(width, height);
-    this.material.uniforms.uResolution.value.set(
-      width / this.pixelMultiplier[0],
-      height / this.pixelMultiplier[1]
-    );
-    this.cloudRenderTarget.setSize(
-      width / this.pixelMultiplier[0],
-      height / this.pixelMultiplier[1]
-    );
+    const resX = width / this.pixelMultiplier[0];
+    const resY = height / this.pixelMultiplier[1];
+    this.material.uniforms.uResolution.value.set(resX, resY);
+    this.passThroughMaterial.uniforms.uResolution.value.set(resX, resY);
+    this.cloudRenderTarget.setSize(resX, resY);
   }
 
   isAnimated() {
@@ -226,7 +247,10 @@ class Cloud extends Pass {
     return new THREE.ShaderMaterial({
       uniforms: {
         tDiffuse: { value: null },
+        tTiles: { value: null },
+        tTileAtlas: { value: null },
         uUVTest: { value: false },
+        uResolution: { value: new THREE.Vector2() },
       },
       vertexShader: /* glsl */ `
 				varying vec2 vUv;
@@ -237,14 +261,92 @@ class Cloud extends Pass {
 			`,
       fragmentShader: /* glsl */ `
 				uniform sampler2D tDiffuse;
+        uniform sampler2D tTiles;
+        uniform sampler2D tTileAtlas;
         uniform bool uUVTest;
+        uniform vec2 uResolution;
 				varying vec2 vUv;
 
+        float minColor(vec3 c)
+        {
+          return min(min(c.r, c.g), c.b);
+          //return min(0.5 * (c.r + c.g), c.b);
+        }
+        
+        float maxColor(vec3 c)
+        {
+          return max(max(c.r, c.g), c.b);
+          //return max(0.5 * (c.r + c.g), c.b);
+        }
+
+        float luminosity(float minColor, float maxColor)
+        {
+          return 0.5 * (minColor + maxColor);
+        }
+        
+        float saturation(float minColor, float maxColor, float luminosity)
+        {
+          return luminosity != 1.0 ? (maxColor - minColor) / (1.0 - abs(2.0 * luminosity - 1.0)) : 0.0;
+        }
+        
 				void main() {
-					vec4 texel = texture2D( tDiffuse, vUv );
+          vec2 pixelFrac = 1.0 / uResolution;
+          vec2 pixelCoord = floor(vUv / pixelFrac);
+          vec2 texelLookup = pixelCoord * pixelFrac + 0.5 * pixelFrac;
+					vec4 texel = texture2D( tDiffuse, texelLookup );
+
+          // 2-pass emoji lookup with sky vs. cloud distinction
+          // First check if the pixel should be forced to be a cloud or sky pixel based on its saturation.
+          // For high low saturation, we want cloud emojis.
+          // For the rest we can use either (mixed emoji tile set)
+          float minColor = minColor(texel.rgb);
+          float maxColor = maxColor(texel.rgb);
+          float luminosity = luminosity(minColor, maxColor);
+          float saturation = saturation(minColor, maxColor, luminosity);
+
+          bool forceCloud = saturation < 0.8;
+
+          // simple emoji lookup with brightness only
+          // compute brightness of texel
+          //float luminance = (texel.r + texel.g + texel.b) / 3.0;
+          //float luminance = 0.2126*texel.r + 0.7152*texel.g + 0.0722*texel.b;
+          float luminance = 0.299*texel.r + 0.587*texel.g + 0.114*texel.b;
+          //float luminance = sqrt( 0.299*texel.r*texel.r + 0.587*texel.g*texel.g + 0.114*texel.b*texel.b );
+
+          vec2 uvLookup = vUv * uResolution;
+          int tileCount = 32;
+          uvLookup.x /= float(tileCount);
+          float maxCoordX = 1.0 / float(tileCount);
+          uvLookup.x = mod(uvLookup.x, maxCoordX);
+          int chosenTileSetCount = forceCloud ? 16 : 32;
+          int tileIndex = int(mod((1.0-luminance) * float(chosenTileSetCount), float(chosenTileSetCount)));
+          uvLookup.x += float(tileIndex) * maxCoordX;
+
+          //vec4 tile = texture2D( tTiles, vUv * uResolution);
+          vec4 tile = texture2D( tTileAtlas, uvLookup);
+
+          // mix in uv test color
           texel.r += float(uUVTest) * vUv.x;
           texel.g += float(uUVTest) * vUv.y;
-					gl_FragColor = texel;
+          //gl_FragColor = texel;
+
+          // display luminosity
+          //gl_FragColor = vec4(vec3(luminosity), 1.0);
+          
+          // display saturation
+          vec4 saturationColor = vec4(vec3(saturation), 1.0);
+          
+          //gl_FragColor = saturationColor;
+          //gl_FragColor = mix(texel, saturationColor, 0.5);
+
+          // display 50/50 mix of texel and emoji
+					gl_FragColor = mix(texel, tile, 0.5);
+          
+          // show only emoji
+          //gl_FragColor = tile;
+          
+          // show only texel
+          //gl_FragColor = texel;
 				}
 			`,
     });

@@ -52,8 +52,9 @@ let cloud = new Cloud(camera, {
   noise: false,
   turbulence: 0.05,
   shift: 1.0,
-  pixelWidth: 1,
-  pixelHeight: 1,
+  pixelWidth: 20,
+  pixelHeight: 20,
+  blur: false,
   UVTest: false,
 });
 
@@ -73,7 +74,7 @@ gui.add(params, "pause").onChange((value) => {
 
 gui.add(cloud, "shift").min(0).max(10).step(0.01);
 gui.add(cloud, "noise");
-gui.add(cloud, "turbulence").min(0).max(2).step(0.01);
+gui.add(cloud, "turbulence").min(0).max(10).step(0.01);
 gui.addColor(params, "skyColor").onChange((value) => {
   cloud.skyColor = new THREE.Color(value);
 });
@@ -82,9 +83,9 @@ gui.addColor(params, "cloudColor").onChange((value) => {
 });
 gui
   .add(cloud, "pixelWidth")
-  .min(1)
+  .min(2)
   .max(64)
-  .step(1)
+  .step(2)
   .listen()
   .onChange(() => {
     params.lastTouchedPixelID = 0;
@@ -95,9 +96,9 @@ gui
 
 gui
   .add(cloud, "pixelHeight")
-  .min(1)
+  .min(2)
   .max(64)
-  .step(1)
+  .step(2)
   .listen()
   .onChange(() => {
     params.lastTouchedPixelID = 1;
@@ -113,6 +114,7 @@ gui.add(params, "uniformPixels").onChange((value) => {
     cloud.pixelHeight = sizes[params.lastTouchedPixelID];
   }
 });
+gui.add(cloud, "blur");
 gui.add(cloud, "UVTest");
 
 const handleResize = () => {
