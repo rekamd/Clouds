@@ -31,6 +31,9 @@ timer.enableFixedDelta();
 
 let params = {
   skyColor: 0x337fff,
+  sunPositionX: 1.0,
+  sunPositionY: 2.0,
+  sunPositionZ: 1.0,
   cloudColor: 0xeabf6b,
   uniformPixels: true,
   lastTouchedPixelID: 0,
@@ -40,7 +43,8 @@ let params = {
 
 let cloud = new Cloud(camera, {
   cloudSize: new THREE.Vector3(0.5, 1.0, 0.5),
-  sunPosition: new THREE.Vector3(1.0, 2.0, 1.0),
+  sunIntensity: 0.8,
+  //sunPosition: new THREE.Vector3(1.0, 2.0, 1.0),
   cloudColor: new THREE.Color(params.cloudColor), //"rgb(234, 191, 107)"
   //cloudColor: new THREE.Color("rgb(234, 191, 107)"),
   skyColor: new THREE.Color(params.skyColor), //"rgb(51, 127, 255)"
@@ -73,8 +77,43 @@ gui.add(params, "pause").onChange((value) => {
 });
 
 gui.add(cloud, "shift").min(0).max(10).step(0.01);
+gui.add(cloud, "cloudNoiseSize").min(0).max(10).step(0.001);
 gui.add(cloud, "noise");
-gui.add(cloud, "turbulence").min(0).max(10).step(0.01);
+gui.add(cloud, "turbulence").min(0).max(4).step(0.001);
+gui.add(cloud, "sunIntensity").min(0).max(1.0).step(0.001);
+gui.add(cloud, "sunSize").min(0).max(1.0).step(0.001);
+gui
+  .add(params, "sunPositionX")
+  .onChange((value) => {
+    let sunPos = cloud.sunPosition;
+    console.log("x: " + value);
+    sunPos.x = value;
+    cloud.sunPosition = sunPos;
+    console.log("sunPosition: " + cloud.sunPosition);
+  })
+  .min(-10)
+  .max(10)
+  .step(0.1);
+gui
+  .add(params, "sunPositionY")
+  .onChange((value) => {
+    let sunPos = cloud.sunPosition;
+    sunPos.y = value;
+    cloud.sunPosition = sunPos;
+  })
+  .min(-10)
+  .max(10)
+  .step(0.01);
+gui
+  .add(params, "sunPositionZ")
+  .onChange((value) => {
+    let sunPos = cloud.sunPosition;
+    sunPos.z = value;
+    cloud.sunPosition = sunPos;
+  })
+  .min(-10)
+  .max(10)
+  .step(0.01);
 gui.addColor(params, "skyColor").onChange((value) => {
   cloud.skyColor = new THREE.Color(value);
 });

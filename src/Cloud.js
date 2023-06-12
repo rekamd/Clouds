@@ -8,6 +8,9 @@ class Cloud extends Pass {
     camera,
     {
       cloudSize = new THREE.Vector3(0.5, 1.0, 0.5),
+      cloudNoiseSize = 1.0,
+      sunIntensity = 0.8,
+      sunSize = 1.0,
       sunPosition = new THREE.Vector3(1.0, 2.0, 1.0),
       cloudColor = new THREE.Color(0xeabf6b),
       skyColor = new THREE.Color(0x337fff),
@@ -26,10 +29,20 @@ class Cloud extends Pass {
   ) {
     super();
 
+    this.sunPos = sunPosition;
     this.cloudMaterial = new THREE.ShaderMaterial({
       uniforms: {
         uCloudSize: {
           value: cloudSize,
+        },
+        uCloudNoiseSize: {
+          value: cloudNoiseSize,
+        },
+        uSunIntensity: {
+          value: sunIntensity,
+        },
+        uSunSize: {
+          value: sunSize,
         },
         uSunPosition: {
           value: sunPosition,
@@ -125,8 +138,37 @@ class Cloud extends Pass {
     return this.material.uniforms.uCloudSize.value;
   }
 
+  get cloudNoiseSize() {
+    return this.material.uniforms.uCloudNoiseSize.value;
+  }
+
+  set cloudNoiseSize(value) {
+    this.material.uniforms.uCloudNoiseSize.value = value;
+  }
+
+  get sunIntensity() {
+    return this.material.uniforms.uSunIntensity.value;
+  }
+
+  set sunIntensity(value) {
+    this.material.uniforms.uSunIntensity.value = value;
+  }
+
+  get sunSize() {
+    return this.material.uniforms.uSunSize.value;
+  }
+
+  set sunSize(value) {
+    this.material.uniforms.uSunSize.value = value;
+  }
+
   get sunPosition() {
-    return this.material.uniforms.uSunPosition.value;
+    return this.sunPos;
+  }
+
+  set sunPosition(value) {
+    this.material.uniforms.uSunPosition.value = value;
+    this.sunPos = value;
   }
 
   get skyColor() {
