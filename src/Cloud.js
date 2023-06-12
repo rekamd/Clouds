@@ -9,6 +9,7 @@ class Cloud extends Pass {
     {
       cloudSize = new THREE.Vector3(0.5, 1.0, 0.5),
       cloudNoiseSize = 1.0,
+      cloudShape = 43758.5453,
       sunIntensity = 0.8,
       sunSize = 1.0,
       sunPosition = new THREE.Vector3(1.0, 2.0, 1.0),
@@ -37,6 +38,9 @@ class Cloud extends Pass {
         },
         uCloudNoiseSize: {
           value: cloudNoiseSize,
+        },
+        uCloudShape: {
+          value: cloudShape,
         },
         uSunIntensity: {
           value: sunIntensity,
@@ -144,6 +148,14 @@ class Cloud extends Pass {
 
   set cloudNoiseSize(value) {
     this.material.uniforms.uCloudNoiseSize.value = value;
+  }
+
+  get cloudShape() {
+    return this.material.uniforms.uCloudShape.value;
+  }
+
+  set cloudShape(value) {
+    this.material.uniforms.uCloudShape.value = value;
   }
 
   get sunIntensity() {

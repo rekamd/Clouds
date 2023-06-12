@@ -1,7 +1,7 @@
 // 3D FBM noise https://shadertoy.com/view/lss3zr
 export const fbm = /* glsl */ `
   mat3 m = mat3(0.00, 0.80, 0.60, -0.80, 0.36, -0.48, -0.60, -0.48, 0.64);
-  float hash(float n, float size) {
+  float hash(float n, float size, float uniformity) {
     // Todo: parameterize constant and function types here
     //return fract(sin(n) * 43758.5453);
     //return fract(sin(n) * 125.01238219);
@@ -14,10 +14,23 @@ export const fbm = /* glsl */ `
     //return fract(sin(n) * 43758.5453) * 2.0;
     //return fract(sin(n) * 43758.5453) * 4.0;
     
-    return fract(sin(n) * 43758.5453) * size;
+    //return fract(sin(n) * 43758.5453) * size;
+    //return fract(sin(n) * cos(n) * tanh(n) * 43758.5453) * size;
+    //return fract(sin(n) * cos(n) * 43758.5453) * size;
+    //return fract(sin(n * 1000.0) * 43758.5453) * size;
+    //return fract(sin(n) * 0.5453) * size;
+    //return fract(sin(n) * 1.12342 + cos(n) * 1.7281) * size;
+    //return fract(sin(n) * 1.12342) * size;
+    //return fract(sin(n) * 1.12342 + cos(n) * 1.12342) * size;
+    
+    //float uniformity = 43758.5453;
+    //float uniformity = 2.13151231;
+    //float uniformity = 1.02719;
+    //float uniformity = 0.192;
+    return fract( (sin(n) + cos(n)) * uniformity) * size;
   }
 
-  float noise(vec3 x, float size) {
+  float noise(vec3 x, float size, float uniformity) {
     vec3 p = floor(x);
     vec3 f = fract(x);
 
@@ -31,10 +44,10 @@ export const fbm = /* glsl */ `
     //float n = 123.0 * p.x + p.y * 2321.0 + 50017.0 * p.z;
 
     // Todo: noise function constants can be used for different looks
-    float res = mix(mix(mix(hash(n + 0.0, size), hash(n + 1.0, size), f.x),
-                        mix(hash(n + 57.0, size), hash(n + 58.0, size), f.x), f.y),
-                    mix(mix(hash(n + 113.0, size), hash(n + 114.0, size), f.x),
-                        mix(hash(n + 170.0, size), hash(n + 171.0, size), f.x), f.y), f.z);
+    float res = mix(mix(mix(hash(n + 0.0, size, uniformity), hash(n + 1.0, size, uniformity), f.x),
+                        mix(hash(n + 57.0, size, uniformity), hash(n + 58.0, size, uniformity), f.x), f.y),
+                    mix(mix(hash(n + 113.0, size, uniformity), hash(n + 114.0, size, uniformity), f.x),
+                        mix(hash(n + 170.0, size, uniformity), hash(n + 171.0, size, uniformity), f.x), f.y), f.z);
 
     // Variation A
     //float res = mix(mix(mix(hash(n + 0.0), hash(n + 1.0), f.x),
@@ -64,12 +77,12 @@ export const fbm = /* glsl */ `
     return res;
   }
 
-  float fbm(vec3 p, float size) {
+  float fbm(vec3 p, float size, float uniformity) {
     float f = 0.0;
-    f += 0.5000 * noise(p, size); p = m * p * 2.02;
-    f += 0.2500 * noise(p, size); p = m * p * 2.03;
-    f += 0.12500 * noise(p, size); p = m * p * 2.01;
-    f += 0.06250 * noise(p, size);
+    f += 0.5000 * noise(p, size, uniformity); p = m * p * 2.02;
+    f += 0.2500 * noise(p, size, uniformity); p = m * p * 2.03;
+    f += 0.12500 * noise(p, size, uniformity); p = m * p * 2.01;
+    f += 0.06250 * noise(p, size, uniformity);
     return f;
   }
 `;
@@ -79,6 +92,7 @@ export const fragmentShader = /* glsl */ `
 
   uniform vec3 uCloudSize;
   uniform float uCloudNoiseSize;
+  uniform float uCloudShape;
   uniform float uSunSize;
   uniform float uSunIntensity;
   uniform vec3 uSunPosition;
@@ -97,15 +111,15 @@ export const fragmentShader = /* glsl */ `
   uniform float uTurbulence;
   uniform float uShift;
 
-  float cloudDepth(vec3 position, vec3 cloudSize, float cloudNoiseSize) {
+  float cloudDepth(vec3 position, vec3 cloudSize, float cloudNoiseSize, float cloudUniformity) {
     float ellipse = 1.0 - length(position * cloudSize);
-    float cloud = ellipse + fbm(position, cloudNoiseSize) * 2.2;
+    float cloud = ellipse + fbm(position, cloudNoiseSize, cloudUniformity) * 2.2;
 
     return min(max(0.0, cloud), 1.0);
   }
 
   // https://shaderbits.com/blog/creating-volumetric-ray-marcher
-  vec4 cloudMarch(float jitter, float turbulence, vec3 cloudSize, float cloudNoiseSize, vec3 position, vec3 lightDirection, vec3 ray) {
+  vec4 cloudMarch(float jitter, float turbulence, vec3 cloudSize, float cloudNoiseSize, float cloudUniformity, vec3 position, vec3 lightDirection, vec3 ray) {
     float stepLength = uCloudLength / uCloudSteps;
     float shadowStepLength = uShadowLength / uShadowSteps;
 
@@ -116,7 +130,7 @@ export const fragmentShader = /* glsl */ `
     for (float i = 0.0; i < uCloudSteps; i++) {
       if (color.a < k_alphaThreshold) break;
 
-      float depth = cloudDepth(cloudPosition, cloudSize, cloudNoiseSize);
+      float depth = cloudDepth(cloudPosition, cloudSize, cloudNoiseSize, cloudUniformity);
       const float k_DepthThreshold = 0.001;
       float depthTest = float(depth > k_DepthThreshold);
       if (depth > k_DepthThreshold) {
@@ -125,7 +139,7 @@ export const fragmentShader = /* glsl */ `
         float shadow = 0.0;
         for (float s = 0.0; s < uShadowSteps; s++) {
           lightPosition += lightDirection * shadowStepLength;
-          shadow += cloudDepth(lightPosition, cloudSize, cloudNoiseSize);
+          shadow += cloudDepth(lightPosition, cloudSize, cloudNoiseSize, cloudUniformity);
         }
         shadow = exp((-shadow / uShadowSteps) * 3.0);
 
@@ -150,7 +164,8 @@ export const fragmentShader = /* glsl */ `
     vec4 eyeDir = viewMatrixInverse * normalize(vec4(point.xy, -1, 0.0));  
 
     // Noise / jitter:
-    float jitter = uNoise ? hash(uv.x + uv.y * 50.0 + uTime, 1.0) : 0.0;
+    float defaultHashShape = 43758.5453;
+    float jitter = uNoise ? hash(uv.x + uv.y * 50.0 + uTime, 1.0, defaultHashShape) : 0.0;
 
     // Turbulence:
     // Todo: could mix two sin or two fruct turbulences which are shifted by 50%,
@@ -181,8 +196,9 @@ export const fragmentShader = /* glsl */ `
     cloudShift = mod(cloudShift, skyCutoff*2.0);
     vec3 cloudShiftDirection = vec3(1,0,0);
     cloudPos += (cloudShift - skyCutoff) * cloudShiftDirection;
-    vec4 color1 = cloudMarch(jitter, turbulence, uCloudSize, uCloudNoiseSize, cloudPos, lightDir, ray);   
-    vec4 color2 = cloudMarch(jitter, turbulence, uCloudSize * vec3(1.5,2.0,1.5), uCloudNoiseSize, cloudPos + vec3(3.0,-3.0,-1), lightDir, ray);
+
+    vec4 color1 = cloudMarch(jitter, turbulence, uCloudSize, uCloudNoiseSize, uCloudShape, cloudPos, lightDir, ray);   
+    vec4 color2 = cloudMarch(jitter, turbulence, uCloudSize * vec3(1.5,2.0,1.5), uCloudNoiseSize, uCloudShape, cloudPos + vec3(3.0,-3.0,-1), lightDir, ray);
     
     // uniform sky color
     //vec3 skyColor = uSkyColor;

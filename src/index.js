@@ -78,6 +78,7 @@ gui.add(params, "pause").onChange((value) => {
 
 gui.add(cloud, "shift").min(0).max(10).step(0.01);
 gui.add(cloud, "cloudNoiseSize").min(0).max(10).step(0.001);
+gui.add(cloud, "cloudShape").min(-50000).max(50000).step(0.000001);
 gui.add(cloud, "noise");
 gui.add(cloud, "turbulence").min(0).max(4).step(0.001);
 gui.add(cloud, "sunIntensity").min(0).max(1.0).step(0.001);
@@ -93,7 +94,7 @@ gui
   })
   .min(-10)
   .max(10)
-  .step(0.1);
+  .step(0.001);
 gui
   .add(params, "sunPositionY")
   .onChange((value) => {
@@ -103,7 +104,7 @@ gui
   })
   .min(-10)
   .max(10)
-  .step(0.01);
+  .step(0.001);
 gui
   .add(params, "sunPositionZ")
   .onChange((value) => {
@@ -113,7 +114,7 @@ gui
   })
   .min(-10)
   .max(10)
-  .step(0.01);
+  .step(0.001);
 gui.addColor(params, "skyColor").onChange((value) => {
   cloud.skyColor = new THREE.Color(value);
 });
