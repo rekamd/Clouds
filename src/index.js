@@ -77,7 +77,7 @@ gui.add(params, "pause").onChange((value) => {
 });
 
 gui.add(cloud, "shift").min(0).max(10).step(0.01);
-gui.add(cloud, "cloudNoiseSize").min(0).max(10).step(0.001);
+gui.add(cloud, "cloudScatter").min(0).max(20).step(0.001);
 gui.add(cloud, "cloudShape").min(-50000).max(50000).step(0.000001);
 gui.add(cloud, "noise");
 gui.add(cloud, "turbulence").min(0).max(4).step(0.001);

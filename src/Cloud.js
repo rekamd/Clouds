@@ -8,7 +8,7 @@ class Cloud extends Pass {
     camera,
     {
       cloudSize = new THREE.Vector3(0.5, 1.0, 0.5),
-      cloudNoiseSize = 1.0,
+      cloudScatter = 2.2,
       cloudShape = 43758.5453,
       sunIntensity = 0.8,
       sunSize = 1.0,
@@ -36,8 +36,8 @@ class Cloud extends Pass {
         uCloudSize: {
           value: cloudSize,
         },
-        uCloudNoiseSize: {
-          value: cloudNoiseSize,
+        uCloudScatter: {
+          value: cloudScatter,
         },
         uCloudShape: {
           value: cloudShape,
@@ -142,12 +142,12 @@ class Cloud extends Pass {
     return this.material.uniforms.uCloudSize.value;
   }
 
-  get cloudNoiseSize() {
-    return this.material.uniforms.uCloudNoiseSize.value;
+  get cloudScatter() {
+    return this.material.uniforms.uCloudScatter.value;
   }
 
-  set cloudNoiseSize(value) {
-    this.material.uniforms.uCloudNoiseSize.value = value;
+  set cloudScatter(value) {
+    this.material.uniforms.uCloudScatter.value = value;
   }
 
   get cloudShape() {
@@ -400,7 +400,7 @@ class Cloud extends Pass {
           //gl_FragColor = tile;
           
           // show only texel
-          //gl_FragColor = texel;
+          gl_FragColor = texel;
 				}
 			`,
     });
