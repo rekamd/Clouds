@@ -8,6 +8,7 @@ class Cloud extends Pass {
     camera,
     {
       cloudSize = new THREE.Vector3(0.5, 1.0, 0.5),
+      cloudRoughness = 2.0,
       cloudScatter = 2.2,
       cloudShape = 43758.5453,
       sunIntensity = 0.8,
@@ -35,6 +36,9 @@ class Cloud extends Pass {
       uniforms: {
         uCloudSize: {
           value: cloudSize,
+        },
+        uCloudRoughness: {
+          value: cloudRoughness,
         },
         uCloudScatter: {
           value: cloudScatter,
@@ -142,6 +146,14 @@ class Cloud extends Pass {
     return this.material.uniforms.uCloudSize.value;
   }
 
+  get cloudRoughness() {
+    return this.material.uniforms.uCloudRoughness.value;
+  }
+
+  set cloudRoughness(value) {
+    this.material.uniforms.uCloudRoughness.value = value;
+  }
+  
   get cloudScatter() {
     return this.material.uniforms.uCloudScatter.value;
   }

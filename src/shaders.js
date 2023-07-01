@@ -72,6 +72,7 @@ export const fragmentShader = /* glsl */ `
   ${fbm}
 
   uniform vec3 uCloudSize;
+  uniform float uCloudRoughness;
   uniform float uCloudScatter;
   uniform float uCloudShape;
   uniform float uSunSize;
@@ -92,16 +93,15 @@ export const fragmentShader = /* glsl */ `
   uniform float uTurbulence;
   uniform float uShift;
 
-  float cloudDepth(vec3 position, vec3 cloudSize, float cloudScatter, float cloudShape) {
+  float cloudDepth(vec3 position, vec3 cloudSize, float cloudScatter, float cloudShape, float cloudRoughness) {
     float ellipse = 1.0 - length(position * cloudSize);
-    float roughness = 2.0;
-    float cloud = ellipse + fbm(position, cloudShape, roughness) * cloudScatter;
+    float cloud = ellipse + fbm(position, cloudShape, cloudRoughness) * cloudScatter;
 
     return min(max(0.0, cloud), 1.0);
   }
 
   // https://shaderbits.com/blog/creating-volumetric-ray-marcher
-  vec4 cloudMarch(float jitter, float turbulence, vec3 cloudSize, float cloudScatter, float cloudShape, vec3 position, vec3 lightDirection, vec3 ray) {
+  vec4 cloudMarch(float jitter, float turbulence, vec3 cloudSize, float cloudScatter, float cloudShape, float cloudRoughness, vec3 position, vec3 lightDirection, vec3 ray) {
     float stepLength = uCloudLength / uCloudSteps;
     float shadowStepLength = uShadowLength / uShadowSteps;
 
@@ -112,7 +112,7 @@ export const fragmentShader = /* glsl */ `
     for (float i = 0.0; i < uCloudSteps; i++) {
       if (color.a < k_alphaThreshold) break;
 
-      float depth = cloudDepth(cloudPosition, cloudSize, cloudScatter, cloudShape);
+      float depth = cloudDepth(cloudPosition, cloudSize, cloudScatter, cloudShape, cloudRoughness);
       const float k_DepthThreshold = 0.001;
       float depthTest = float(depth > k_DepthThreshold);
       if (depth > k_DepthThreshold) {
@@ -121,7 +121,7 @@ export const fragmentShader = /* glsl */ `
         float shadow = 0.0;
         for (float s = 0.0; s < uShadowSteps; s++) {
           lightPosition += lightDirection * shadowStepLength;
-          shadow += cloudDepth(lightPosition, cloudSize, cloudScatter, cloudShape);
+          shadow += cloudDepth(lightPosition, cloudSize, cloudScatter, cloudShape, cloudRoughness);
         }
         shadow = exp((-shadow / uShadowSteps) * 3.0);
 
@@ -179,8 +179,8 @@ export const fragmentShader = /* glsl */ `
     vec3 cloudShiftDirection = vec3(1,0,0);
     cloudPos += (cloudShift - skyCutoff) * cloudShiftDirection;
 
-    vec4 color1 = cloudMarch(jitter, turbulence, uCloudSize, uCloudScatter, uCloudShape, cloudPos, lightDir, ray);   
-    vec4 color2 = cloudMarch(jitter, turbulence, uCloudSize * vec3(1.5,2.0,1.5), uCloudScatter, uCloudShape, cloudPos + vec3(3.0,-3.0,-1), lightDir, ray);
+    vec4 color1 = cloudMarch(jitter, turbulence, uCloudSize, uCloudScatter, uCloudShape, uCloudRoughness, cloudPos, lightDir, ray);   
+    vec4 color2 = cloudMarch(jitter, turbulence, uCloudSize * vec3(1.5,2.0,1.5), uCloudScatter, uCloudShape, uCloudRoughness, cloudPos + vec3(3.0,-3.0,-1), lightDir, ray);
     
     // uniform sky color
     //vec3 skyColor = uSkyColor;
