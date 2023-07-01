@@ -25,6 +25,7 @@ class Cloud extends Pass {
       shift = 1.0,
       pixelWidth = 1,
       pixelHeight = 1,
+      tileMixFactor = 0.5,
       blur = false,
       UVTest = false,
     } = {}
@@ -103,6 +104,7 @@ class Cloud extends Pass {
 
     this.tiles = new Tiles();
     this.UVTest = UVTest;
+    this.tileMixFactor = tileMixFactor;
     this.resolution = new THREE.Vector2();
     this.pixelMultiplier = [pixelWidth, pixelHeight];
     this.camera = camera;
@@ -153,7 +155,7 @@ class Cloud extends Pass {
   set cloudRoughness(value) {
     this.material.uniforms.uCloudRoughness.value = value;
   }
-  
+
   get cloudScatter() {
     return this.material.uniforms.uCloudScatter.value;
   }
@@ -294,6 +296,7 @@ class Cloud extends Pass {
     const uniforms = this.passThroughMaterial.uniforms;
     uniforms.tDiffuse.value = this.cloudRenderTarget.texture;
     uniforms.uUVTest.value = this.UVTest;
+    uniforms.uTileMixFactor.value = this.tileMixFactor;
 
     if (this.renderToScreen) {
       //console.log("render to screen");
@@ -317,6 +320,7 @@ class Cloud extends Pass {
         tTileAtlas: { value: null },
         uUVTest: { value: false },
         uResolution: { value: new THREE.Vector2() },
+        uTileMixFactor: { value: 0.5 },
       },
       vertexShader: /* glsl */ `
 				varying vec2 vUv;
@@ -331,7 +335,8 @@ class Cloud extends Pass {
         uniform sampler2D tTileAtlas;
         uniform bool uUVTest;
         uniform vec2 uResolution;
-				varying vec2 vUv;
+        uniform float uTileMixFactor;
+        varying vec2 vUv;
 
         float minColor(vec3 c)
         {
@@ -406,13 +411,13 @@ class Cloud extends Pass {
           //gl_FragColor = mix(texel, saturationColor, 0.5);
 
           // display 50/50 mix of texel and emoji
-					gl_FragColor = mix(texel, tile, 0.5);
+					gl_FragColor = mix(texel, tile, uTileMixFactor);
           
           // show only emoji
           //gl_FragColor = tile;
           
           // show only texel
-          gl_FragColor = texel;
+          //gl_FragColor = texel;
 				}
 			`,
     });

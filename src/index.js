@@ -155,6 +155,7 @@ gui.add(params, "uniformPixels").onChange((value) => {
     cloud.pixelHeight = sizes[params.lastTouchedPixelID];
   }
 });
+gui.add(cloud, "tileMixFactor").min(-1).max(2);
 gui.add(cloud, "blur");
 gui.add(cloud, "UVTest");
 
