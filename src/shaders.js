@@ -4,7 +4,29 @@ export const fbm = /* glsl */ `
   // Todo: animate the noise below, size and uniformity can be changed over time
   mat3 m = mat3(0.00, 0.80, 0.60, -0.80, 0.36, -0.48, -0.60, -0.48, 0.64);
   float hash(float n, float shape) {
-    return fract( (sin(n) + cos(n)) * shape);
+    // Original:
+    //return fract( (sin(n) + cos(n)) * shape);
+
+    // todo: shape increases the size; should have both, multiplier and add
+    //return fract(sin(n) + cos(n)) + shape; // this works well
+    //return fract( (sin(n) + cos(n)) * sin(shape)) + shape;
+    
+    // Note: moving the shape out of the fract and injecting it via
+    // a circular function (here sine) nicely grows and shrinks
+    // the clouds. If the shape, which we modify here over time
+    // would be added to the fract in some way, we would see jumping.
+    // Warning: cloudShape must be initially set to 0 or a lower value (~100) for this to work
+    // There are likely some sort of numerical inaccuracies otherwise
+    //return fract(sin(n) + cos(n)) + sin(shape*10.0) + 2.0;
+    
+    // proposed function:
+    
+    float shapeVariation = 100.231; // some value. to be replaced by original shape.
+    float time = shape; // to be replaced by time
+    float animationSpeed = 0.5;
+    float minCloudDensity = 0.5;
+    return fract((sin(n) + cos(n)) * shapeVariation) + sin(time * animationSpeed) + minCloudDensity;
+    // return fract((sin(n) + cos(n)) * shape) + sin(time * animationSpeed) + minCloudDensity;
   }
 
   float noise(vec3 x, float shape) {
@@ -179,8 +201,9 @@ export const fragmentShader = /* glsl */ `
     vec3 cloudShiftDirection = vec3(1,0,0);
     cloudPos += (cloudShift - skyCutoff) * cloudShiftDirection;
 
-    vec4 color1 = cloudMarch(jitter, turbulence, uCloudSize, uCloudScatter, uCloudShape, uCloudRoughness, cloudPos, lightDir, ray);   
-    vec4 color2 = cloudMarch(jitter, turbulence, uCloudSize * vec3(1.5,2.0,1.5), uCloudScatter, uCloudShape, uCloudRoughness, cloudPos + vec3(3.0,-3.0,-1), lightDir, ray);
+    float cloudShape = uCloudShape + uTime;
+    vec4 color1 = cloudMarch(jitter, turbulence, uCloudSize, uCloudScatter, cloudShape, uCloudRoughness, cloudPos, lightDir, ray);   
+    vec4 color2 = cloudMarch(jitter, turbulence, uCloudSize * vec3(1.5,2.0,1.5), uCloudScatter, cloudShape, uCloudRoughness, cloudPos + vec3(3.0,-3.0,-1), lightDir, ray);
     
     // uniform sky color
     //vec3 skyColor = uSkyColor;

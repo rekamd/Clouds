@@ -10,7 +10,8 @@ class Cloud extends Pass {
       cloudSize = new THREE.Vector3(0.5, 1.0, 0.5),
       cloudRoughness = 2.0,
       cloudScatter = 2.2,
-      cloudShape = 43758.5453,
+      //cloudShape = 43758.5453, // original default
+      cloudShape = 0.5453,
       sunIntensity = 0.8,
       sunSize = 1.0,
       sunPosition = new THREE.Vector3(1.0, 2.0, 1.0),
