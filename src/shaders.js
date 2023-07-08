@@ -6,10 +6,6 @@ export const fbm = /* glsl */ `
   float hash(float n, float shape) {
     // Original:
     //return fract( (sin(n) + cos(n)) * shape);
-
-    // todo: shape increases the size; should have both, multiplier and add
-    //return fract(sin(n) + cos(n)) + shape; // this works well
-    //return fract( (sin(n) + cos(n)) * sin(shape)) + shape;
     
     // Note: moving the shape out of the fract and injecting it via
     // a circular function (here sine) nicely grows and shrinks
@@ -25,8 +21,12 @@ export const fbm = /* glsl */ `
     float time = shape; // to be replaced by time
     float animationSpeed = 0.5;
     float minCloudDensity = 0.5;
-    return fract((sin(n) + cos(n)) * shapeVariation) + sin(time * animationSpeed) + minCloudDensity;
-    // return fract((sin(n) + cos(n)) * shape) + sin(time * animationSpeed) + minCloudDensity;
+    //return fract((sin(n) + cos(n)) * shapeVariation) + sin(time * animationSpeed) + minCloudDensity;
+    
+    // more interesting, less simplistic animation pattern
+    return fract((sin(n) + cos(n)) * shapeVariation) + pow(sin((time * animationSpeed)/3.0), 5.0) + minCloudDensity;
+
+    //return fract((sin(n) + cos(n)) * shape) + sin(time * animationSpeed) + minCloudDensity;
   }
 
   float noise(vec3 x, float shape) {
