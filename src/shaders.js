@@ -292,7 +292,6 @@ void main() {
   int tileIndex = int(mod((1.0-luminance) * float(chosenTileSetCount), float(chosenTileSetCount)));
   uvLookup.x += float(tileIndex) * maxCoordX;
 
-  //vec4 tile = texture2D( tTiles, vUv * uResolution);
   vec4 tile = texture2D( tTileAtlas, uvLookup);
 
   // mix in uv test color
@@ -304,12 +303,13 @@ void main() {
   //gl_FragColor = vec4(vec3(luminosity), 1.0);
   
   // display saturation
+  #if 0
   vec4 saturationColor = vec4(vec3(saturation), 1.0);
-  
-  //gl_FragColor = saturationColor;
+  gl_FragColor = saturationColor;
   //gl_FragColor = mix(texel, saturationColor, 0.5);
+  #endif
 
-  // display 50/50 mix of texel and emoji
+  // display mix of texel and emoji
   gl_FragColor = mix(texel, tile, uTileMixFactor);
   
   // show only emoji
