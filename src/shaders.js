@@ -1,64 +1,12 @@
-// 3D FBM noise https://shadertoy.com/view/lss3zr
-export const fbm = /* glsl */ `
-
-  // Todo: animate the noise below, size and uniformity can be changed over time
-  mat3 m = mat3(0.00, 0.80, 0.60, -0.80, 0.36, -0.48, -0.60, -0.48, 0.64);
-  float hash(float n, float shape, float time) {
-    // Original:
-    //return fract( (sin(n) + cos(n)) * shape);
-    
-    // Note: moving the shape out of the fract and injecting it via
-    // a circular function (here sine) nicely grows and shrinks
-    // the clouds. If the shape, which we modify here over time
-    // would be added to the fract in some way, we would see jumping.
-    // Warning: cloudShape must be initially set to 0 or a lower value (~100) for this to work
-    // There are likely some sort of numerical inaccuracies otherwise
-    //return fract(sin(n) + cos(n)) + sin(shape*10.0) + 2.0;
-    
-    // proposed function:
-    
-    float animationSpeed = 0.5;
-    float minCloudDensity = 0.5;
-    
-    //return fract((sin(n) + cos(n)) * shape) + sin(time * animationSpeed) + minCloudDensity;
-    // more interesting, less simplistic animation pattern
-    return fract((sin(n) + cos(n)) * shape) + pow(sin((time * animationSpeed)/3.0), 5.0) + minCloudDensity;
-  }
-
-  float noise(vec3 x, float shape, float time) {
-    vec3 p = floor(x);
-    vec3 f = fract(x);
-
-    f = f * f * (3.0 - 2.0 * f);
-
-    float n = p.x + p.y * 57.0 + 113.0 * p.z;
-    float res = mix(mix(mix(hash(n + 0.0, shape, time), hash(n + 1.0, shape, time), f.x),
-                        mix(hash(n + 57.0, shape, time), hash(n + 58.0, shape, time), f.x), f.y),
-                    mix(mix(hash(n + 113.0, shape, time), hash(n + 114.0, shape, time), f.x),
-                        mix(hash(n + 170.0, shape, time), hash(n + 171.0, shape, time), f.x), f.y), f.z);
-
-    return res;
-  }
-
-  float fbm(vec3 p, float shape, float roughness, float time) {
-    float f = 0.0;
-    float r = roughness;
-    float t = 0.01;
-    f += 0.5000 * noise(p, shape, time); p = m * p * (r + 2.0 * t);
-    f += 0.2500 * noise(p, shape, time); p = m * p * (r + 3.0 * t);
-    f += 0.12500 * noise(p, shape, time); p = m * p * (r + t);
-    f += 0.06250 * noise(p, shape, time);
-    return f;
-  }
-`;
-
 export const fragmentShader = /* glsl */ `
-  ${fbm}
 
   uniform vec3 uCloudSize;
+  uniform float uCloudMinimumDensity;
   uniform float uCloudRoughness;
   uniform float uCloudScatter;
   uniform float uCloudShape;
+  uniform float uCloudAnimationSpeed;
+  uniform float uCloudAnimationStrength;
   uniform float uSunSize;
   uniform float uSunIntensity;
   uniform vec3 uSunPosition;
@@ -77,9 +25,54 @@ export const fragmentShader = /* glsl */ `
   uniform float uTurbulence;
   uniform float uShift;
 
+  mat3 m = mat3(0.00, 0.80, 0.60, -0.80, 0.36, -0.48, -0.60, -0.48, 0.64);
+  float hash(float n, float shape, float animationSpeed, float animationStrength, float time) {
+    // Original:
+    //return fract( (sin(n) + cos(n)) * shape);
+    
+    // Note: adding a component to the cloud hash for animation through
+    // a circular function (here sine) nicely grows and shrinks
+    // the clouds. If a value we modify over time for this animation effect
+    // would be part of a fract function, we would see jumping.
+    
+    //float animationSpeed = 0.5;
+    
+    //return fract((sin(n) + cos(n)) * shape) + sin(time * animationSpeed);
+    // more interesting, less simplistic animation pattern
+    return fract((sin(n) + cos(n)) * shape) + animationStrength * pow(sin((time * animationSpeed)/3.0), 5.0);
+  }
+
+  float noise(vec3 x, float shape, float time) {
+    vec3 p = floor(x);
+    vec3 f = fract(x);
+
+    f = f * f * (3.0 - 2.0 * f);
+
+    float animationSpeed = uCloudAnimationSpeed;
+    float animationStrength = uCloudAnimationStrength;
+    float n = p.x + p.y * 57.0 + 113.0 * p.z;
+    float res = mix(mix(mix(hash(n + 0.0, shape, animationSpeed, animationStrength, time), hash(n + 1.0, shape, animationSpeed, animationStrength, time), f.x),
+                        mix(hash(n + 57.0, shape, animationSpeed, animationStrength, time), hash(n + 58.0, shape, animationSpeed, animationStrength, time), f.x), f.y),
+                    mix(mix(hash(n + 113.0, shape, animationSpeed, animationStrength, time), hash(n + 114.0, shape, animationSpeed, animationStrength, time), f.x),
+                        mix(hash(n + 170.0, shape, animationSpeed, animationStrength, time), hash(n + 171.0, shape, animationSpeed, animationStrength, time), f.x), f.y), f.z);
+
+    return res;
+  }
+
+  float fbm(vec3 p, float shape, float roughness, float time) {
+    float f = 0.0;
+    float r = roughness;
+    float t = 0.01;
+    f += 0.5000 * noise(p, shape, time); p = m * p * (r + 2.0 * t);
+    f += 0.2500 * noise(p, shape, time); p = m * p * (r + 3.0 * t);
+    f += 0.12500 * noise(p, shape, time); p = m * p * (r + t);
+    f += 0.06250 * noise(p, shape, time);
+    return f;
+  }
+
   float cloudDepth(vec3 position, vec3 cloudSize, float cloudScatter, float cloudShape, float cloudRoughness, float time) {
     float ellipse = 1.0 - length(position * cloudSize);
-    float cloud = ellipse + fbm(position, cloudShape, cloudRoughness, time) * cloudScatter;
+    float cloud = ellipse + fbm(position, cloudShape, cloudRoughness, time) * cloudScatter + uCloudMinimumDensity;
 
     return min(max(0.0, cloud), 1.0);
   }
@@ -131,7 +124,7 @@ export const fragmentShader = /* glsl */ `
 
     // Noise / jitter:
     float defaultHashShape = 43758.5453;
-    float jitter = uNoise ? hash(uv.x + uv.y * 50.0 + uTime, defaultHashShape, 0.0) : 0.0;
+    float jitter = uNoise ? hash(uv.x + uv.y * 50.0 + uTime, defaultHashShape, 0.0, 0.0, 0.0) : 0.0;
 
     // Turbulence:
     // Todo: could mix two sin or two fruct turbulences which are shifted by 50%,

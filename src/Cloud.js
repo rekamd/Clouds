@@ -8,13 +8,15 @@ class Cloud extends Pass {
     camera,
     {
       cloudSize = new THREE.Vector3(0.5, 1.0, 0.5),
+      cloudMinimumDensity = 0.0,
       cloudRoughness = 2.0,
       cloudScatter = 2.2,
-      //cloudShape = 43758.5453, // original default
       cloudShape = 0.5453,
-      sunIntensity = 0.8,
-      sunSize = 1.0,
-      sunPosition = new THREE.Vector3(1.0, 2.0, 1.0),
+      cloudAnimationSpeed = 0.2,
+      cloudAnimationStrength = 0.6,
+      sunIntensity = 1.0,
+      sunSize = 0.15,
+      sunPosition = new THREE.Vector3(4.0, 3.5, -1.0),
       cloudColor = new THREE.Color(0xeabf6b),
       skyColor = new THREE.Color(0x337fff),
       cloudSteps = 48,
@@ -39,6 +41,9 @@ class Cloud extends Pass {
         uCloudSize: {
           value: cloudSize,
         },
+        uCloudMinimumDensity: {
+          value: cloudMinimumDensity,
+        },
         uCloudRoughness: {
           value: cloudRoughness,
         },
@@ -47,6 +52,12 @@ class Cloud extends Pass {
         },
         uCloudShape: {
           value: cloudShape,
+        },
+        uCloudAnimationSpeed: {
+          value: cloudAnimationSpeed,
+        },
+        uCloudAnimationStrength: {
+          value: cloudAnimationStrength,
         },
         uSunIntensity: {
           value: sunIntensity,
@@ -149,6 +160,14 @@ class Cloud extends Pass {
     return this.material.uniforms.uCloudSize.value;
   }
 
+  get cloudMinimumDensity() {
+    return this.material.uniforms.uCloudMinimumDensity.value;
+  }
+
+  set cloudMinimumDensity(value) {
+    this.material.uniforms.uCloudMinimumDensity.value = value;
+  }
+
   get cloudRoughness() {
     return this.material.uniforms.uCloudRoughness.value;
   }
@@ -171,6 +190,22 @@ class Cloud extends Pass {
 
   set cloudShape(value) {
     this.material.uniforms.uCloudShape.value = value;
+  }
+
+  get cloudAnimationSpeed() {
+    return this.material.uniforms.uCloudAnimationSpeed.value;
+  }
+
+  set cloudAnimationSpeed(value) {
+    this.material.uniforms.uCloudAnimationSpeed.value = value;
+  }
+
+  get cloudAnimationStrength() {
+    return this.material.uniforms.uCloudAnimationStrength.value;
+  }
+
+  set cloudAnimationStrength(value) {
+    this.material.uniforms.uCloudAnimationStrength.value = value;
   }
 
   get sunIntensity() {

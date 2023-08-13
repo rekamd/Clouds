@@ -25,15 +25,14 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 //controls.autoRotate = true;
 
-//let clock = new THREE.Clock();
 let timer = new Timer();
 timer.enableFixedDelta();
 
 let params = {
   skyColor: 0x337fff,
-  sunPositionX: 1.0,
-  sunPositionY: 2.0,
-  sunPositionZ: 1.0,
+  sunPositionX: 4.0,
+  sunPositionY: 3.5,
+  sunPositionZ: -1.0,
   cloudColor: 0xeabf6b,
   uniformPixels: true,
   lastTouchedPixelID: 0,
@@ -43,12 +42,9 @@ let params = {
 
 let cloud = new Cloud(camera, {
   cloudSize: new THREE.Vector3(0.5, 1.0, 0.5),
-  sunIntensity: 0.8,
-  //sunPosition: new THREE.Vector3(1.0, 2.0, 1.0),
+  sunIntensity: 1.0,
   cloudColor: new THREE.Color(params.cloudColor), //"rgb(234, 191, 107)"
-  //cloudColor: new THREE.Color("rgb(234, 191, 107)"),
   skyColor: new THREE.Color(params.skyColor), //"rgb(51, 127, 255)"
-  //skyColor: new THREE.Color("rgb(51, 127, 255)"),
   cloudSteps: 48,
   shadowSteps: 16, // orig: 8, but too noisy
   cloudLength: 16,
@@ -56,8 +52,8 @@ let cloud = new Cloud(camera, {
   noise: false,
   turbulence: 0.05,
   shift: 1.0,
-  pixelWidth: 20,
-  pixelHeight: 20,
+  pixelWidth: 10,
+  pixelHeight: 10,
   blur: false,
   UVTest: false,
 });
@@ -66,20 +62,15 @@ let composer = new EffectComposer(renderer);
 composer.addPass(cloud);
 
 let gui = new GUI();
-gui.add(params, "pause").onChange((value) => {
-  /*
-  if (value) {
-    clock.stop();
-  } else {
-    clock.start();
-  }
-  */
-});
+gui.add(params, "pause");
 
 gui.add(cloud, "shift").min(0).max(10).step(0.01);
+gui.add(cloud, "cloudMinimumDensity").min(0).max(5).step(0.001);
 gui.add(cloud, "cloudRoughness").min(0).max(5).step(0.001);
 gui.add(cloud, "cloudScatter").min(0).max(20).step(0.001);
-gui.add(cloud, "cloudShape").min(-50000).max(50000).step(0.000001);
+gui.add(cloud, "cloudShape").min(-5).max(5).step(0.001);
+gui.add(cloud, "cloudAnimationSpeed").min(0).max(5).step(0.001);
+gui.add(cloud, "cloudAnimationStrength").min(0).max(5).step(0.001);
 gui.add(cloud, "noise");
 gui.add(cloud, "turbulence").min(0).max(4).step(0.001);
 gui.add(cloud, "sunIntensity").min(0).max(1.0).step(0.001);
@@ -220,13 +211,8 @@ function render() {
   stats.end();
 }
 
-//renderer.setAnimationLoop((time) => {
-//  doAnimate(time);
-//});
-
 function animate() {
   requestAnimationFrame(animate);
-  //let time = clock.getElapsedTime();
   if (!params.pause) {
     timer.update();
   }
