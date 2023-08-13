@@ -1,4 +1,16 @@
-export const fragmentShader = /* glsl */ `
+export const random = /* glsl */ `
+float random(float x, float seed)
+{
+  return fract(sin(x * (seed + 78.233))*(43758.5453123 + seed));
+}
+
+float random(vec2 st, float seed)
+{
+  return fract(sin(dot(st, vec2(seed + 12.9898, seed + 78.233))) * (43758.5453123 + seed));
+}
+`;
+
+export const cloudFragmentShader = /* glsl */ `
 
   uniform vec3 uCloudSize;
   uniform float uCloudMinimumDensity;
@@ -25,6 +37,8 @@ export const fragmentShader = /* glsl */ `
   uniform float uTurbulence;
   uniform float uShift;
 
+  ${random}
+
   mat3 m = mat3(0.00, 0.80, 0.60, -0.80, 0.36, -0.48, -0.60, -0.48, 0.64);
   float hash(float n, float shape, float animationSpeed, float animationStrength, float time) {
     // Original:
@@ -34,8 +48,6 @@ export const fragmentShader = /* glsl */ `
     // a circular function (here sine) nicely grows and shrinks
     // the clouds. If a value we modify over time for this animation effect
     // would be part of a fract function, we would see jumping.
-    
-    //float animationSpeed = 0.5;
     
     //return fract((sin(n) + cos(n)) * shape) + sin(time * animationSpeed);
     // more interesting, less simplistic animation pattern
@@ -189,6 +201,121 @@ export const fragmentShader = /* glsl */ `
         
     gl_FragColor = finalColor;
 
+#if 0
+    // random test
+    vec2 ipos = floor(gl_FragCoord.xy);
+    //float seed = sin(floor(uTime * 100.0));
+    float seed = sin(uTime);
+    float colorR = random(uv.x, seed);
+    float colorG = random(uv.y, seed);
+    vec3 color = vec3(colorR, colorG, 1.0);
+    color = vec3(random(uv, seed));
+    gl_FragColor = vec4(color, 1.0);
+#endif
+
     //gl_FragColor = vec4(1,0,0,1);
+    //gl_FragColor = vec4(uv.x, uv.y, 0.0, 1.0);
   }
+`;
+
+export const tileVertexShader = /* glsl */ `
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+}
+`;
+
+export const tileFragmentShader = /* glsl */ `
+uniform sampler2D tDiffuse;
+uniform sampler2D tTiles;
+uniform sampler2D tTileAtlas;
+uniform bool uUVTest;
+uniform vec2 uResolution;
+uniform float uTileMixFactor;
+varying vec2 vUv;
+
+${random}
+
+float minColor(vec3 c)
+{
+  return min(min(c.r, c.g), c.b);
+  //return min(0.5 * (c.r + c.g), c.b);
+}
+
+float maxColor(vec3 c)
+{
+  return max(max(c.r, c.g), c.b);
+  //return max(0.5 * (c.r + c.g), c.b);
+}
+
+float luminosity(float minColor, float maxColor)
+{
+  return 0.5 * (minColor + maxColor);
+}
+
+float saturation(float minColor, float maxColor, float luminosity)
+{
+  return luminosity != 1.0 ? (maxColor - minColor) / (1.0 - abs(2.0 * luminosity - 1.0)) : 0.0;
+}
+
+void main() {
+  vec2 pixelFrac = 1.0 / uResolution;
+  vec2 pixelCoord = floor(vUv / pixelFrac);
+  vec2 texelLookup = pixelCoord * pixelFrac + 0.5 * pixelFrac;
+  vec4 texel = texture2D( tDiffuse, texelLookup );
+
+  // 2-pass emoji lookup with sky vs. cloud distinction
+  // First check if the pixel should be forced to be a cloud or sky pixel based on its saturation.
+  // For high low saturation, we want cloud emojis.
+  // For the rest we can use either (mixed emoji tile set)
+  float minColor = minColor(texel.rgb);
+  float maxColor = maxColor(texel.rgb);
+  float luminosity = luminosity(minColor, maxColor);
+  float saturation = saturation(minColor, maxColor, luminosity);
+
+  bool forceCloud = saturation < 0.8;
+
+  // simple emoji lookup with brightness only
+  // compute brightness of texel
+  //float luminance = (texel.r + texel.g + texel.b) / 3.0;
+  //float luminance = 0.2126*texel.r + 0.7152*texel.g + 0.0722*texel.b;
+  float luminance = 0.299*texel.r + 0.587*texel.g + 0.114*texel.b;
+  //float luminance = sqrt( 0.299*texel.r*texel.r + 0.587*texel.g*texel.g + 0.114*texel.b*texel.b );
+
+  vec2 uvLookup = vUv * uResolution;
+  int tileCount = 32;
+  uvLookup.x /= float(tileCount);
+  float maxCoordX = 1.0 / float(tileCount);
+  uvLookup.x = mod(uvLookup.x, maxCoordX);
+  int chosenTileSetCount = forceCloud ? 16 : 32;
+  int tileIndex = int(mod((1.0-luminance) * float(chosenTileSetCount), float(chosenTileSetCount)));
+  uvLookup.x += float(tileIndex) * maxCoordX;
+
+  //vec4 tile = texture2D( tTiles, vUv * uResolution);
+  vec4 tile = texture2D( tTileAtlas, uvLookup);
+
+  // mix in uv test color
+  texel.r += float(uUVTest) * vUv.x;
+  texel.g += float(uUVTest) * vUv.y;
+  //gl_FragColor = texel;
+
+  // display luminosity
+  //gl_FragColor = vec4(vec3(luminosity), 1.0);
+  
+  // display saturation
+  vec4 saturationColor = vec4(vec3(saturation), 1.0);
+  
+  //gl_FragColor = saturationColor;
+  //gl_FragColor = mix(texel, saturationColor, 0.5);
+
+  // display 50/50 mix of texel and emoji
+  gl_FragColor = mix(texel, tile, uTileMixFactor);
+  
+  // show only emoji
+  //gl_FragColor = tile;
+  
+  // show only texel
+  //gl_FragColor = texel;
+}
 `;
