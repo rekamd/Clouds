@@ -193,13 +193,19 @@ export const cloudFragmentShader = /* glsl */ `
     //finalColor = vec4(color1.rgb + color2.rgb + skyColor * min(color1.a + color2.a, 1.0), 1.0);
     // two clouds option 4 (linear interpolation; todo: what if the clouds overlap? could do CSG style: choose color of cloud which is denser):
     finalColor = mix(vec4(color1.rgb + skyColor * color1.a, 1.0), vec4(color2.rgb + skyColor * color2.a, 1.0), color1.a);
-
     // Note: approach likely faster and easier to render properly if we work the multiple cloud support into the cloudMarch function.
     
+    // mark cloud pixel
+    // Note: cloud depth is encoded in alpha as depth = 1.0 - alpha
+    float minCloudDensity = 0.5;
+    float cloudPixelFactor = step(minCloudDensity, (1.0-color1.a) + (1.0-color2.a));
+    //float cloudPixelFactor = min((1.0-color1.a) + (1.0-color2.a), 1.0);
+
     // sun glare        
     finalColor += 1.4 * vec4(0.2, 0.08, 0.04, 1) * pow(sunIntensity, 8.0 );  
         
-    gl_FragColor = finalColor;
+    gl_FragColor = vec4(finalColor.rgb, cloudPixelFactor);
+    //gl_FragColor = vec4(vec3(cloudPixelFactor), 1.0);
 
 #if 0
     // random test
@@ -272,9 +278,19 @@ void main() {
   float minColor = minColor(texel.rgb);
   float maxColor = maxColor(texel.rgb);
   float luminosity = luminosity(minColor, maxColor);
+
+  float cloudFlag = texel.a; // 0.0 if texel is sky (not cloud)
+
+#if 0
   float saturation = saturation(minColor, maxColor, luminosity);
 
-  bool forceCloud = saturation < 0.8;
+  // todo: potentially add tuning parameter here for threshold
+  float cloudSaturationThreshold = 0.8;
+  bool forceCloud = saturation < (cloudSaturationThreshold * cloudFlag);
+  float forceCloudFactor = 2.0 - float(forceCloud);
+#else
+  float forceCloudFactor = 2.0 - cloudFlag;
+#endif
 
   // simple emoji lookup with brightness only
   // compute brightness of texel
@@ -288,16 +304,25 @@ void main() {
   uvLookup.x /= float(tileCount);
   float maxCoordX = 1.0 / float(tileCount);
   uvLookup.x = mod(uvLookup.x, maxCoordX);
-  int chosenTileSetCount = forceCloud ? 16 : 32;
+  int chosenTileSetCount = int(forceCloudFactor) * 16; // choose either 16 or 32. 16 if we want to force clouds (forceCloudFactor == 1.0)
   int tileIndex = int(mod((1.0-luminance) * float(chosenTileSetCount), float(chosenTileSetCount)));
-  uvLookup.x += float(tileIndex) * maxCoordX;
+
+  // todo: add parameter for noise
+  float noise = 1.0 - 2.0 * random(texelLookup, 0.0); // in [-1,1]
+  float maxNoiseTileOffsetFactor = 0.1;
+  float maxNoiseTileOffset = ceil(maxNoiseTileOffsetFactor * float(chosenTileSetCount));
+
+  float tileOffset = maxNoiseTileOffset * noise;
+  int finalTileIndex = tileIndex + int(tileOffset);
+  finalTileIndex = max(0, min(finalTileIndex, chosenTileSetCount-1));
+  uvLookup.x += float(finalTileIndex) * maxCoordX;
 
   vec4 tile = texture2D( tTileAtlas, uvLookup);
 
   // mix in uv test color
   texel.r += float(uUVTest) * vUv.x;
   texel.g += float(uUVTest) * vUv.y;
-  //gl_FragColor = texel;
+  //gl_FragColor = vec4(vUv, 1.0, 1.0);
 
   // display luminosity
   //gl_FragColor = vec4(vec3(luminosity), 1.0);
@@ -317,5 +342,7 @@ void main() {
   
   // show only texel
   //gl_FragColor = texel;
+
+  //gl_FragColor = vec4(vec3(float(finalTileIndex) / 31.0), 1.0);
 }
 `;
