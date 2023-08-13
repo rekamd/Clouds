@@ -3,7 +3,7 @@ export const fbm = /* glsl */ `
 
   // Todo: animate the noise below, size and uniformity can be changed over time
   mat3 m = mat3(0.00, 0.80, 0.60, -0.80, 0.36, -0.48, -0.60, -0.48, 0.64);
-  float hash(float n, float shape) {
+  float hash(float n, float shape, float time) {
     // Original:
     //return fract( (sin(n) + cos(n)) * shape);
     
@@ -17,75 +17,37 @@ export const fbm = /* glsl */ `
     
     // proposed function:
     
-    float shapeVariation = 100.231; // some value. to be replaced by original shape.
-    float time = shape; // to be replaced by time
     float animationSpeed = 0.5;
     float minCloudDensity = 0.5;
-    //return fract((sin(n) + cos(n)) * shapeVariation) + sin(time * animationSpeed) + minCloudDensity;
     
-    // more interesting, less simplistic animation pattern
-    return fract((sin(n) + cos(n)) * shapeVariation) + pow(sin((time * animationSpeed)/3.0), 5.0) + minCloudDensity;
-
     //return fract((sin(n) + cos(n)) * shape) + sin(time * animationSpeed) + minCloudDensity;
+    // more interesting, less simplistic animation pattern
+    return fract((sin(n) + cos(n)) * shape) + pow(sin((time * animationSpeed)/3.0), 5.0) + minCloudDensity;
   }
 
-  float noise(vec3 x, float shape) {
+  float noise(vec3 x, float shape, float time) {
     vec3 p = floor(x);
     vec3 f = fract(x);
 
     f = f * f * (3.0 - 2.0 * f);
 
-    // Todo: parameterize magic numbers (same as below). These seem to be offsets.
     float n = p.x + p.y * 57.0 + 113.0 * p.z;
-    // Variation A
-    //float n = p.x + p.y * 5.0 + 23.0 * p.z;
-    // Variation B
-    //float n = 123.0 * p.x + p.y * 2321.0 + 50017.0 * p.z;
-
-    // Todo: noise function constants can be used for different looks
-    float res = mix(mix(mix(hash(n + 0.0, shape), hash(n + 1.0, shape), f.x),
-                        mix(hash(n + 57.0, shape), hash(n + 58.0, shape), f.x), f.y),
-                    mix(mix(hash(n + 113.0, shape), hash(n + 114.0, shape), f.x),
-                        mix(hash(n + 170.0, shape), hash(n + 171.0, shape), f.x), f.y), f.z);
-
-    // Variation A
-    //float res = mix(mix(mix(hash(n + 0.0), hash(n + 1.0), f.x),
-    //                    mix(hash(n + 5.0), hash(n + 6.0), f.x), f.y),
-    //                mix(mix(hash(n + 23.0), hash(n + 24.0), f.x),
-    //                    mix(hash(n + 50.0), hash(n + 51.0), f.x), f.y), f.z);
-
-    // Variation B
-    //float res = mix(mix(mix(hash(n + 123.0), hash(n + 124.0), f.x),
-    //                    mix(hash(n + 2321.0), hash(n + 2322.0), f.x), f.y),
-    //                mix(mix(hash(n + 50017.0), hash(n + 50018.0), f.x),
-    //                    mix(hash(n + 100231.0), hash(n + 100232.0), f.x), f.y), f.z);
-
-    // Todo: this version creates visible bands
-    //float res = mix(mix(mix(hash(n + 0.0), hash(n + 56.0), f.x),
-    //                    mix(hash(n + 57.0), hash(n + 112.0), f.x), f.y),
-    //                mix(mix(hash(n + 113.0), hash(n + 169.0), f.x),
-    //                    mix(hash(n + 170.0), hash(n + 200.0), f.x), f.y), f.z);
-
-    // Todo: this version leads to a rougher look but also some chaotic artifacts,
-    // likely since it is not coordinates with the magic numbers above
-    //float res = mix(mix(mix(hash(n + 0.0), hash(n + 1.0), f.x),
-    //                    mix(hash(n + 222.0), hash(n + 323.0), f.x), f.y),
-    //                mix(mix(hash(n + 1130.0), hash(n + 1138.0), f.x),
-    //                    mix(hash(n + 17.0), hash(n + 19.0), f.x), f.y), f.z);
+    float res = mix(mix(mix(hash(n + 0.0, shape, time), hash(n + 1.0, shape, time), f.x),
+                        mix(hash(n + 57.0, shape, time), hash(n + 58.0, shape, time), f.x), f.y),
+                    mix(mix(hash(n + 113.0, shape, time), hash(n + 114.0, shape, time), f.x),
+                        mix(hash(n + 170.0, shape, time), hash(n + 171.0, shape, time), f.x), f.y), f.z);
 
     return res;
   }
 
-  float fbm(vec3 p, float shape, float roughness) {
+  float fbm(vec3 p, float shape, float roughness, float time) {
     float f = 0.0;
     float r = roughness;
     float t = 0.01;
-    //float r = 3.0;
-    //float t = -0.05;
-    f += 0.5000 * noise(p, shape); p = m * p * (r + 2.0 * t);
-    f += 0.2500 * noise(p, shape); p = m * p * (r + 3.0 * t);
-    f += 0.12500 * noise(p, shape); p = m * p * (r + t);
-    f += 0.06250 * noise(p, shape);
+    f += 0.5000 * noise(p, shape, time); p = m * p * (r + 2.0 * t);
+    f += 0.2500 * noise(p, shape, time); p = m * p * (r + 3.0 * t);
+    f += 0.12500 * noise(p, shape, time); p = m * p * (r + t);
+    f += 0.06250 * noise(p, shape, time);
     return f;
   }
 `;
@@ -115,15 +77,15 @@ export const fragmentShader = /* glsl */ `
   uniform float uTurbulence;
   uniform float uShift;
 
-  float cloudDepth(vec3 position, vec3 cloudSize, float cloudScatter, float cloudShape, float cloudRoughness) {
+  float cloudDepth(vec3 position, vec3 cloudSize, float cloudScatter, float cloudShape, float cloudRoughness, float time) {
     float ellipse = 1.0 - length(position * cloudSize);
-    float cloud = ellipse + fbm(position, cloudShape, cloudRoughness) * cloudScatter;
+    float cloud = ellipse + fbm(position, cloudShape, cloudRoughness, time) * cloudScatter;
 
     return min(max(0.0, cloud), 1.0);
   }
 
   // https://shaderbits.com/blog/creating-volumetric-ray-marcher
-  vec4 cloudMarch(float jitter, float turbulence, vec3 cloudSize, float cloudScatter, float cloudShape, float cloudRoughness, vec3 position, vec3 lightDirection, vec3 ray) {
+  vec4 cloudMarch(float jitter, float turbulence, vec3 cloudSize, float cloudScatter, float cloudShape, float cloudRoughness, float time, vec3 position, vec3 lightDirection, vec3 ray) {
     float stepLength = uCloudLength / uCloudSteps;
     float shadowStepLength = uShadowLength / uShadowSteps;
 
@@ -134,7 +96,7 @@ export const fragmentShader = /* glsl */ `
     for (float i = 0.0; i < uCloudSteps; i++) {
       if (color.a < k_alphaThreshold) break;
 
-      float depth = cloudDepth(cloudPosition, cloudSize, cloudScatter, cloudShape, cloudRoughness);
+      float depth = cloudDepth(cloudPosition, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
       const float k_DepthThreshold = 0.001;
       float depthTest = float(depth > k_DepthThreshold);
       if (depth > k_DepthThreshold) {
@@ -143,7 +105,7 @@ export const fragmentShader = /* glsl */ `
         float shadow = 0.0;
         for (float s = 0.0; s < uShadowSteps; s++) {
           lightPosition += lightDirection * shadowStepLength;
-          shadow += cloudDepth(lightPosition, cloudSize, cloudScatter, cloudShape, cloudRoughness);
+          shadow += cloudDepth(lightPosition, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
         }
         shadow = exp((-shadow / uShadowSteps) * 3.0);
 
@@ -169,7 +131,7 @@ export const fragmentShader = /* glsl */ `
 
     // Noise / jitter:
     float defaultHashShape = 43758.5453;
-    float jitter = uNoise ? hash(uv.x + uv.y * 50.0 + uTime, defaultHashShape) : 0.0;
+    float jitter = uNoise ? hash(uv.x + uv.y * 50.0 + uTime, defaultHashShape, 0.0) : 0.0;
 
     // Turbulence:
     // Todo: could mix two sin or two fruct turbulences which are shifted by 50%,
@@ -179,7 +141,7 @@ export const fragmentShader = /* glsl */ `
     // and the whole effect is view angle dependent (turbulence is a shift along the sun ray)
     //float turbulence = uTime * uTurbulence;
 
-    // this below works fine but the the fract function causes a sort of "reset" effect at certain moments
+    // this below works fine but the fract function causes a sort of "reset" effect at certain moments
     // and the turbulence is still view-angle dependent.
     float turbulence = fract(uTime * uTurbulence); /* * optionalTurbulenceStrength */;
 
@@ -201,9 +163,8 @@ export const fragmentShader = /* glsl */ `
     vec3 cloudShiftDirection = vec3(1,0,0);
     cloudPos += (cloudShift - skyCutoff) * cloudShiftDirection;
 
-    float cloudShape = uCloudShape + uTime;
-    vec4 color1 = cloudMarch(jitter, turbulence, uCloudSize, uCloudScatter, cloudShape, uCloudRoughness, cloudPos, lightDir, ray);   
-    vec4 color2 = cloudMarch(jitter, turbulence, uCloudSize * vec3(1.5,2.0,1.5), uCloudScatter, cloudShape, uCloudRoughness, cloudPos + vec3(3.0,-3.0,-1), lightDir, ray);
+    vec4 color1 = cloudMarch(jitter, turbulence, uCloudSize, uCloudScatter, uCloudShape, uCloudRoughness, uTime, cloudPos, lightDir, ray);   
+    vec4 color2 = cloudMarch(jitter, turbulence, uCloudSize * vec3(1.5,2.0,1.5), uCloudScatter, uCloudShape, uCloudRoughness, uTime, cloudPos + vec3(3.0,-3.0,-1), lightDir, ray);
     
     // uniform sky color
     //vec3 skyColor = uSkyColor;
