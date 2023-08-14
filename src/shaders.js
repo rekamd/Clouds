@@ -102,8 +102,13 @@ export const cloudFragmentShader = /* glsl */ `
     for (float i = 0.0; i < uCloudSteps; i++) {
       if (color.a < k_alphaThreshold) break;
 
+      float timeShift = 819.2083;
+      float timeScale = 2.0;
+      float shapeShift = 3.7826;
+      float sizeScale = 0.8;
+      float scatterShift = 1.2241;
       float depth = cloudDepth(cloudPosition, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
-      float depth2 = cloudDepth(cloudPosition2, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
+      float depth2 = cloudDepth(cloudPosition2, cloudSize * sizeScale, cloudScatter + scatterShift, cloudShape + shapeShift, cloudRoughness, time * timeScale + timeShift);
 
       depth = max(depth, depth2);
       const float k_DepthThreshold = 0.001;
@@ -119,7 +124,7 @@ export const cloudFragmentShader = /* glsl */ `
           lightPosition += lightDirection * shadowStepLength;
           lightPosition2 += lightDirection * shadowStepLength;
           shadow1 += cloudDepth(lightPosition, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
-          shadow2 += cloudDepth(lightPosition2, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
+          shadow2 += cloudDepth(lightPosition2, cloudSize * sizeScale, cloudScatter + scatterShift, cloudShape + shapeShift, cloudRoughness, time * timeScale+ timeShift);
           //shadow += cloudDepth(lightPosition, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
         }
         shadow1 = exp((-shadow1 / uShadowSteps) * 3.0);
