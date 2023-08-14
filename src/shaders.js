@@ -305,7 +305,7 @@ void main() {
   uvLookup.x /= float(tileCount);
   float maxCoordX = 1.0 / float(tileCount);
   uvLookup.x = mod(uvLookup.x, maxCoordX);
-  int chosenTileSetCount = int(forceCloudFactor) * 16; // choose either 16 or 32. 16 if we want to force clouds (forceCloudFactor == 1.0)
+  int chosenTileSetCount = int(forceCloudFactor) * tileCount / 2; // choose either 16 or 32. 16 if we want to force clouds (forceCloudFactor == 1.0)
   int tileIndex = int(mod((1.0-luminance) * float(chosenTileSetCount), float(chosenTileSetCount)));
 
   // todo: add parameter for noise
