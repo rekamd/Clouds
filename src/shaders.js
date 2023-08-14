@@ -239,6 +239,7 @@ uniform sampler2D tTileAtlas;
 uniform bool uUVTest;
 uniform vec2 uResolution;
 uniform float uTileMixFactor;
+uniform float uTime;
 varying vec2 vUv;
 
 ${random}
@@ -308,8 +309,9 @@ void main() {
   int tileIndex = int(mod((1.0-luminance) * float(chosenTileSetCount), float(chosenTileSetCount)));
 
   // todo: add parameter for noise
-  float noise = 1.0 - 2.0 * random(texelLookup, 0.0); // in [-1,1]
-  float maxNoiseTileOffsetFactor = 0.1;
+  float seed = sin(floor(uTime * 20.0));
+  float noise = 1.0 - 2.0 * random(texelLookup, seed); // in [-1,1]
+  float maxNoiseTileOffsetFactor = 0.04;
   float maxNoiseTileOffset = ceil(maxNoiseTileOffsetFactor * float(chosenTileSetCount));
 
   float tileOffset = maxNoiseTileOffset * noise;

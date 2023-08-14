@@ -279,6 +279,7 @@ class Cloud extends Pass {
   }
 
   set time(value) {
+    this.passThroughMaterial.uniforms.uTime.value = value;
     this.material.uniforms.uTime.value = value;
   }
 
@@ -356,6 +357,7 @@ class Cloud extends Pass {
         tTiles: { value: null },
         tTileAtlas: { value: null },
         uUVTest: { value: false },
+        uTime: { value: 0 },
         uResolution: { value: new THREE.Vector2() },
         uTileMixFactor: { value: 0.5 },
       },
