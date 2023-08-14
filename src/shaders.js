@@ -51,7 +51,7 @@ export const cloudFragmentShader = /* glsl */ `
     
     //return fract((sin(n) + cos(n)) * shape) + sin(time * animationSpeed);
     // more interesting, less simplistic animation pattern
-    return fract((sin(n) + cos(n)) * shape) + animationStrength * pow(sin((time * animationSpeed)/3.0), 5.0);
+    return fract((sin(n) + cos(n)) * (43758.5453 + shape)) + animationStrength * pow(sin((time * animationSpeed)/3.0), 5.0);
   }
 
   float noise(vec3 x, float shape, float time) {
@@ -95,7 +95,7 @@ export const cloudFragmentShader = /* glsl */ `
     float shadowStepLength = uShadowLength / uShadowSteps;
 
     vec3 cloudPosition = position + ray * turbulence * stepLength;
-
+    //vec3 cloudPosition2 = position + vec3(-2.0,-2.0,-2.0) + ray * turbulence * stepLength;
     vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
     const float k_alphaThreshold = 0.0;
     for (float i = 0.0; i < uCloudSteps; i++) {
@@ -103,7 +103,7 @@ export const cloudFragmentShader = /* glsl */ `
 
       float depth = cloudDepth(cloudPosition, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
       const float k_DepthThreshold = 0.001;
-      float depthTest = float(depth > k_DepthThreshold);
+      //float depthTest = float(depth > k_DepthThreshold);
       if (depth > k_DepthThreshold) {
         vec3 lightPosition = cloudPosition + lightDirection * jitter * shadowStepLength;
 
@@ -114,6 +114,7 @@ export const cloudFragmentShader = /* glsl */ `
         }
         shadow = exp((-shadow / uShadowSteps) * 3.0);
 
+        // todo: parametrize density factor
         float density = clamp((depth / uCloudSteps) * 20.0, 0.0, 1.0);
         color.rgb += vec3(shadow * density) * uCloudColor * color.a;
         color.a *= 1.0 - density;
@@ -193,6 +194,7 @@ export const cloudFragmentShader = /* glsl */ `
     //finalColor = vec4(color1.rgb + color2.rgb + skyColor * min(color1.a + color2.a, 1.0), 1.0);
     // two clouds option 4 (linear interpolation; todo: what if the clouds overlap? could do CSG style: choose color of cloud which is denser):
     finalColor = mix(vec4(color1.rgb + skyColor * color1.a, 1.0), vec4(color2.rgb + skyColor * color2.a, 1.0), color1.a);
+    
     // Note: approach likely faster and easier to render properly if we work the multiple cloud support into the cloudMarch function.
     
     // mark cloud pixel
