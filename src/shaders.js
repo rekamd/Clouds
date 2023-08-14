@@ -95,24 +95,37 @@ export const cloudFragmentShader = /* glsl */ `
     float shadowStepLength = uShadowLength / uShadowSteps;
 
     vec3 cloudPosition = position + ray * turbulence * stepLength;
-    //vec3 cloudPosition2 = position + vec3(-2.0,-2.0,-2.0) + ray * turbulence * stepLength;
+    vec3 cloudPosition2 = position + vec3(-4.0,-4.0,-4.0) + ray * turbulence * stepLength;
+
     vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
     const float k_alphaThreshold = 0.0;
     for (float i = 0.0; i < uCloudSteps; i++) {
       if (color.a < k_alphaThreshold) break;
 
       float depth = cloudDepth(cloudPosition, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
+      float depth2 = cloudDepth(cloudPosition2, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
+
+      depth = max(depth, depth2);
       const float k_DepthThreshold = 0.001;
       //float depthTest = float(depth > k_DepthThreshold);
       if (depth > k_DepthThreshold) {
         vec3 lightPosition = cloudPosition + lightDirection * jitter * shadowStepLength;
+        vec3 lightPosition2 = cloudPosition2 + lightDirection * jitter * shadowStepLength;
 
         float shadow = 0.0;
+        float shadow1 = 0.0;
+        float shadow2 = 0.0;
         for (float s = 0.0; s < uShadowSteps; s++) {
           lightPosition += lightDirection * shadowStepLength;
-          shadow += cloudDepth(lightPosition, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
+          lightPosition2 += lightDirection * shadowStepLength;
+          shadow1 += cloudDepth(lightPosition, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
+          shadow2 += cloudDepth(lightPosition2, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
+          //shadow += cloudDepth(lightPosition, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
         }
-        shadow = exp((-shadow / uShadowSteps) * 3.0);
+        shadow1 = exp((-shadow1 / uShadowSteps) * 3.0);
+        shadow2 = exp((-shadow2 / uShadowSteps) * 3.0);
+        shadow = min(shadow1, shadow2);
+        //shadow = exp((-shadow / uShadowSteps) * 3.0);
 
         // todo: parametrize density factor
         float density = clamp((depth / uCloudSteps) * 20.0, 0.0, 1.0);
@@ -123,6 +136,7 @@ export const cloudFragmentShader = /* glsl */ `
       }
 
       cloudPosition += ray * stepLength;
+      cloudPosition2 += ray * stepLength;
     }
 
     return color;
@@ -194,7 +208,6 @@ export const cloudFragmentShader = /* glsl */ `
     //finalColor = vec4(color1.rgb + color2.rgb + skyColor * min(color1.a + color2.a, 1.0), 1.0);
     // two clouds option 4 (linear interpolation; todo: what if the clouds overlap? could do CSG style: choose color of cloud which is denser):
     finalColor = mix(vec4(color1.rgb + skyColor * color1.a, 1.0), vec4(color2.rgb + skyColor * color2.a, 1.0), color1.a);
-    
     // Note: approach likely faster and easier to render properly if we work the multiple cloud support into the cloudMarch function.
     
     // mark cloud pixel
