@@ -99,7 +99,7 @@ export const cloudFragmentShader = /* glsl */ `
     float shadowStepLength = uShadowLength / uShadowSteps;
 
     vec3 cloudPosition = position + ray * turbulence * stepLength;
-
+    vec3 cloudOffset = vec3(4.0, 4.0, 0.0);
     vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
     const float k_alphaThreshold = 0.0;
     for (float i = 0.0; i < uCloudSteps; i++) {
@@ -114,8 +114,7 @@ export const cloudFragmentShader = /* glsl */ `
       float maxDepth = 0.0;
       for (int c = 0; c < cloudCount; ++c)
       {
-        float cloudFactor = float(c) / float(cloudCount-1);
-        vec3 cloudPositionCloud = cloudPosition + cloudFactor * vec3(-4.0,-4.0,-4.0);
+        vec3 cloudPositionCloud = cloudPosition + float(c) * cloudOffset;
         float depth = cloudDepth(cloudPositionCloud, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
         //float depth2 = cloudDepth(cloudPosition2, cloudSize * sizeScale, cloudScatter + scatterShift, cloudShape + shapeShift, cloudRoughness, time * timeScale + timeShift);
 
@@ -131,8 +130,7 @@ export const cloudFragmentShader = /* glsl */ `
         float minShadow = FLT_MAX;
         for (int c = 0; c < cloudCount; ++c)
         {
-          float cloudFactor = float(c) / float(cloudCount-1);
-          vec3 lightPositionCloud = lightPosition + cloudFactor * vec3(-4.0,-4.0,-4.0);
+          vec3 lightPositionCloud = lightPosition + float(c) * cloudOffset;
           float shadow = 0.0;
           for (float s = 0.0; s < uShadowSteps; s++) {
             lightPositionCloud += lightDirection * shadowStepLength;
