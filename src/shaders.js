@@ -37,6 +37,9 @@ export const cloudFragmentShader = /* glsl */ `
   uniform float uTurbulence;
   uniform float uShift;
 
+  #define FLT_MAX 3.402823466e+38
+  #define FLT_MIN 1.175494351e-38
+
   ${random}
 
   mat3 m = mat3(0.00, 0.80, 0.60, -0.80, 0.36, -0.48, -0.60, -0.48, 0.64);
@@ -82,6 +85,7 @@ export const cloudFragmentShader = /* glsl */ `
     return f;
   }
 
+  // Todo: cloudSize is actually inverse cloud size. Need to fix that
   float cloudDepth(vec3 position, vec3 cloudSize, float cloudScatter, float cloudShape, float cloudRoughness, float time) {
     float ellipse = 1.0 - length(position * cloudSize);
     float cloud = ellipse + fbm(position, cloudShape, cloudRoughness, time) * cloudScatter + uCloudMinimumDensity;
@@ -90,12 +94,11 @@ export const cloudFragmentShader = /* glsl */ `
   }
 
   // https://shaderbits.com/blog/creating-volumetric-ray-marcher
-  vec4 cloudMarch(float jitter, float turbulence, vec3 cloudSize, float cloudScatter, float cloudShape, float cloudRoughness, float time, vec3 position, vec3 lightDirection, vec3 ray) {
+  vec4 cloudMarch(int cloudCount, float jitter, float turbulence, vec3 cloudSize, float cloudScatter, float cloudShape, float cloudRoughness, float time, vec3 position, vec3 lightDirection, vec3 ray) {
     float stepLength = uCloudLength / uCloudSteps;
     float shadowStepLength = uShadowLength / uShadowSteps;
 
     vec3 cloudPosition = position + ray * turbulence * stepLength;
-    vec3 cloudPosition2 = position + vec3(-4.0,-4.0,-4.0) + ray * turbulence * stepLength;
 
     vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
     const float k_alphaThreshold = 0.0;
@@ -107,41 +110,49 @@ export const cloudFragmentShader = /* glsl */ `
       float shapeShift = 3.7826;
       float sizeScale = 0.8;
       float scatterShift = 1.2241;
-      float depth = cloudDepth(cloudPosition, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
-      float depth2 = cloudDepth(cloudPosition2, cloudSize * sizeScale, cloudScatter + scatterShift, cloudShape + shapeShift, cloudRoughness, time * timeScale + timeShift);
 
-      depth = max(depth, depth2);
+      float maxDepth = 0.0;
+      for (int c = 0; c < cloudCount; ++c)
+      {
+        float cloudFactor = float(c) / float(cloudCount-1);
+        vec3 cloudPositionCloud = cloudPosition + cloudFactor * vec3(-4.0,-4.0,-4.0);
+        float depth = cloudDepth(cloudPositionCloud, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
+        //float depth2 = cloudDepth(cloudPosition2, cloudSize * sizeScale, cloudScatter + scatterShift, cloudShape + shapeShift, cloudRoughness, time * timeScale + timeShift);
+
+        maxDepth = max(depth, maxDepth);
+      }
+
       const float k_DepthThreshold = 0.001;
       //float depthTest = float(depth > k_DepthThreshold);
-      if (depth > k_DepthThreshold) {
+      if (maxDepth > k_DepthThreshold) {
         vec3 lightPosition = cloudPosition + lightDirection * jitter * shadowStepLength;
-        vec3 lightPosition2 = cloudPosition2 + lightDirection * jitter * shadowStepLength;
+        //vec3 lightPosition2 = cloudPosition2 + lightDirection * jitter * shadowStepLength;
 
-        float shadow = 0.0;
-        float shadow1 = 0.0;
-        float shadow2 = 0.0;
-        for (float s = 0.0; s < uShadowSteps; s++) {
-          lightPosition += lightDirection * shadowStepLength;
-          lightPosition2 += lightDirection * shadowStepLength;
-          shadow1 += cloudDepth(lightPosition, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
-          shadow2 += cloudDepth(lightPosition2, cloudSize * sizeScale, cloudScatter + scatterShift, cloudShape + shapeShift, cloudRoughness, time * timeScale+ timeShift);
-          //shadow += cloudDepth(lightPosition, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
+        float minShadow = FLT_MAX;
+        for (int c = 0; c < cloudCount; ++c)
+        {
+          float cloudFactor = float(c) / float(cloudCount-1);
+          vec3 lightPositionCloud = lightPosition + cloudFactor * vec3(-4.0,-4.0,-4.0);
+          float shadow = 0.0;
+          for (float s = 0.0; s < uShadowSteps; s++) {
+            lightPositionCloud += lightDirection * shadowStepLength;
+            shadow += cloudDepth(lightPositionCloud, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
+            //shadow2 += cloudDepth(lightPosition2, cloudSize * sizeScale, cloudScatter + scatterShift, cloudShape + shapeShift, cloudRoughness, time * timeScale+ timeShift);
+            //shadow += cloudDepth(lightPosition, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
+          }
+          shadow = exp((-shadow / uShadowSteps) * 3.0);
+          minShadow = min(shadow, minShadow);
         }
-        shadow1 = exp((-shadow1 / uShadowSteps) * 3.0);
-        shadow2 = exp((-shadow2 / uShadowSteps) * 3.0);
-        shadow = min(shadow1, shadow2);
-        //shadow = exp((-shadow / uShadowSteps) * 3.0);
 
         // todo: parametrize density factor
-        float density = clamp((depth / uCloudSteps) * 20.0, 0.0, 1.0);
-        color.rgb += vec3(shadow * density) * uCloudColor * color.a;
+        float density = clamp((maxDepth / uCloudSteps) * 20.0, 0.0, 1.0);
+        color.rgb += vec3(minShadow * density) * uCloudColor * color.a;
         color.a *= 1.0 - density;
 
         color.rgb += density * uSkyColor * color.a;
       }
 
       cloudPosition += ray * stepLength;
-      cloudPosition2 += ray * stepLength;
     }
 
     return color;
@@ -188,7 +199,7 @@ export const cloudFragmentShader = /* glsl */ `
     vec3 cloudShiftDirection = vec3(1,0,0);
     cloudPos += (cloudShift - skyCutoff) * cloudShiftDirection;
 
-    vec4 color1 = cloudMarch(jitter, turbulence, uCloudSize, uCloudScatter, uCloudShape, uCloudRoughness, uTime, cloudPos, lightDir, ray);   
+    vec4 color1 = cloudMarch(4, jitter, turbulence, uCloudSize, uCloudScatter, uCloudShape, uCloudRoughness, uTime, cloudPos, lightDir, ray);   
     //vec4 color2 = cloudMarch(jitter, turbulence, uCloudSize * vec3(1.5,2.0,1.5), uCloudScatter, uCloudShape, uCloudRoughness, uTime, cloudPos + vec3(3.0,-3.0,-1), lightDir, ray);
     
     // uniform sky color
