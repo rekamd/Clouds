@@ -189,7 +189,7 @@ export const cloudFragmentShader = /* glsl */ `
     cloudPos += (cloudShift - skyCutoff) * cloudShiftDirection;
 
     vec4 color1 = cloudMarch(jitter, turbulence, uCloudSize, uCloudScatter, uCloudShape, uCloudRoughness, uTime, cloudPos, lightDir, ray);   
-    vec4 color2 = cloudMarch(jitter, turbulence, uCloudSize * vec3(1.5,2.0,1.5), uCloudScatter, uCloudShape, uCloudRoughness, uTime, cloudPos + vec3(3.0,-3.0,-1), lightDir, ray);
+    //vec4 color2 = cloudMarch(jitter, turbulence, uCloudSize * vec3(1.5,2.0,1.5), uCloudScatter, uCloudShape, uCloudRoughness, uTime, cloudPos + vec3(3.0,-3.0,-1), lightDir, ray);
     
     // uniform sky color
     //vec3 skyColor = uSkyColor;
@@ -204,7 +204,7 @@ export const cloudFragmentShader = /* glsl */ `
     skyColor += uSunIntensity * vec3(1.0, 0.6, 0.1) * pow(sunIntensity, uSunSize * maxSunSizePow + (1.0-uSunSize) * minSunSizePow );
     
     vec4 finalColor;
-    //finalColor = vec4(color.rgb + skyColor * color.a, 1.0);
+    finalColor = vec4(color1.rgb + skyColor * color1.a, 1.0);
     // two clouds option 1:
     //finalColor = vec4(color1.rgb * (1.0-color1.a) + color2.rgb * (1.0-color2.a) + skyColor * min((color1.a + color2.a)/2.0, 1.0), 1.0);
     // two clouds option 2:
@@ -212,13 +212,14 @@ export const cloudFragmentShader = /* glsl */ `
     // two clouds option 3 (same as above):
     //finalColor = vec4(color1.rgb + color2.rgb + skyColor * min(color1.a + color2.a, 1.0), 1.0);
     // two clouds option 4 (linear interpolation; todo: what if the clouds overlap? could do CSG style: choose color of cloud which is denser):
-    finalColor = mix(vec4(color1.rgb + skyColor * color1.a, 1.0), vec4(color2.rgb + skyColor * color2.a, 1.0), color1.a);
+    //finalColor = mix(vec4(color1.rgb + skyColor * color1.a, 1.0), vec4(color2.rgb + skyColor * color2.a, 1.0), color1.a);
     // Note: approach likely faster and easier to render properly if we work the multiple cloud support into the cloudMarch function.
     
     // mark cloud pixel
     // Note: cloud depth is encoded in alpha as depth = 1.0 - alpha
     float minCloudDensity = 0.5;
-    float cloudPixelFactor = step(minCloudDensity, (1.0-color1.a) + (1.0-color2.a));
+    //float cloudPixelFactor = step(minCloudDensity, (1.0-color1.a) + (1.0-color2.a));
+    float cloudPixelFactor = step(minCloudDensity, 1.0-color1.a);
     //float cloudPixelFactor = min((1.0-color1.a) + (1.0-color2.a), 1.0);
 
     // sun glare        
