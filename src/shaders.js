@@ -327,7 +327,8 @@ void main() {
   // compute brightness of texel
   //float luminance = (texel.r + texel.g + texel.b) / 3.0;
   //float luminance = 0.2126*texel.r + 0.7152*texel.g + 0.0722*texel.b;
-  float luminance = 0.299*texel.r + 0.587*texel.g + 0.114*texel.b;
+  vec3 luminanceWeights = vec3(0.299, 0.587, 0.114);
+  float luminance = dot(luminanceWeights, texel.rgb);
   //float luminance = sqrt( 0.299*texel.r*texel.r + 0.587*texel.g*texel.g + 0.114*texel.b*texel.b );
 
   vec2 uvLookup = vUv * uResolution;
@@ -364,6 +365,11 @@ void main() {
   vec4 saturationColor = vec4(vec3(saturation), 1.0);
   gl_FragColor = saturationColor;
   //gl_FragColor = mix(texel, saturationColor, 0.5);
+  #endif
+
+  // desaturate tile if it is cloud
+  #if 1
+  tile.rgb = mix(tile.rgb, vec3(dot(tile.rgb, luminanceWeights)), cloudFlag);
   #endif
 
   // display mix of texel and emoji
