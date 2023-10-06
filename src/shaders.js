@@ -99,7 +99,7 @@ export const cloudFragmentShader = /* glsl */ `
     float shadowStepLength = uShadowLength / uShadowSteps;
 
     vec3 cloudPosition = position + ray * turbulence * stepLength;
-    vec3 cloudOffset = vec3(4.0, 4.0, 0.0);
+    vec3 cloudOffset = vec3(0, 30.0, 0);
     vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
     const float k_alphaThreshold = 0.0;
     for (float i = 0.0; i < uCloudSteps; i++) {
@@ -112,11 +112,12 @@ export const cloudFragmentShader = /* glsl */ `
       float scatterShift = 1.2241;
 
       float maxDepth = 0.0;
+      float seed = 8217.0;
       for (int c = 0; c < cloudCount; ++c)
       {
-        vec3 cloudPositionCloud = cloudPosition + float(c) * cloudOffset;
+        //vec3 cloudPositionCloud = cloudPosition + float(c) * cloudOffset;
+        vec3 cloudPositionCloud = cloudPosition + random(float(c+1), seed) * cloudOffset;
         float depth = cloudDepth(cloudPositionCloud, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
-        //float depth2 = cloudDepth(cloudPosition2, cloudSize * sizeScale, cloudScatter + scatterShift, cloudShape + shapeShift, cloudRoughness, time * timeScale + timeShift);
 
         maxDepth = max(depth, maxDepth);
       }
@@ -125,18 +126,17 @@ export const cloudFragmentShader = /* glsl */ `
       //float depthTest = float(depth > k_DepthThreshold);
       if (maxDepth > k_DepthThreshold) {
         vec3 lightPosition = cloudPosition + lightDirection * jitter * shadowStepLength;
-        //vec3 lightPosition2 = cloudPosition2 + lightDirection * jitter * shadowStepLength;
 
         float minShadow = FLT_MAX;
         for (int c = 0; c < cloudCount; ++c)
         {
-          vec3 lightPositionCloud = lightPosition + float(c) * cloudOffset;
+          //vec3 lightPositionCloud = lightPosition + float(c) * cloudOffset;
+          vec3 lightPositionCloud = lightPosition + random(float(c+1), seed) * cloudOffset;
+
           float shadow = 0.0;
           for (float s = 0.0; s < uShadowSteps; s++) {
             lightPositionCloud += lightDirection * shadowStepLength;
             shadow += cloudDepth(lightPositionCloud, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
-            //shadow2 += cloudDepth(lightPosition2, cloudSize * sizeScale, cloudScatter + scatterShift, cloudShape + shapeShift, cloudRoughness, time * timeScale+ timeShift);
-            //shadow += cloudDepth(lightPosition, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
           }
           shadow = exp((-shadow / uShadowSteps) * 3.0);
           minShadow = min(shadow, minShadow);
@@ -197,8 +197,7 @@ export const cloudFragmentShader = /* glsl */ `
     vec3 cloudShiftDirection = vec3(1,0,0);
     cloudPos += (cloudShift - skyCutoff) * cloudShiftDirection;
 
-    vec4 color1 = cloudMarch(4, jitter, turbulence, uCloudSize, uCloudScatter, uCloudShape, uCloudRoughness, uTime, cloudPos, lightDir, ray);   
-    //vec4 color2 = cloudMarch(jitter, turbulence, uCloudSize * vec3(1.5,2.0,1.5), uCloudScatter, uCloudShape, uCloudRoughness, uTime, cloudPos + vec3(3.0,-3.0,-1), lightDir, ray);
+    vec4 color1 = cloudMarch(8, jitter, turbulence, uCloudSize, uCloudScatter, uCloudShape, uCloudRoughness, uTime, cloudPos, lightDir, ray);
     
     // uniform sky color
     //vec3 skyColor = uSkyColor;
@@ -214,22 +213,11 @@ export const cloudFragmentShader = /* glsl */ `
     
     vec4 finalColor;
     finalColor = vec4(color1.rgb + skyColor * color1.a, 1.0);
-    // two clouds option 1:
-    //finalColor = vec4(color1.rgb * (1.0-color1.a) + color2.rgb * (1.0-color2.a) + skyColor * min((color1.a + color2.a)/2.0, 1.0), 1.0);
-    // two clouds option 2:
-    //finalColor = vec4(color1.rgb * (1.0-color1.a) + color2.rgb * (1.0-color2.a) + skyColor * min(color1.a + color2.a, 1.0), 1.0);
-    // two clouds option 3 (same as above):
-    //finalColor = vec4(color1.rgb + color2.rgb + skyColor * min(color1.a + color2.a, 1.0), 1.0);
-    // two clouds option 4 (linear interpolation; todo: what if the clouds overlap? could do CSG style: choose color of cloud which is denser):
-    //finalColor = mix(vec4(color1.rgb + skyColor * color1.a, 1.0), vec4(color2.rgb + skyColor * color2.a, 1.0), color1.a);
-    // Note: approach likely faster and easier to render properly if we work the multiple cloud support into the cloudMarch function.
     
     // mark cloud pixel
     // Note: cloud depth is encoded in alpha as depth = 1.0 - alpha
     float minCloudDensity = 0.5;
-    //float cloudPixelFactor = step(minCloudDensity, (1.0-color1.a) + (1.0-color2.a));
     float cloudPixelFactor = step(minCloudDensity, 1.0-color1.a);
-    //float cloudPixelFactor = min((1.0-color1.a) + (1.0-color2.a), 1.0);
 
     // sun glare        
     finalColor += 1.4 * vec4(0.2, 0.08, 0.04, 1) * pow(sunIntensity, 8.0 );  
