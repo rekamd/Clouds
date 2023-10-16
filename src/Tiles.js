@@ -22,9 +22,9 @@ class Tiles {
     // See here for details: https://threejs.org/docs/#api/en/textures/Texture
 
     //var tilesData = ImageData.emoji_atlas1;
-    //var tilesData = ImageData.stamps_atlas1;
+    var tilesData = ImageData.stamps_atlas1;
     //var tilesData = ImageData.stamps_atlas4;
-    var tilesData = ImageData.stamps_atlas6;
+    //var tilesData = ImageData.stamps_atlas6;
     this.tileTextureAtlas = loader.load(base64PreFix + tilesData);
     this.tileTextureAtlas.wrapS = THREE.RepeatWrapping;
     this.tileTextureAtlas.wrapT = THREE.RepeatWrapping;
