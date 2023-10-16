@@ -128,12 +128,8 @@ export const cloudFragmentShader = /* glsl */ `
 
     vec3 cloudPosition = position + ray * turbulence * stepLength;
 
-    float shiftSpeed = shift;
     const float skyCutoffDistance = 25.0;
-    float cloudShift = shiftSpeed * time;
-    cloudShift = mod(cloudShift, skyCutoffDistance*2.0);
-    vec3 cloudShiftDirection = vec3(1,0,0);
-    cloudPosition += (cloudShift - skyCutoffDistance) * cloudShiftDirection;
+    float maxShiftSpeed = shift;
 
     vec3 cloudOffset = vec3(10.0, 10.0, 10.0);
     vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
@@ -157,6 +153,12 @@ export const cloudFragmentShader = /* glsl */ `
       {
         float cloudHash = float(c+1);
         vec3 cloudPositionCloud = cloudPosition + random3D(cloudHash, baseSeed) * cloudOffset;
+
+        float cloudShift = max(0.1,abs(random(cloudHash))) * maxShiftSpeed * time;
+        cloudShift = mod(cloudShift, skyCutoffDistance*2.0);
+        vec3 cloudShiftDirection = vec3(1,0,0);
+        cloudPositionCloud += (cloudShift - skyCutoffDistance) * cloudShiftDirection;
+    
         float randomTime = randShiftAndScale(time, maxTimeScale, maxTimeShift, timeSeed + cloudHash);
         float depth = cloudDepth(cloudPositionCloud, invCloudSize, cloudScatter, cloudShape, cloudRoughness, randomTime);
 
@@ -173,6 +175,12 @@ export const cloudFragmentShader = /* glsl */ `
         {
           float cloudHash = float(c+1);
           vec3 lightPositionCloud = lightPosition + random3D(cloudHash, baseSeed) * cloudOffset;
+
+          float cloudShift = max(0.1,abs(random(cloudHash))) * maxShiftSpeed * time;
+          cloudShift = mod(cloudShift, skyCutoffDistance*2.0);
+          vec3 cloudShiftDirection = vec3(1,0,0);
+          lightPositionCloud += (cloudShift - skyCutoffDistance) * cloudShiftDirection;
+       
           float randomTime = randShiftAndScale(time, maxTimeScale, maxTimeShift, timeSeed + cloudHash);
 
           float shadow = 0.0;
