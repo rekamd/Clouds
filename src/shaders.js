@@ -1,12 +1,27 @@
 export const random = /* glsl */ `
 float random(float x, float seed)
 {
-  return fract(sin(x * (seed + 78.233))*(43758.5453123 + seed));
+  return fract(sin(x * (seed + 78.233))*(seed + 43758.5453123));
+}
+
+float random(float seed)
+{
+  return fract(sin(seed + 78.233)*(seed + 43758.5453123));
 }
 
 float random(vec2 st, float seed)
 {
-  return fract(sin(dot(st, vec2(seed + 12.9898, seed + 78.233))) * (43758.5453123 + seed));
+  return fract(sin(dot(st, vec2(seed + 12.9898, seed + 78.233))) * (seed + 43758.5453123));
+}
+
+vec3 random3D(float x, float seed)
+{
+  return vec3(random(x, seed), random(x+17.928, seed), random(x+43.132, seed));
+}
+
+vec3 random3D(float seed)
+{
+  return vec3(random(seed), random(seed+17.928), random(seed+43.132));
 }
 `;
 
@@ -93,31 +108,41 @@ export const cloudFragmentShader = /* glsl */ `
     return min(max(0.0, cloud), 1.0);
   }
 
+  float randShiftAndScale(float val, float maxScale, float maxShift, float seed)
+  {
+     return (val + maxShift * random(seed)) * maxScale * abs(random(seed+31.72));
+  }
+
   // https://shaderbits.com/blog/creating-volumetric-ray-marcher
   vec4 cloudMarch(int cloudCount, float jitter, float turbulence, vec3 cloudSize, float cloudScatter, float cloudShape, float cloudRoughness, float time, vec3 position, vec3 lightDirection, vec3 ray) {
     float stepLength = uCloudLength / uCloudSteps;
     float shadowStepLength = uShadowLength / uShadowSteps;
 
     vec3 cloudPosition = position + ray * turbulence * stepLength;
-    vec3 cloudOffset = vec3(0, 30.0, 0);
+    vec3 cloudOffset = vec3(10.0, 10.0, 10.0);
     vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
     const float k_alphaThreshold = 0.0;
+
+    // todo: parametrize base seed
+    const float baseSeed = 83.0;
+    float timeSeed = baseSeed + 7.0;
+
     for (float i = 0.0; i < uCloudSteps; i++) {
       if (color.a < k_alphaThreshold) break;
 
-      float timeShift = 819.2083;
-      float timeScale = 2.0;
+      float maxTimeShift = 819.2083;
+      float maxTimeScale = 3.0;
       float shapeShift = 3.7826;
       float sizeScale = 0.8;
       float scatterShift = 1.2241;
 
       float maxDepth = 0.0;
-      float seed = 8217.0;
       for (int c = 0; c < cloudCount; ++c)
       {
-        //vec3 cloudPositionCloud = cloudPosition + float(c) * cloudOffset;
-        vec3 cloudPositionCloud = cloudPosition + random(float(c+1), seed) * cloudOffset;
-        float depth = cloudDepth(cloudPositionCloud, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
+        float cloudHash = float(c+1);
+        vec3 cloudPositionCloud = cloudPosition + random3D(cloudHash, baseSeed) * cloudOffset;
+        float randomTime = randShiftAndScale(time, maxTimeScale, maxTimeShift, timeSeed + cloudHash);
+        float depth = cloudDepth(cloudPositionCloud, cloudSize, cloudScatter, cloudShape, cloudRoughness, randomTime);
 
         maxDepth = max(depth, maxDepth);
       }
@@ -130,13 +155,14 @@ export const cloudFragmentShader = /* glsl */ `
         float minShadow = FLT_MAX;
         for (int c = 0; c < cloudCount; ++c)
         {
-          //vec3 lightPositionCloud = lightPosition + float(c) * cloudOffset;
-          vec3 lightPositionCloud = lightPosition + random(float(c+1), seed) * cloudOffset;
+          float cloudHash = float(c+1);
+          vec3 lightPositionCloud = lightPosition + random3D(cloudHash, baseSeed) * cloudOffset;
+          float randomTime = randShiftAndScale(time, maxTimeScale, maxTimeShift, timeSeed + cloudHash);
 
           float shadow = 0.0;
           for (float s = 0.0; s < uShadowSteps; s++) {
             lightPositionCloud += lightDirection * shadowStepLength;
-            shadow += cloudDepth(lightPositionCloud, cloudSize, cloudScatter, cloudShape, cloudRoughness, time);
+            shadow += cloudDepth(lightPositionCloud, cloudSize, cloudScatter, cloudShape, cloudRoughness, randomTime);
           }
           shadow = exp((-shadow / uShadowSteps) * 3.0);
           minShadow = min(shadow, minShadow);
