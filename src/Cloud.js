@@ -8,7 +8,7 @@ class Cloud extends Pass {
   constructor(
     camera,
     {
-      cloudSize = new THREE.Vector3(0.5, 1.0, 0.5),
+      cloudSize = new THREE.Vector3(2, 1, 2),
       cloudMinimumDensity = 0.0,
       cloudRoughness = 2.0,
       cloudScatter = 2.2,

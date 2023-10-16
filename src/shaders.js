@@ -23,6 +23,8 @@ vec3 random3D(float seed)
 {
   return vec3(random(seed), random(seed+17.928), random(seed+43.132));
 }
+
+// Todo: add halton sequence random function here
 `;
 
 export const cloudFragmentShader = /* glsl */ `
@@ -93,16 +95,15 @@ export const cloudFragmentShader = /* glsl */ `
     float f = 0.0;
     float r = roughness;
     float t = 0.01;
-    f += 0.5000 * noise(p, shape, time); p = m * p * (r + 2.0 * t);
-    f += 0.2500 * noise(p, shape, time); p = m * p * (r + 3.0 * t);
-    f += 0.12500 * noise(p, shape, time); p = m * p * (r + t);
-    f += 0.06250 * noise(p, shape, time);
+    f += 0.5 * noise(p, shape, time); p = m * p * (r + 2.0 * t);
+    f += 0.25 * noise(p, shape, time); p = m * p * (r + 3.0 * t);
+    f += 0.125 * noise(p, shape, time); p = m * p * (r + t);
+    f += 0.0625 * noise(p, shape, time);
     return f;
   }
 
-  // Todo: cloudSize is actually inverse cloud size. Need to fix that
-  float cloudDepth(vec3 position, vec3 cloudSize, float cloudScatter, float cloudShape, float cloudRoughness, float time) {
-    float ellipse = 1.0 - length(position * cloudSize);
+  float cloudDepth(vec3 position, vec3 invCloudSize, float cloudScatter, float cloudShape, float cloudRoughness, float time) {
+    float ellipse = 1.0 - length(position * invCloudSize);
     float cloud = ellipse + fbm(position, cloudShape, cloudRoughness, time) * cloudScatter + uCloudMinimumDensity;
 
     return min(max(0.0, cloud), 1.0);
@@ -117,6 +118,7 @@ export const cloudFragmentShader = /* glsl */ `
   vec4 cloudMarch(int cloudCount, float jitter, float turbulence, vec3 cloudSize, float cloudScatter, float cloudShape, float cloudRoughness, float time, vec3 position, vec3 lightDirection, vec3 ray) {
     float stepLength = uCloudLength / uCloudSteps;
     float shadowStepLength = uShadowLength / uShadowSteps;
+    vec3 invCloudSize = 1.0 / cloudSize;
 
     vec3 cloudPosition = position + ray * turbulence * stepLength;
     vec3 cloudOffset = vec3(10.0, 10.0, 10.0);
@@ -142,7 +144,7 @@ export const cloudFragmentShader = /* glsl */ `
         float cloudHash = float(c+1);
         vec3 cloudPositionCloud = cloudPosition + random3D(cloudHash, baseSeed) * cloudOffset;
         float randomTime = randShiftAndScale(time, maxTimeScale, maxTimeShift, timeSeed + cloudHash);
-        float depth = cloudDepth(cloudPositionCloud, cloudSize, cloudScatter, cloudShape, cloudRoughness, randomTime);
+        float depth = cloudDepth(cloudPositionCloud, invCloudSize, cloudScatter, cloudShape, cloudRoughness, randomTime);
 
         maxDepth = max(depth, maxDepth);
       }
@@ -162,7 +164,7 @@ export const cloudFragmentShader = /* glsl */ `
           float shadow = 0.0;
           for (float s = 0.0; s < uShadowSteps; s++) {
             lightPositionCloud += lightDirection * shadowStepLength;
-            shadow += cloudDepth(lightPositionCloud, cloudSize, cloudScatter, cloudShape, cloudRoughness, randomTime);
+            shadow += cloudDepth(lightPositionCloud, invCloudSize, cloudScatter, cloudShape, cloudRoughness, randomTime);
           }
           shadow = exp((-shadow / uShadowSteps) * 3.0);
           minShadow = min(shadow, minShadow);

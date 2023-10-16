@@ -41,7 +41,7 @@ let params = {
 };
 
 let cloud = new Cloud(camera, {
-  cloudSize: new THREE.Vector3(0.5, 1.0, 0.5),
+  cloudSize: new THREE.Vector3(2, 1, 2),
   sunIntensity: 1.0,
   cloudColor: new THREE.Color(params.cloudColor), //"rgb(234, 191, 107)"
   skyColor: new THREE.Color(params.skyColor), //"rgb(51, 127, 255)"
