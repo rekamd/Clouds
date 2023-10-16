@@ -260,14 +260,14 @@ export const cloudFragmentShader = /* glsl */ `
     float minSunSizePow = 80.0;
     skyColor += uSunIntensity * vec3(1.0, 0.6, 0.1) * pow(sunIntensity, uSunSize * maxSunSizePow + (1.0-uSunSize) * minSunSizePow );
     
-    vec4 finalColor;
-    finalColor = vec4(color1.rgb + skyColor * color1.a, 1.0);
+    vec4 finalColor = vec4(color1.rgb + skyColor * color1.a, 1.0);
     
     // mark cloud pixel
     // Note: cloud depth is encoded in alpha as depth = 1.0 - alpha
     float minCloudDensity = 0.5;
     float cloudPixelFactor = step(minCloudDensity, 1.0-color1.a);
 
+    // todo: the glare doesn't seem to work anymore since multi cloud support inside the cloud march function
     // sun glare        
     finalColor += 1.4 * vec4(0.2, 0.08, 0.04, 1) * pow(sunIntensity, 8.0 );  
         
