@@ -41,6 +41,8 @@ let params = {
 };
 
 let cloud = new Cloud(camera, {
+  cloudSeed: 83.0,
+  cloudCount: 8,
   cloudSize: new THREE.Vector3(2, 1, 2),
   sunIntensity: 1.0,
   cloudColor: new THREE.Color(params.cloudColor), //"rgb(234, 191, 107)"
@@ -65,6 +67,8 @@ let gui = new GUI();
 gui.add(params, "pause");
 
 gui.add(cloud, "shift").min(0).max(10).step(0.01);
+gui.add(cloud, "cloudSeed").min(1).max(32000).step(1);
+gui.add(cloud, "cloudCount").min(1).max(10).step(1);
 gui.add(cloud, "cloudMinimumDensity").min(0).max(5).step(0.001);
 gui.add(cloud, "cloudRoughness").min(0).max(5).step(0.001);
 gui.add(cloud, "cloudScatter").min(0).max(20).step(0.001);

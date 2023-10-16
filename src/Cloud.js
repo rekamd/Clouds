@@ -8,6 +8,8 @@ class Cloud extends Pass {
   constructor(
     camera,
     {
+      cloudSeed = 83.0,
+      cloudCount = 8,
       cloudSize = new THREE.Vector3(2, 1, 2),
       cloudMinimumDensity = 0.0,
       cloudRoughness = 2.0,
@@ -32,13 +34,19 @@ class Cloud extends Pass {
       tileMixFactor = 0.5,
       blur = false,
       UVTest = false,
-    } = {}
+    } = {},
   ) {
     super();
 
     this.sunPos = sunPosition;
     this.cloudMaterial = new THREE.ShaderMaterial({
       uniforms: {
+        uCloudSeed: {
+          value: cloudSeed,
+        },
+        uCloudCount: {
+          value: cloudCount,
+        },
         uCloudSize: {
           value: cloudSize,
         },
@@ -127,7 +135,7 @@ class Cloud extends Pass {
     this.passThroughMaterial.uniforms.tTileAtlas.value =
       this.tiles.tileTextureAtlas;
     this.passThroughFullScreenQuad = new Pass.FullScreenQuad(
-      this.passThroughMaterial
+      this.passThroughMaterial,
     );
 
     this.cloudRenderTarget = new THREE.WebGLRenderTarget();
@@ -155,6 +163,22 @@ class Cloud extends Pass {
 
   get material() {
     return this.cloudMaterial;
+  }
+
+  get cloudSeed() {
+    return this.material.uniforms.uCloudSeed.value;
+  }
+
+  set cloudSeed(value) {
+    this.material.uniforms.uCloudSeed.value = value;
+  }
+
+  get cloudCount() {
+    return this.material.uniforms.uCloudCount.value;
+  }
+
+  set cloudCount(value) {
+    this.material.uniforms.uCloudCount.value = value;
   }
 
   get cloudSize() {

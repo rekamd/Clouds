@@ -29,6 +29,8 @@ vec3 random3D(float seed)
 
 export const cloudFragmentShader = /* glsl */ `
 
+  uniform float uCloudSeed;
+  uniform int uCloudCount;
   uniform vec3 uCloudSize;
   uniform float uCloudMinimumDensity;
   uniform float uCloudRoughness;
@@ -115,18 +117,30 @@ export const cloudFragmentShader = /* glsl */ `
   }
 
   // https://shaderbits.com/blog/creating-volumetric-ray-marcher
-  vec4 cloudMarch(int cloudCount, float jitter, float turbulence, vec3 cloudSize, float cloudScatter, float cloudShape, float cloudRoughness, float time, vec3 position, vec3 lightDirection, vec3 ray) {
+  vec4 cloudMarch(int cloudCount, float seed, float jitter, float turbulence,
+    vec3 cloudSize, float cloudScatter, float cloudShape, float cloudRoughness,
+    float time, float shift,
+    vec3 position, vec3 lightDirection, vec3 ray)
+  {
     float stepLength = uCloudLength / uCloudSteps;
     float shadowStepLength = uShadowLength / uShadowSteps;
     vec3 invCloudSize = 1.0 / cloudSize;
 
     vec3 cloudPosition = position + ray * turbulence * stepLength;
+
+    float shiftSpeed = shift;
+    const float skyCutoffDistance = 25.0;
+    float cloudShift = shiftSpeed * time;
+    cloudShift = mod(cloudShift, skyCutoffDistance*2.0);
+    vec3 cloudShiftDirection = vec3(1,0,0);
+    cloudPosition += (cloudShift - skyCutoffDistance) * cloudShiftDirection;
+
     vec3 cloudOffset = vec3(10.0, 10.0, 10.0);
     vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
     const float k_alphaThreshold = 0.0;
 
     // todo: parametrize base seed
-    const float baseSeed = 83.0;
+    float baseSeed = seed;
     float timeSeed = baseSeed + 7.0;
 
     for (float i = 0.0; i < uCloudSteps; i++) {
@@ -191,6 +205,7 @@ export const cloudFragmentShader = /* glsl */ `
     
     vec4 eyeDir = viewMatrixInverse * normalize(vec4(point.xy, -1, 0.0));  
 
+    // Todo: reevaluate noise. Can this be added as post effect on clouds as well?
     // Noise / jitter:
     float defaultHashShape = 43758.5453;
     float jitter = uNoise ? hash(uv.x + uv.y * 50.0 + uTime, defaultHashShape, 0.0, 0.0, 0.0) : 0.0;
@@ -217,15 +232,13 @@ export const cloudFragmentShader = /* glsl */ `
       
     vec3 lightDir = normalize(uSunPosition);
           
-    vec3 cloudPos = uCameraPosition;
-    float shiftSpeed = uShift;
-    float skyCutoff = 25.0;
-    float cloudShift = shiftSpeed * uTime;
-    cloudShift = mod(cloudShift, skyCutoff*2.0);
-    vec3 cloudShiftDirection = vec3(1,0,0);
-    cloudPos += (cloudShift - skyCutoff) * cloudShiftDirection;
+    // todo: remove hardcoded shift below
+    vec3 cloudPos = uCameraPosition - vec3(0.0,8.0,0.0);
 
-    vec4 color1 = cloudMarch(8, jitter, turbulence, uCloudSize, uCloudScatter, uCloudShape, uCloudRoughness, uTime, cloudPos, lightDir, ray);
+    vec4 color1 = cloudMarch(uCloudCount, uCloudSeed, jitter, turbulence,
+      uCloudSize, uCloudScatter, uCloudShape, uCloudRoughness,
+      uTime, uShift,
+      cloudPos, lightDir, ray);
     
     // uniform sky color
     //vec3 skyColor = uSkyColor;
