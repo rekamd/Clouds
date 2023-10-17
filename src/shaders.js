@@ -139,6 +139,8 @@ export const cloudFragmentShader = /* glsl */ `
     float baseSeed = seed;
     float timeSeed = baseSeed + 7.0;
 
+    const vec3 cloudShiftDirection = vec3(1,0,0);
+
     for (float i = 0.0; i < uCloudSteps; i++) {
       if (color.a < k_alphaThreshold) break;
 
@@ -156,11 +158,15 @@ export const cloudFragmentShader = /* glsl */ `
 
         float cloudShift = max(0.1,abs(random(cloudHash))) * maxShiftSpeed * time;
         cloudShift = mod(cloudShift, skyCutoffDistance*2.0);
-        vec3 cloudShiftDirection = vec3(1,0,0);
+        float transitionZone = dot(cloudSize, cloudShiftDirection);
+        float alphaBegin = tanh(cloudShift/transitionZone);
+        float alphaEnd = tanh((2.0 * skyCutoffDistance - cloudShift) / transitionZone);
+        float invAlpha = 1.0/(alphaBegin * alphaEnd);
+
         cloudPositionCloud += (cloudShift - skyCutoffDistance) * cloudShiftDirection;
     
         float randomTime = randShiftAndScale(time, maxTimeScale, maxTimeShift, timeSeed + cloudHash);
-        float depth = cloudDepth(cloudPositionCloud, invCloudSize, cloudScatter, cloudShape, cloudRoughness, randomTime);
+        float depth = cloudDepth(cloudPositionCloud, invAlpha * invCloudSize, cloudScatter, cloudShape, cloudRoughness, randomTime);
 
         maxDepth = max(depth, maxDepth);
       }
