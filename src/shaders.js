@@ -435,14 +435,19 @@ void main() {
   #endif
 
   // mix tile with gradient using the overlay blend mode
-#if 0
+#if 1
   vec3 gradient = vec3(1.0-tileFactor);
+  // todo: use smooth gradient rather than blocky gradient
   tile.rgb = overlay(tile.rgb, gradient);
 #endif
 
   // display mix of texel and emoji
-#if 0
-  gl_FragColor = overlay(tile, vec4(texel.rgb, uTileMixFactor));
+#if 1
+  //gl_FragColor = overlay(tile, vec4(texel.rgb, uTileMixFactor));
+  //gl_FragColor.rgb = mix(texel.rgb, multiply(tile.rgb, texel.rgb), uTileMixFactor);
+
+  // todo: in this mode, use smooth gradient rather than blocky gradient
+  gl_FragColor.rgb = mix(multiply(tile.rgb, texel.rgb), tile.rgb, uTileMixFactor);
 #else
   gl_FragColor = mix(texel, tile, uTileMixFactor);
 #endif
