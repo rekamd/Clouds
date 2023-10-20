@@ -338,6 +338,25 @@ float saturation(float minColor, float maxColor, float luminosity)
   return luminosity != 1.0 ? (maxColor - minColor) / (1.0 - abs(2.0 * luminosity - 1.0)) : 0.0;
 }
 
+vec3 multiply(vec3 baseColor, vec3 layerColor) {
+	return baseColor * layerColor;
+}
+
+float overlay(float b, float l) {
+	return b < 0.5 ? (2.0 * b * l) : (1.0 - 2.0 * (1.0 - b) * (1.0 - l));
+}
+
+vec3 overlay(vec3 baseColor, vec3 layerColor)
+{
+  return vec3(overlay(baseColor.r, layerColor.r), overlay(baseColor.g, layerColor.g), overlay(baseColor.b, layerColor.b));
+}
+
+vec4 overlay(vec4 baseColor, vec4 layerColor)
+{
+  vec3 color = mix(overlay(baseColor.rgb, layerColor.rgb), baseColor.rgb, layerColor.a);
+  return vec4(color, baseColor.a);
+}
+
 void main() {
   vec2 pixelFrac = 1.0 / uResolution;
   vec2 pixelCoord = floor(vUv / pixelFrac);
@@ -380,6 +399,7 @@ void main() {
   uvLookup.x = mod(uvLookup.x, maxCoordX);
   int chosenTileSetCount = int(forceCloudFactor) * tileCount / 2; // choose either 16 or 32. 16 if we want to force clouds (forceCloudFactor == 1.0)
   int tileIndex = int(mod((1.0-luminance) * float(chosenTileSetCount), float(chosenTileSetCount)));
+  float tileFactor = int(cloudFlag) == 0 ? float(tileIndex) / float(32) : float(tileIndex) / float(16);
 
   // todo: add parameter for noise
   float seed = sin(floor(uTime * 20.0));
@@ -414,8 +434,18 @@ void main() {
   tile.rgb = mix(tile.rgb, vec3(dot(tile.rgb, luminanceWeights)), cloudFlag);
   #endif
 
+  // mix tile with gradient using the overlay blend mode
+#if 0
+  vec3 gradient = vec3(1.0-tileFactor);
+  tile.rgb = overlay(tile.rgb, gradient);
+#endif
+
   // display mix of texel and emoji
+#if 0
+  gl_FragColor = overlay(tile, vec4(texel.rgb, uTileMixFactor));
+#else
   gl_FragColor = mix(texel, tile, uTileMixFactor);
+#endif
   
   // show only emoji
   //gl_FragColor = tile;
@@ -424,5 +454,6 @@ void main() {
   //gl_FragColor = texel;
 
   //gl_FragColor = vec4(vec3(float(finalTileIndex) / 31.0), 1.0);
+  //gl_FragColor = vec4(vec3(1.0-tileFactor), 1.0);
 }
 `;
