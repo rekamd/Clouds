@@ -156,7 +156,7 @@ export const cloudFragmentShader = /* glsl */ `
         float cloudHash = float(c+1);
         vec3 cloudPositionCloud = cloudPosition + random3D(cloudHash, baseSeed) * cloudOffset;
 
-        float cloudShift = max(0.1,abs(random(cloudHash))) * maxShiftSpeed * time;
+        float cloudShift = max(0.1,abs(random(cloudHash + baseSeed))) * maxShiftSpeed * time + random(cloudHash + baseSeed + 37.2) * 3287.102;
         cloudShift = mod(cloudShift, skyCutoffDistance*2.0);
         float transitionZone = dot(cloudSize, cloudShiftDirection);
         float alphaBegin = tanh(cloudShift/transitionZone);
@@ -182,7 +182,7 @@ export const cloudFragmentShader = /* glsl */ `
           float cloudHash = float(c+1);
           vec3 lightPositionCloud = lightPosition + random3D(cloudHash, baseSeed) * cloudOffset;
 
-          float cloudShift = max(0.1,abs(random(cloudHash))) * maxShiftSpeed * time;
+          float cloudShift = max(0.1,abs(random(cloudHash + baseSeed))) * maxShiftSpeed * time + random(cloudHash + baseSeed + 37.2) * 3287.102;
           cloudShift = mod(cloudShift, skyCutoffDistance*2.0);
           vec3 cloudShiftDirection = vec3(1,0,0);
           lightPositionCloud += (cloudShift - skyCutoffDistance) * cloudShiftDirection;
