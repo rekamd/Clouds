@@ -276,7 +276,7 @@ export const cloudFragmentShader = /* glsl */ `
     // sun glare        
     finalColor += 1.4 * vec4(0.2, 0.08, 0.04, 1) * pow(sunIntensity, 8.0 );  
         
-    gl_FragColor = vec4(finalColor.rgb, cloudPixelFactor);
+    gl_FragColor = vec4(min(finalColor.rgb, vec3(1,1,1)), cloudPixelFactor);
     //gl_FragColor = vec4(vec3(cloudPixelFactor), 1.0);
 
 #if 0
