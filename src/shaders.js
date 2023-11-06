@@ -372,17 +372,7 @@ void main() {
   float luminosity = luminosity(minColor, maxColor);
 
   float cloudFlag = texel.a; // 0.0 if texel is sky (not cloud)
-
-#if 0
-  float saturation = saturation(minColor, maxColor, luminosity);
-
-  // todo: potentially add tuning parameter here for threshold
-  float cloudSaturationThreshold = 0.8;
-  bool forceCloud = saturation < (cloudSaturationThreshold * cloudFlag);
-  float forceCloudFactor = 2.0 - float(forceCloud);
-#else
   float forceCloudFactor = 2.0 - cloudFlag;
-#endif
 
   // simple emoji lookup with brightness only
   // compute brightness of texel
@@ -397,19 +387,26 @@ void main() {
   uvLookup.x /= float(tileCount);
   float maxCoordX = 1.0 / float(tileCount);
   uvLookup.x = mod(uvLookup.x, maxCoordX);
+#if 0 // use full tile set for sky
   int chosenTileSetCount = int(forceCloudFactor) * tileCount / 2; // choose either 16 or 32. 16 if we want to force clouds (forceCloudFactor == 1.0)
+#else
+  int chosenTileSetCount = 16;
+#endif
   int tileIndex = int(mod((1.0-luminance) * float(chosenTileSetCount), float(chosenTileSetCount)));
-  float tileFactor = int(cloudFlag) == 0 ? float(tileIndex) / float(32) : float(tileIndex) / float(16);
+  float tileFactor = float(tileIndex) / float(chosenTileSetCount);
 
   // todo: add parameter for noise
   float seed = sin(floor(uTime * 20.0));
   float noise = 1.0 - 2.0 * random(texelLookup, seed); // in [-1,1]
-  float maxNoiseTileOffsetFactor = 0.04;
+  float maxNoiseTileOffsetFactor = 0.1;
   float maxNoiseTileOffset = ceil(maxNoiseTileOffsetFactor * float(chosenTileSetCount));
 
   float tileOffset = maxNoiseTileOffset * noise;
   int finalTileIndex = tileIndex + int(tileOffset);
   finalTileIndex = max(0, min(finalTileIndex, chosenTileSetCount-1));
+#if 1 // shift into sky tiles, if only sky tiles should be chosen for sky
+  finalTileIndex += int(cloudFlag) == 0 ? 16 : 0;
+#endif
   uvLookup.x += float(finalTileIndex) * maxCoordX;
 
   vec4 tile = texture2D( tTileAtlas, uvLookup);
