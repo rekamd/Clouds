@@ -208,12 +208,22 @@ gui.add(params, "uniformPixels").onChange((value) => {
   }
 });
 gui.add(cloud, "tileMixFactor").min(-1).max(2);
-gui.add(params, "skyTileIndex").onChange((value) => {
-  cloud.setTileTextureIndex(true, value);
-});
-gui.add(params, "cloudTileIndex").onChange((value) => {
-  cloud.setTileTextureIndex(false, value);
-});
+gui
+  .add(params, "skyTileIndex")
+  .min(0)
+  .max(4)
+  .step(1)
+  .onChange((value) => {
+    cloud.setTileTextureIndex(true, value);
+  });
+gui
+  .add(params, "cloudTileIndex")
+  .min(0)
+  .max(4)
+  .step(1)
+  .onChange((value) => {
+    cloud.setTileTextureIndex(false, value);
+  });
 gui.add(cloud, "blur");
 gui.add(cloud, "UVTest");
 
