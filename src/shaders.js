@@ -306,8 +306,8 @@ void main() {
 
 export const tileFragmentShader = /* glsl */ `
 uniform sampler2D tDiffuse;
-uniform sampler2D tTiles;
-uniform sampler2D tTileAtlas;
+uniform sampler2D tTileAtlasSky;
+uniform sampler2D tTileAtlasCloud;
 uniform bool uUVTest;
 uniform vec2 uResolution;
 uniform float uTileMixFactor;
@@ -383,7 +383,8 @@ void main() {
   //float luminance = sqrt( 0.299*texel.r*texel.r + 0.587*texel.g*texel.g + 0.114*texel.b*texel.b );
 
   vec2 uvLookup = vUv * uResolution;
-  int tileCount = 32;
+  //int tileCount = 32;
+  int tileCount = 16;
   uvLookup.x /= float(tileCount);
   float maxCoordX = 1.0 / float(tileCount);
   uvLookup.x = mod(uvLookup.x, maxCoordX);
@@ -404,12 +405,12 @@ void main() {
   float tileOffset = maxNoiseTileOffset * noise;
   int finalTileIndex = tileIndex + int(tileOffset);
   finalTileIndex = max(0, min(finalTileIndex, chosenTileSetCount-1));
-#if 1 // shift into sky tiles, if only sky tiles should be chosen for sky
-  finalTileIndex += int(cloudFlag) == 0 ? 16 : 0;
-#endif
+//#if 1 // shift into sky tiles, if only sky tiles should be chosen for sky
+  //finalTileIndex += int(cloudFlag) == 0 ? 16 : 0;
+//#endif
   uvLookup.x += float(finalTileIndex) * maxCoordX;
 
-  vec4 tile = texture2D( tTileAtlas, uvLookup);
+  vec4 tile = int(cloudFlag) == 0 ? texture2D( tTileAtlasSky, uvLookup) : texture2D( tTileAtlasCloud, uvLookup);
 
   // mix in uv test color
   texel.r += float(uUVTest) * vUv.x;

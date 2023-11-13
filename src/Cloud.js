@@ -131,9 +131,11 @@ class Cloud extends Pass {
     this.camera = camera;
     this.cloudFullScreenQuad = new Pass.FullScreenQuad(this.cloudMaterial);
     this.passThroughMaterial = this.createPassThroughMaterial();
-    this.passThroughMaterial.uniforms.tTiles.value = this.tiles.tileTexture;
-    this.passThroughMaterial.uniforms.tTileAtlas.value =
-      this.tiles.tileTextureAtlas;
+    this.passThroughMaterial.uniforms.tTileAtlasSky.value =
+      this.tiles.tileTextureAtlas1;
+    this.passThroughMaterial.uniforms.tTileAtlasCloud.value =
+      this.tiles.tileTextureAtlas2;
+
     this.passThroughFullScreenQuad = new Pass.FullScreenQuad(
       this.passThroughMaterial,
     );
@@ -378,8 +380,8 @@ class Cloud extends Pass {
     return new THREE.ShaderMaterial({
       uniforms: {
         tDiffuse: { value: null },
-        tTiles: { value: null },
-        tTileAtlas: { value: null },
+        tTileAtlasSky: { value: null },
+        tTileAtlasCloud: { value: null },
         uUVTest: { value: false },
         uTime: { value: 0 },
         uResolution: { value: new THREE.Vector2() },
