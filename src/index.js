@@ -92,6 +92,8 @@ let params = {
   lastTouchedPixelID: 0,
   pause: false,
   lastTime: 0,
+  skyTileIndex: 0,
+  cloudTileIndex: 0,
 };
 
 let cloud = new Cloud(camera, {
@@ -206,6 +208,12 @@ gui.add(params, "uniformPixels").onChange((value) => {
   }
 });
 gui.add(cloud, "tileMixFactor").min(-1).max(2);
+gui.add(params, "skyTileIndex").onChange((value) => {
+  cloud.setTileTextureIndex(true, value);
+});
+gui.add(params, "cloudTileIndex").onChange((value) => {
+  cloud.setTileTextureIndex(false, value);
+});
 gui.add(cloud, "blur");
 gui.add(cloud, "UVTest");
 

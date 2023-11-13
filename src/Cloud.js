@@ -132,9 +132,9 @@ class Cloud extends Pass {
     this.cloudFullScreenQuad = new Pass.FullScreenQuad(this.cloudMaterial);
     this.passThroughMaterial = this.createPassThroughMaterial();
     this.passThroughMaterial.uniforms.tTileAtlasSky.value =
-      this.tiles.tileTextureAtlas1;
+      this.tiles.tileTextureAtlasArray[1];
     this.passThroughMaterial.uniforms.tTileAtlasCloud.value =
-      this.tiles.tileTextureAtlas2;
+      this.tiles.tileTextureAtlasArray[2];
 
     this.passThroughFullScreenQuad = new Pass.FullScreenQuad(
       this.passThroughMaterial,
@@ -334,6 +334,17 @@ class Cloud extends Pass {
     this.material.uniforms.uResolution.value.set(resX, resY);
     this.passThroughMaterial.uniforms.uResolution.value.set(resX, resY);
     this.cloudRenderTarget.setSize(resX, resY);
+  }
+
+  setTileTextureIndex(skyTiles, tileIndex) {
+    let tiles = new Tiles();
+    if (skyTiles) {
+      this.passThroughMaterial.uniforms.tTileAtlasSky.value =
+        tiles.tileTextureAtlasArray[tileIndex];
+    } else {
+      this.passThroughMaterial.uniforms.tTileAtlasCloud.value =
+        tiles.tileTextureAtlasArray[tileIndex];
+    }
   }
 
   isAnimated() {

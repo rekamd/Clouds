@@ -36,20 +36,28 @@ class Tiles {
     // Todo: for tiling (see Texture.repeat) and wrapping to work, the texture needs to be a power of 2
     // See here for details: https://threejs.org/docs/#api/en/textures/Texture
 
-    //this.tileTextureAtlasArray = new Array();
+    this.tileTextureAtlasArray = new Array();
     //var tilesDataEmoji1 = ImageData.emoji_atlas1;
     //var tilesDataStamps1 = ImageData.stamps_atlas1;
     //var tilesDataStamps4 = ImageData.stamps_atlas4;
-    var tilesDataStamps1 = ImageData.stamps_hexagon_full;
-    var tilesDataStamps2 = ImageData.stamps_circle_diag;
+    //var tilesDataStamps1 = ImageData.stamps_hexagon_full;
+    //var tilesDataStamps2 = ImageData.stamps_circle_diag;
 
-    this.tileTextureAtlas1 = loader.load(base64PreFix + tilesDataStamps1);
-    this.tileTextureAtlas1.wrapS = THREE.RepeatWrapping;
-    this.tileTextureAtlas1.wrapT = THREE.RepeatWrapping;
+    let tileDataArray = [
+      ImageData.stamps_circle_diag,
+      ImageData.stamps_hexagon_full,
+      ImageData.stamps_hexagon_patter,
+      ImageData.stamps_square_pattern,
+      ImageData.stamps_triangle_full,
+    ];
 
-    this.tileTextureAtlas2 = loader.load(base64PreFix + tilesDataStamps2);
-    this.tileTextureAtlas2.wrapS = THREE.RepeatWrapping;
-    this.tileTextureAtlas2.wrapT = THREE.RepeatWrapping;
+    for (let i = 0; i < tileDataArray.length; ++i) {
+      let tileTextureAtlas = loader.load(base64PreFix + tileDataArray[i]);
+      tileTextureAtlas.wrapS = THREE.RepeatWrapping;
+      tileTextureAtlas.wrapT = THREE.RepeatWrapping;
+
+      this.tileTextureAtlasArray.push(tileTextureAtlas);
+    }
   }
 }
 
