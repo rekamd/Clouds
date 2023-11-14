@@ -319,13 +319,11 @@ ${random}
 float minColor(vec3 c)
 {
   return min(min(c.r, c.g), c.b);
-  //return min(0.5 * (c.r + c.g), c.b);
 }
 
 float maxColor(vec3 c)
 {
   return max(max(c.r, c.g), c.b);
-  //return max(0.5 * (c.r + c.g), c.b);
 }
 
 float luminosity(float minColor, float maxColor)
@@ -336,6 +334,101 @@ float luminosity(float minColor, float maxColor)
 float saturation(float minColor, float maxColor, float luminosity)
 {
   return luminosity != 1.0 ? (maxColor - minColor) / (1.0 - abs(2.0 * luminosity - 1.0)) : 0.0;
+}
+
+float convertHueToRGB(float f1, float f2, float hue)
+{
+  if (hue < 0.0)
+    hue += 1.0;
+  else if (hue > 1.0)
+    hue -= 1.0;
+  float res;
+  if ((6.0 * hue) < 1.0)
+    res = f1 + (f2 - f1) * 6.0 * hue;
+  else if ((2.0 * hue) < 1.0)
+    res = f2;
+  else if ((3.0 * hue) < 2.0)
+    res = f1 + (f2 - f1) * ((2.0 / 3.0) - hue) * 6.0;
+  else
+    res = f1;
+  return res;
+}
+
+vec3 convertHSLToRGB(vec3 hsl)
+{
+  vec3 rgb;
+
+  if (hsl.y == 0.0)
+    rgb = vec3(hsl.z, hsl.z, hsl.z);
+  else
+  {
+    float f2;
+
+    if (hsl.z < 0.5)
+      f2 = hsl.z * (1.0 + hsl.y);
+    else
+      f2 = (hsl.z + hsl.y) - (hsl.y * hsl.z);
+	
+    float f1 = 2.0 * hsl.z - f2;
+
+    rgb.r = convertHueToRGB(f1, f2, hsl.x + (1.0/3.0));
+    rgb.g = convertHueToRGB(f1, f2, hsl.x);
+    rgb.b = convertHueToRGB(f1, f2, hsl.x - (1.0/3.0));
+  }
+
+  return rgb;
+}
+
+vec3 convertRGBToHSL(vec3 color)
+{
+  // hue, saturation, luminance
+  vec3 hsl;
+	
+  float fmin = minColor(color);
+  float fmax = maxColor(color);
+  float delta = fmax - fmin;
+
+  hsl.z = (fmax + fmin) / 2.0;
+
+  if (delta == 0.0)
+  {
+    hsl.x = hsl.y = 0.0;
+  }
+  else
+  {
+    if (hsl.z < 0.5)
+    {
+      hsl.y = delta / (fmax + fmin);
+    }
+    else
+    {
+      hsl.y = delta / (2.0 - fmax - fmin);
+    }
+
+    float deltaR = (((fmax - color.r) / 6.0) + (delta / 2.0)) / delta;
+    float deltaG = (((fmax - color.g) / 6.0) + (delta / 2.0)) / delta;
+    float deltaB = (((fmax - color.b) / 6.0) + (delta / 2.0)) / delta;
+
+    if (color.r == fmax )
+      hsl.x = deltaB - deltaG; // Hue
+    else if (color.g == fmax)
+      hsl.x = (1.0 / 3.0) + deltaR - deltaB; // Hue
+    else if (color.b == fmax)
+      hsl.x = (2.0 / 3.0) + deltaG - deltaR; // Hue
+
+    if (hsl.x < 0.0)
+      hsl.x += 1.0; // Hue
+    else if (hsl.x > 1.0)
+      hsl.x -= 1.0; // Hue
+  }
+
+  return hsl;
+}
+
+vec3 luminosityBlend(vec3 baseColor, vec3 layerColor)
+{
+  vec3 baseColorHSL = convertRGBToHSL(baseColor);
+  return convertHSLToRGB(vec3(baseColorHSL.r, baseColorHSL.g, convertRGBToHSL(layerColor).b));
 }
 
 vec3 multiply(vec3 baseColor, vec3 layerColor) {
@@ -440,14 +533,16 @@ void main() {
 #endif
 
   // display mix of texel and emoji
-#if 1
+#if 0 // multiply blend
   //gl_FragColor = overlay(tile, vec4(texel.rgb, uTileMixFactor));
   //gl_FragColor.rgb = mix(texel.rgb, multiply(tile.rgb, texel.rgb), uTileMixFactor);
 
   // todo: in this mode, use smooth gradient rather than blocky gradient
   gl_FragColor.rgb = mix(multiply(tile.rgb, texel.rgb), tile.rgb, uTileMixFactor);
-#else
+#elif 0 // linear interpolation
   gl_FragColor = mix(texel, tile, uTileMixFactor);
+#else // luminosity
+  gl_FragColor = vec4(luminosityBlend(texel.rgb, tile.rgb), 1.0);
 #endif
   
   // show only emoji
