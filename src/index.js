@@ -104,10 +104,10 @@ let cloud = new Cloud(camera, {
   sunPosition: new THREE.Vector3(sunPositionX, sunPositionY, sunPositionZ),
   cloudColor: new THREE.Color(params.cloudColor), //"rgb(234, 191, 107)"
   skyColor: new THREE.Color(params.skyColor), //"rgb(51, 127, 255)"
-  cloudSteps: 48,
-  shadowSteps: 16, // orig: 8, but too noisy
-  cloudLength: 16,
-  shadowLength: 4, // orig: 2, but too dark
+  cloudSteps: 64,
+  shadowSteps: 32, // orig: 8, but too noisy
+  cloudLength: 32,
+  shadowLength: 8, // orig: 2, but too dark
   noise: false,
   turbulence: 0.05,
   shift: 1.0,

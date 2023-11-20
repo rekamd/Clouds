@@ -120,22 +120,22 @@ export const cloudFragmentShader = /* glsl */ `
   vec4 cloudMarch(int cloudCount, float seed, float jitter, float turbulence,
     vec3 cloudSize, float cloudScatter, float cloudShape, float cloudRoughness,
     float time, float shift,
-    vec3 position, vec3 lightDirection, vec3 ray)
+    vec3 position, vec3 lightDirection, vec3 ray, float rayShift)
   {
     float stepLength = uCloudLength / uCloudSteps;
     float shadowStepLength = uShadowLength / uShadowSteps;
     vec3 invCloudSize = 1.0 / cloudSize;
 
-    vec3 cloudPosition = position + ray * turbulence * stepLength;
+    vec3 cloudPosition = position + ray * (turbulence * stepLength + rayShift);
 
-    const float skyCutoffDistance = 25.0;
+    const float skyCutoffDistance = 30.0;
     float maxShiftSpeed = shift;
+    float minShiftSpeedFactor = 0.5;
 
-    vec3 cloudOffset = vec3(10.0, 10.0, 10.0);
+    vec3 cloudOffset = vec3(20.0, 10.0, 20.0);
     vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
     const float k_alphaThreshold = 0.0;
 
-    // todo: parametrize base seed
     float baseSeed = seed;
     float timeSeed = baseSeed + 7.0;
 
@@ -144,6 +144,7 @@ export const cloudFragmentShader = /* glsl */ `
     for (float i = 0.0; i < uCloudSteps; i++) {
       if (color.a < k_alphaThreshold) break;
 
+      float transitionFactor = 5.0;
       float maxTimeShift = 819.2083;
       float maxTimeScale = 3.0;
       float shapeShift = 3.7826;
@@ -156,10 +157,9 @@ export const cloudFragmentShader = /* glsl */ `
         float cloudHash = float(c+1);
         vec3 cloudPositionCloud = cloudPosition + random3D(cloudHash, baseSeed) * cloudOffset;
 
-        float cloudShift = maxShiftSpeed * time + random(cloudHash, baseSeed + 37.2) * 3287.102;
-        // max(0.1,abs(random(cloudHash, baseSeed))) * maxShiftSpeed * time + random(cloudHash, baseSeed + 37.2) * 3287.102;
+        float cloudShift = mix(minShiftSpeedFactor * maxShiftSpeed, maxShiftSpeed, abs(random(cloudHash, baseSeed))) * time + random(cloudHash, baseSeed + 37.2) * 3287.102;
         cloudShift = mod(cloudShift, skyCutoffDistance*2.0);
-        float transitionZone = dot(cloudSize, cloudShiftDirection);
+        float transitionZone = dot(cloudSize*transitionFactor, cloudShiftDirection);
         float alphaBegin = tanh(cloudShift/transitionZone);
         float alphaEnd = tanh((2.0 * skyCutoffDistance - cloudShift) / transitionZone);
         float invAlpha = 1.0/(alphaBegin * alphaEnd);
@@ -173,7 +173,6 @@ export const cloudFragmentShader = /* glsl */ `
       }
 
       const float k_DepthThreshold = 0.001;
-      //float depthTest = float(depth > k_DepthThreshold);
       if (maxDepth > k_DepthThreshold) {
         vec3 lightPosition = cloudPosition + lightDirection * jitter * shadowStepLength;
 
@@ -183,10 +182,13 @@ export const cloudFragmentShader = /* glsl */ `
           float cloudHash = float(c+1);
           vec3 lightPositionCloud = lightPosition + random3D(cloudHash, baseSeed) * cloudOffset;
 
-          float cloudShift = maxShiftSpeed * time + random(cloudHash, baseSeed + 37.2) * 3287.102;
-          // max(0.1,abs(random(cloudHash, baseSeed))) * maxShiftSpeed * time + random(cloudHash, baseSeed + 37.2) * 3287.102;
+          float cloudShift = mix(minShiftSpeedFactor * maxShiftSpeed, maxShiftSpeed, abs(random(cloudHash, baseSeed))) * time + random(cloudHash, baseSeed + 37.2) * 3287.102;
           cloudShift = mod(cloudShift, skyCutoffDistance*2.0);
-          vec3 cloudShiftDirection = vec3(1,0,0);
+          float transitionZone = dot(cloudSize*transitionFactor, cloudShiftDirection);
+          float alphaBegin = tanh(cloudShift/transitionZone);
+          float alphaEnd = tanh((2.0 * skyCutoffDistance - cloudShift) / transitionZone);
+          float invAlpha = 1.0/(alphaBegin * alphaEnd);
+          
           lightPositionCloud += (cloudShift - skyCutoffDistance) * cloudShiftDirection;
        
           float randomTime = randShiftAndScale(time, maxTimeScale, maxTimeShift, timeSeed + cloudHash);
@@ -194,7 +196,7 @@ export const cloudFragmentShader = /* glsl */ `
           float shadow = 0.0;
           for (float s = 0.0; s < uShadowSteps; s++) {
             lightPositionCloud += lightDirection * shadowStepLength;
-            shadow += cloudDepth(lightPositionCloud, invCloudSize, cloudScatter, cloudShape + 17.213 * random(cloudHash, baseSeed), cloudRoughness, randomTime);
+            shadow += cloudDepth(lightPositionCloud, invAlpha * invCloudSize, cloudScatter, cloudShape + 17.213 * random(cloudHash, baseSeed), cloudRoughness, randomTime);
           }
           shadow = exp((-shadow / uShadowSteps) * 3.0);
           minShadow = min(shadow, minShadow);
@@ -249,13 +251,24 @@ export const cloudFragmentShader = /* glsl */ `
     vec3 lightDir = normalize(uSunPosition);
           
     // todo: remove hardcoded shift below
-    vec3 cloudPos = uCameraPosition - vec3(0.0,8.0,0.0);
+    float cloudOffset = 8.0;
+    float rayShift = cloudOffset;
+    vec3 cloudPos = uCameraPosition - vec3(0.0,cloudOffset,0.0);
 
     vec4 color1 = cloudMarch(uCloudCount, uCloudSeed, jitter, turbulence,
       uCloudSize, uCloudScatter, uCloudShape, uCloudRoughness,
       uTime, uShift,
-      cloudPos, lightDir, ray);
+      cloudPos, lightDir, ray, rayShift);
     
+    float backgroundCloudOffset = 20.0;
+    float backgroundRayShift = backgroundCloudOffset;
+    vec3 backgroundCloudPos = cloudPos - vec3(0.0,backgroundCloudOffset,0.0);
+    vec3 backgroundCloudSize = uCloudSize * 0.5;
+    vec4 color2 = cloudMarch(uCloudCount * 2, uCloudSeed + 389.121, jitter, turbulence,
+      backgroundCloudSize, uCloudScatter, uCloudShape, uCloudRoughness,
+        uTime * 0.5, uShift,
+        backgroundCloudPos, lightDir, ray, backgroundRayShift);
+
     // uniform sky color
     //vec3 skyColor = uSkyColor;
    
@@ -268,12 +281,14 @@ export const cloudFragmentShader = /* glsl */ `
     float minSunSizePow = 80.0;
     skyColor += uSunIntensity * vec3(1.0, 0.6, 0.1) * pow(sunIntensity, uSunSize * maxSunSizePow + (1.0-uSunSize) * minSunSizePow );
     
-    vec4 finalColor = vec4(color1.rgb + skyColor * color1.a, 1.0);
+    float cloudDepth = max(1.0-color1.a, 1.0-color2.a);
+    vec4 finalColor = mix(vec4(color1.rgb + skyColor * color1.a, 1.0), vec4(color2.rgb + skyColor * color2.a, 1.0), color1.a);
+    //vec4 finalColor = vec4(color1.rgb + skyColor * color1.a, 1.0);
     
     // mark cloud pixel
     // Note: cloud depth is encoded in alpha as depth = 1.0 - alpha
     float minCloudDensity = 0.5;
-    float cloudPixelFactor = step(minCloudDensity, 1.0-color1.a);
+    float cloudPixelFactor = step(minCloudDensity, cloudDepth);
 
     // sun glare        
     finalColor += 1.4 * vec4(0.2, 0.08, 0.04, 1) * pow(sunIntensity, 8.0 );  
@@ -293,7 +308,6 @@ export const cloudFragmentShader = /* glsl */ `
     gl_FragColor = vec4(color, 1.0);
 #endif
 
-    //gl_FragColor = vec4(1,0,0,1);
     //gl_FragColor = vec4(uv.x, uv.y, 0.0, 1.0);
   }
 `;
@@ -471,11 +485,8 @@ void main() {
 
   // simple emoji lookup with brightness only
   // compute brightness of texel
-  //float luminance = (texel.r + texel.g + texel.b) / 3.0;
-  //float luminance = 0.2126*texel.r + 0.7152*texel.g + 0.0722*texel.b;
   vec3 luminanceWeights = vec3(0.299, 0.587, 0.114);
   float luminance = dot(luminanceWeights, texel.rgb);
-  //float luminance = sqrt( 0.299*texel.r*texel.r + 0.587*texel.g*texel.g + 0.114*texel.b*texel.b );
 
   vec2 uvLookup = vUv * uResolution;
   //int tileCount = 32;
@@ -500,9 +511,6 @@ void main() {
   float tileOffset = maxNoiseTileOffset * noise;
   int finalTileIndex = tileIndex + int(tileOffset);
   finalTileIndex = max(0, min(finalTileIndex, chosenTileSetCount-1));
-//#if 1 // shift into sky tiles, if only sky tiles should be chosen for sky
-  //finalTileIndex += int(cloudFlag) == 0 ? 16 : 0;
-//#endif
   uvLookup.x += float(finalTileIndex) * maxCoordX;
 
   vec4 tile = int(cloudFlag) == 0 ? texture2D( tTileAtlasSky, uvLookup) : texture2D( tTileAtlasCloud, uvLookup);
@@ -512,20 +520,11 @@ void main() {
   texel.g += float(uUVTest) * vUv.y;
   //gl_FragColor = vec4(vUv, 1.0, 1.0);
 
-  // display luminosity
-  //gl_FragColor = vec4(vec3(luminosity), 1.0);
-  
-  // display saturation
-  #if 0
-  vec4 saturationColor = vec4(vec3(saturation), 1.0);
-  gl_FragColor = saturationColor;
-  //gl_FragColor = mix(texel, saturationColor, 0.5);
-  #endif
-
+ 
   // desaturate tile if it is cloud
-  #if 1
+#if 1
   tile.rgb = mix(tile.rgb, vec3(dot(tile.rgb, luminanceWeights)), cloudFlag);
-  #endif
+#endif
 
   // mix tile with gradient using the overlay blend mode
 #if 1
@@ -549,14 +548,12 @@ void main() {
 
   // todo: get 2 mix factors so that we can show only rendering, or only tiles or 
   // float mix1 = 
+  gl_FragColor = mix(texel, gl_FragColor, uTileMixFactor);
   
-  // show only emoji
+  // show only tile
   //gl_FragColor = tile;
   
   // show only texel
   //gl_FragColor = texel;
-
-  //gl_FragColor = vec4(vec3(float(finalTileIndex) / 31.0), 1.0);
-  //gl_FragColor = vec4(vec3(1.0-tileFactor), 1.0);
 }
 `;
