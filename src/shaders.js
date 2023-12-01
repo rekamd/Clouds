@@ -274,7 +274,8 @@ export const cloudFragmentShader = /* glsl */ `
    
     // sky gradient
     float heightFactor = 0.5;
-    vec3 skyColor = uSkyColor - heightFactor * ray.y * vec3(1.0,0.5,1.0) + 0.3*vec3(0.5);
+    // todo: gradient target color for lower end
+    vec3 skyColor = uSkyColor - heightFactor * min(0.0, ray.y) * vec3(1.0,1.0,1.0);
     // sun center
     float sunIntensity = clamp( dot(lightDir, eyeDir.xyz), 0.0, 1.0 );    
     float maxSunSizePow = 6.0;
