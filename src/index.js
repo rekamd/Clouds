@@ -211,7 +211,7 @@ gui.add(cloud, "tileMixFactor").min(-1).max(2);
 gui
   .add(params, "skyTileIndex")
   .min(0)
-  .max(4)
+  .max(19)
   .step(1)
   .onChange((value) => {
     cloud.setTileTextureIndex(true, value);
@@ -219,7 +219,7 @@ gui
 gui
   .add(params, "cloudTileIndex")
   .min(0)
-  .max(4)
+  .max(19)
   .step(1)
   .onChange((value) => {
     cloud.setTileTextureIndex(false, value);

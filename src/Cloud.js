@@ -132,9 +132,9 @@ class Cloud extends Pass {
     this.cloudFullScreenQuad = new Pass.FullScreenQuad(this.cloudMaterial);
     this.passThroughMaterial = this.createPassThroughMaterial();
     this.passThroughMaterial.uniforms.tTileAtlasSky.value =
-      this.tiles.tileTextureAtlasArray[1];
+      this.tiles.tileTextureAtlasArray[0];
     this.passThroughMaterial.uniforms.tTileAtlasCloud.value =
-      this.tiles.tileTextureAtlasArray[2];
+      this.tiles.tileTextureAtlasArray[0];
 
     this.passThroughFullScreenQuad = new Pass.FullScreenQuad(
       this.passThroughMaterial,
