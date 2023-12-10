@@ -84,10 +84,12 @@ if (tokenTest) {
 
 let params = {
   skyColor: 0x337fff,
+  skyColorFade: 0xffffff,
   sunPositionX: sunPositionX, //4.0,
   sunPositionY: sunPositionY, //3.5,
   sunPositionZ: sunPositionZ, //-1.0,
   cloudColor: 0xeabf6b,
+  sunColor: "rgb(255, 153, 25)",
   uniformPixels: true,
   lastTouchedPixelID: 0,
   pause: false,
@@ -171,9 +173,17 @@ gui
 gui.addColor(params, "skyColor").onChange((value) => {
   cloud.skyColor = new THREE.Color(value);
 });
+gui.addColor(params, "skyColorFade").onChange((value) => {
+  cloud.skyColorFade = new THREE.Color(value);
+});
+gui.add(cloud, "skyFadeFactor").min(0).max(1);
 gui.addColor(params, "cloudColor").onChange((value) => {
   cloud.cloudColor = new THREE.Color(value);
 });
+gui.addColor(params, "sunColor").onChange((value) => {
+  cloud.sunColor = new THREE.Color(value);
+});
+
 gui
   .add(cloud, "pixelWidth")
   .min(2)

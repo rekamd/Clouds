@@ -44,6 +44,9 @@ export const cloudFragmentShader = /* glsl */ `
   uniform vec3 uCameraPosition;
   uniform vec3 uCloudColor;
   uniform vec3 uSkyColor;
+  uniform vec3 uSkyColorFade;
+  uniform float uSkyFadeFactor;
+  uniform vec3 uSunColor;
   uniform float uCloudSteps;
   uniform float uShadowSteps;
   uniform float uCloudLength;
@@ -274,14 +277,13 @@ export const cloudFragmentShader = /* glsl */ `
    
     // sky gradient
     float heightFactor = 0.5;
-    // todo: gradient target color for lower end
-    vec3 skyColor = uSkyColor - heightFactor * min(0.0, ray.y) * vec3(1.0,1.0,1.0);
+    vec3 skyColor = uSkyColor - uSkyFadeFactor * min(0.0, ray.y) * uSkyColorFade;
     // sun center
     float sunIntensity = clamp( dot(lightDir, eyeDir.xyz), 0.0, 1.0 );    
     float maxSunSizePow = 6.0;
     float minSunSizePow = 80.0;
-    skyColor += uSunIntensity * vec3(1.0, 0.6, 0.1) * pow(sunIntensity, uSunSize * maxSunSizePow + (1.0-uSunSize) * minSunSizePow );
-    
+    skyColor += uSunIntensity * uSunColor * pow(sunIntensity, uSunSize * maxSunSizePow + (1.0-uSunSize) * minSunSizePow );
+
     float cloudDepth = max(1.0-color1.a, 1.0-color2.a);
     vec4 finalColor = mix(vec4(color1.rgb + skyColor * color1.a, 1.0), vec4(color2.rgb + skyColor * color2.a, 1.0), color1.a);
     //vec4 finalColor = vec4(color1.rgb + skyColor * color1.a, 1.0);
