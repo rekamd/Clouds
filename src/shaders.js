@@ -117,9 +117,16 @@ export const cloudFragmentShader = /* glsl */ `
 
   float randShiftAndScale(float val, float maxScale, float maxShift, float seed)
   {
-     return (val + maxShift * random(seed)) * maxScale * abs(random(seed+31.72));
+    return (val + maxShift * random(seed)) * maxScale * abs(random(seed+31.72));
   }
 
+  float cmax(vec3 v)
+  {
+    return max(max(v.x,v.y),v.z);
+  }
+
+  #define MAX_CLOUD_COUNT 128
+  
   // https://shaderbits.com/blog/creating-volumetric-ray-marcher
   vec4 cloudMarch(int cloudCount, float seed, float jitter, float turbulence,
     vec3 cloudSize, float cloudScatter, float cloudShape, float cloudRoughness,
@@ -149,25 +156,30 @@ export const cloudFragmentShader = /* glsl */ `
 
     const vec3 cloudShiftDirection = vec3(1,0,0);
 
+    bool cloudSkipArray[MAX_CLOUD_COUNT];
+
     for (float i = 0.0; i < uCloudSteps; i++) {
       if (color.a < k_alphaThreshold) break;
 
       float transitionFactor = 5.0;
       float maxTimeShift = 819.2083;
       float maxTimeScale = 3.0;
-      float shapeShift = 3.7826;
-      float sizeScale = 0.8;
-      float scatterShift = 1.2241;
+      // todo: use size scale for random size changes along all dimensions
+      //float sizeScale = 0.8;
 
       float maxDepth = 0.0;
       for (int c = 0; c < cloudCount; ++c)
       {
         float cloudHash = float(c+1);
-        //vec3 cloudPositionCloud = cloudPosition + random3D(cloudHash, baseSeed) * cloudOffset;
         vec3 cloudPositionCloud = cloudPosition - 0.5 * cloudOffset + random3D(cloudHash, baseSeed) * cloudOffset;
 
         float cloudShift = mix(minShiftSpeedFactor * maxShiftSpeed, maxShiftSpeed, abs(random(cloudHash, baseSeed))) * time + random(cloudHash, baseSeed + 37.2) * 3287.102;
         cloudShift = mod(cloudShift, skyCutoffDistance*2.0);
+
+        // changes random seed each time the cloud gets teleported so that we get different variations each time
+        int shiftCount = int(cloudShift / (skyCutoffDistance*2.0));
+        cloudHash = cloudHash + float(shiftCount) * 13.213;
+
         float transitionZone = dot(cloudSize*transitionFactor, cloudShiftDirection);
         float alphaBegin = tanh(cloudShift/transitionZone);
         float alphaEnd = tanh((2.0 * skyCutoffDistance - cloudShift) / transitionZone);
@@ -176,9 +188,20 @@ export const cloudFragmentShader = /* glsl */ `
         cloudPositionCloud += (cloudShift - skyCutoffDistance) * cloudShiftDirection;
     
         float randomTime = randShiftAndScale(time, maxTimeScale, maxTimeShift, timeSeed + cloudHash);
-        float depth = cloudDepth(cloudPositionCloud, invAlpha * invCloudSize, cloudScatter, cloudShape + 17.213 * random(cloudHash, baseSeed), cloudRoughness, randomTime);
-
-        maxDepth = max(depth, maxDepth);
+        // early out:
+        // size factor: 1 + cloudScatter + (1.0+cloudScatter) * uCloudAnimationStrength + uCloudMinimumDensity
+        float maxSize = cmax(cloudSize);
+        float ellipse = 1.0 - length(cloudPositionCloud * (invAlpha * invCloudSize));
+        if (ellipse + cloudScatter + (1.0+cloudScatter) * uCloudAnimationStrength + uCloudMinimumDensity > 0.0)
+        {
+          float depth = cloudDepth(cloudPositionCloud, invAlpha * invCloudSize, cloudScatter, cloudShape + 17.213 * random(cloudHash, baseSeed), cloudRoughness, randomTime);
+          maxDepth = max(depth, maxDepth);
+          cloudSkipArray[c] = false;
+        }
+        else
+        {
+          cloudSkipArray[c] = true;
+        }
       }
 
       const float k_DepthThreshold = 0.001;
@@ -188,12 +211,19 @@ export const cloudFragmentShader = /* glsl */ `
         float minShadow = FLT_MAX;
         for (int c = 0; c < cloudCount; ++c)
         {
+          if (cloudSkipArray[c])
+            continue;
+
           float cloudHash = float(c+1);
-          //vec3 lightPositionCloud = lightPosition + random3D(cloudHash, baseSeed) * cloudOffset;
           vec3 lightPositionCloud = lightPosition - 0.5 * cloudOffset + random3D(cloudHash, baseSeed) * cloudOffset;
 
           float cloudShift = mix(minShiftSpeedFactor * maxShiftSpeed, maxShiftSpeed, abs(random(cloudHash, baseSeed))) * time + random(cloudHash, baseSeed + 37.2) * 3287.102;
           cloudShift = mod(cloudShift, skyCutoffDistance*2.0);
+
+          // changes random seed each time the cloud gets teleported so that we get different variations each time
+          int shiftCount = int(cloudShift / (skyCutoffDistance*2.0));
+          cloudHash = cloudHash + float(shiftCount) * 13.213;
+    
           float transitionZone = dot(cloudSize*transitionFactor, cloudShiftDirection);
           float alphaBegin = tanh(cloudShift/transitionZone);
           float alphaEnd = tanh((2.0 * skyCutoffDistance - cloudShift) / transitionZone);
@@ -282,7 +312,7 @@ export const cloudFragmentShader = /* glsl */ `
     //vec3 backgroundCloudPos = cloudPos - vec3(0.0,backgroundCloudOffset,0.0);
     vec3 backgroundCloudPos = cloudPos - backgroundCloudOffsetVector;
     vec3 backgroundCloudSize = uCloudSize * 0.5;
-    vec4 color2 = cloudMarch(uCloudCount * 2, uCloudSeed + 389.121, jitter, turbulence,
+    vec4 color2 = cloudMarch(min(uCloudCount * 2, MAX_CLOUD_COUNT), uCloudSeed + 389.121, jitter, turbulence,
       backgroundCloudSize, uCloudScatter, uCloudShape, uCloudRoughness,
         uTime * 0.5, uShift,
         backgroundCloudPos, lightDir, ray, backgroundRayShift);

@@ -129,7 +129,7 @@ gui.add(params, "pause");
 
 gui.add(cloud, "shift").min(0).max(10).step(0.01);
 gui.add(cloud, "cloudSeed").min(1).max(32000).step(1);
-gui.add(cloud, "cloudCount").min(1).max(10).step(1);
+gui.add(cloud, "cloudCount").min(1).max(128).step(1);
 gui.add(cloud, "cloudMinimumDensity").min(0).max(5).step(0.001);
 gui.add(cloud, "cloudRoughness").min(0).max(5).step(0.001);
 gui.add(cloud, "cloudScatter").min(0).max(20).step(0.001);
