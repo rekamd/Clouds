@@ -42,6 +42,7 @@ export const cloudFragmentShader = /* glsl */ `
   uniform float uSunIntensity;
   uniform vec3 uSunPosition;
   uniform vec3 uCameraPosition;
+  uniform vec3 uCameraDirection;
   uniform vec3 uCloudColor;
   uniform vec3 uSkyColor;
   uniform vec3 uSkyColorFade;
@@ -131,6 +132,10 @@ export const cloudFragmentShader = /* glsl */ `
 
     vec3 cloudPosition = position + ray * (turbulence * stepLength + rayShift);
 
+    // todo: review this given camera positioning. If we always shift along x and camera x is zero
+    // we could make some assumptions here.
+    // Alternatively we should probably use the cloudPos input to this function together with the
+    // shiftDirection as indication for the cut off positions
     const float skyCutoffDistance = 30.0;
     float maxShiftSpeed = shift;
     float minShiftSpeedFactor = 0.5;
@@ -158,7 +163,8 @@ export const cloudFragmentShader = /* glsl */ `
       for (int c = 0; c < cloudCount; ++c)
       {
         float cloudHash = float(c+1);
-        vec3 cloudPositionCloud = cloudPosition + random3D(cloudHash, baseSeed) * cloudOffset;
+        //vec3 cloudPositionCloud = cloudPosition + random3D(cloudHash, baseSeed) * cloudOffset;
+        vec3 cloudPositionCloud = cloudPosition - 0.5 * cloudOffset + random3D(cloudHash, baseSeed) * cloudOffset;
 
         float cloudShift = mix(minShiftSpeedFactor * maxShiftSpeed, maxShiftSpeed, abs(random(cloudHash, baseSeed))) * time + random(cloudHash, baseSeed + 37.2) * 3287.102;
         cloudShift = mod(cloudShift, skyCutoffDistance*2.0);
@@ -183,7 +189,8 @@ export const cloudFragmentShader = /* glsl */ `
         for (int c = 0; c < cloudCount; ++c)
         {
           float cloudHash = float(c+1);
-          vec3 lightPositionCloud = lightPosition + random3D(cloudHash, baseSeed) * cloudOffset;
+          //vec3 lightPositionCloud = lightPosition + random3D(cloudHash, baseSeed) * cloudOffset;
+          vec3 lightPositionCloud = lightPosition - 0.5 * cloudOffset + random3D(cloudHash, baseSeed) * cloudOffset;
 
           float cloudShift = mix(minShiftSpeedFactor * maxShiftSpeed, maxShiftSpeed, abs(random(cloudHash, baseSeed))) * time + random(cloudHash, baseSeed + 37.2) * 3287.102;
           cloudShift = mod(cloudShift, skyCutoffDistance*2.0);
@@ -256,16 +263,24 @@ export const cloudFragmentShader = /* glsl */ `
     // todo: remove hardcoded shift below
     float cloudOffset = 8.0;
     float rayShift = cloudOffset;
-    vec3 cloudPos = uCameraPosition - vec3(0.0,cloudOffset,0.0);
+    //vec3 cloudPos = uCameraPosition - vec3(0.0,cloudOffset,0.0);
+    vec3 dir = uCameraDirection;
+    //vec3 dir = (viewMatrixInverse * vec4(0.0,0.0,-1.0,0.0)).xyz;
+    vec3 cloudPos = uCameraPosition - cloudOffset * dir;
+    //gl_FragColor = vec4(dir, 1.0);
+    //return;
 
     vec4 color1 = cloudMarch(uCloudCount, uCloudSeed, jitter, turbulence,
       uCloudSize, uCloudScatter, uCloudShape, uCloudRoughness,
       uTime, uShift,
       cloudPos, lightDir, ray, rayShift);
     
-    float backgroundCloudOffset = 20.0;
-    float backgroundRayShift = backgroundCloudOffset;
-    vec3 backgroundCloudPos = cloudPos - vec3(0.0,backgroundCloudOffset,0.0);
+    float backgroundCloudOffset = 7.0;
+    vec3 backgroundCloudOffsetVector = backgroundCloudOffset * dir + vec3(0.0,backgroundCloudOffset,0.0);
+    //float backgroundRayShift = backgroundCloudOffset;
+    float backgroundRayShift = length(backgroundCloudOffsetVector);
+    //vec3 backgroundCloudPos = cloudPos - vec3(0.0,backgroundCloudOffset,0.0);
+    vec3 backgroundCloudPos = cloudPos - backgroundCloudOffsetVector;
     vec3 backgroundCloudSize = uCloudSize * 0.5;
     vec4 color2 = cloudMarch(uCloudCount * 2, uCloudSeed + 389.121, jitter, turbulence,
       backgroundCloudSize, uCloudScatter, uCloudShape, uCloudRoughness,

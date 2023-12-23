@@ -56,7 +56,9 @@ const renderer = new THREE.WebGLRenderer({
 document.body.appendChild(renderer.domElement);
 
 const camera = new THREE.PerspectiveCamera(70);
-camera.position.set(-4.0, -5.5, 8.0);
+//camera.position.set(-4.0, -5.5, 8.0);
+camera.position.set(0, -7.5, 8.0);
+//camera.position.set(0, -5.5, 0);
 camera.lookAt(0, 0, 0);
 
 const controls = new OrbitControls(camera, renderer.domElement);
