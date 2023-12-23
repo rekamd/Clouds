@@ -307,11 +307,10 @@ export const cloudFragmentShader = /* glsl */ `
     
     float backgroundCloudOffset = 7.0;
     vec3 backgroundCloudOffsetVector = backgroundCloudOffset * dir + vec3(0.0,backgroundCloudOffset,0.0);
-    //float backgroundRayShift = backgroundCloudOffset;
     float backgroundRayShift = length(backgroundCloudOffsetVector);
-    //vec3 backgroundCloudPos = cloudPos - vec3(0.0,backgroundCloudOffset,0.0);
     vec3 backgroundCloudPos = cloudPos - backgroundCloudOffsetVector;
     vec3 backgroundCloudSize = uCloudSize * 0.5;
+    // todo: hand in transitionZone here so that we can extend it for the far clouds (wider zone along x)
     vec4 color2 = cloudMarch(min(uCloudCount * 2, MAX_CLOUD_COUNT), uCloudSeed + 389.121, jitter, turbulence,
       backgroundCloudSize, uCloudScatter, uCloudShape, uCloudRoughness,
         uTime * 0.5, uShift,
