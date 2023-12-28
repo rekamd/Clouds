@@ -41,8 +41,6 @@ class Cloud extends Pass {
   ) {
     super();
 
-    this.sunPos = sunPosition;
-
     let cameraDirection = new THREE.Vector3();
     camera.getWorldDirection(cameraDirection);
     let cameraPosition = new THREE.Vector3();
@@ -276,12 +274,11 @@ class Cloud extends Pass {
   }
 
   get sunPosition() {
-    return this.sunPos;
+    return this.material.uniforms.uSunPosition.value;
   }
 
   set sunPosition(value) {
     this.material.uniforms.uSunPosition.value = value;
-    this.sunPos = value;
   }
 
   get initialCameraPosition() {
