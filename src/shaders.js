@@ -292,12 +292,14 @@ export const cloudFragmentShader = /* glsl */ `
     vec3 lightDir = normalize(uSunPosition);
           
     // todo: remove hardcoded shift below
+    // todo: move all this into the Cloud class and provide an initial cloud position
+    // here instead.
     float cloudOffset = 8.0;
     float rayShift = cloudOffset;
     //vec3 cloudPos = uCameraPosition - vec3(0.0,cloudOffset,0.0);
     vec3 dir = uInitialCameraDirection;
-    vec3 cloudPos = uCameraPosition - cloudOffset * dir;
-    //gl_FragColor = vec4(uCameraPosition, 1.0);
+    vec3 cloudPos = uInitialCameraPosition + uCameraPosition - cloudOffset * dir;
+    //gl_FragColor = vec4(uInitialCameraPosition, 1.0);
     //return;
 
     vec4 color1 = cloudMarch(uCloudCount, uCloudSeed, jitter, turbulence,
