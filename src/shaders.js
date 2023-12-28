@@ -42,7 +42,8 @@ export const cloudFragmentShader = /* glsl */ `
   uniform float uSunIntensity;
   uniform vec3 uSunPosition;
   uniform vec3 uCameraPosition;
-  uniform vec3 uCameraDirection;
+  uniform vec3 uInitialCameraPosition;
+  uniform vec3 uInitialCameraDirection;
   uniform vec3 uCloudColor;
   uniform vec3 uSkyColor;
   uniform vec3 uSkyColorFade;
@@ -269,7 +270,7 @@ export const cloudFragmentShader = /* glsl */ `
     float jitter = uNoise ? hash(uv.x + uv.y * 50.0 + uTime, defaultHashShape, 0.0, 0.0, 0.0) : 0.0;
 
     // Turbulence:
-    // Todo: could mix two sin or two fruct turbulences which are shifted by 50%,
+    // Todo: could mix two sin or two fract turbulences which are shifted by 50%,
     // or overlay one cos and one sin turbulence to create a proper loop without reset or reverse effects.
 
     // This below works fine but for values larger zero the clouds eventually disappear and never reappear
@@ -294,10 +295,9 @@ export const cloudFragmentShader = /* glsl */ `
     float cloudOffset = 8.0;
     float rayShift = cloudOffset;
     //vec3 cloudPos = uCameraPosition - vec3(0.0,cloudOffset,0.0);
-    vec3 dir = uCameraDirection;
-    //vec3 dir = (viewMatrixInverse * vec4(0.0,0.0,-1.0,0.0)).xyz;
+    vec3 dir = uInitialCameraDirection;
     vec3 cloudPos = uCameraPosition - cloudOffset * dir;
-    //gl_FragColor = vec4(dir, 1.0);
+    //gl_FragColor = vec4(uCameraPosition, 1.0);
     //return;
 
     vec4 color1 = cloudMarch(uCloudCount, uCloudSeed, jitter, turbulence,

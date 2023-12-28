@@ -45,6 +45,8 @@ class Cloud extends Pass {
 
     let cameraDirection = new THREE.Vector3();
     camera.getWorldDirection(cameraDirection);
+    let cameraPosition = new THREE.Vector3();
+    cameraPosition.copy(camera.position);
 
     this.cloudMaterial = new THREE.ShaderMaterial({
       uniforms: {
@@ -85,9 +87,12 @@ class Cloud extends Pass {
           value: sunPosition,
         },
         uCameraPosition: {
-          value: camera.position,
+          value: cameraPosition,
         },
-        uCameraDirection: {
+        uInitialCameraPosition: {
+          value: cameraPosition,
+        },
+        uInitialCameraDirection: {
           value: cameraDirection,
         },
         uCloudColor: {
@@ -279,6 +284,22 @@ class Cloud extends Pass {
     this.sunPos = value;
   }
 
+  get initialCameraPosition() {
+    return this.material.uniforms.uInitialCameraPosition.value;
+  }
+
+  set initialCameraPosition(value) {
+    this.material.uniforms.uInitialCameraPosition.value = value;
+  }
+
+  get initialCameraDirection() {
+    return this.material.uniforms.uInitialCameraDirection.value;
+  }
+
+  set initialCameraDirection(value) {
+    this.material.uniforms.uInitialCameraDirection.value = value;
+  }
+
   get skyColor() {
     return this.material.uniforms.uSkyColor.value;
   }
@@ -405,7 +426,7 @@ class Cloud extends Pass {
     //let direction = new THREE.Vector3();
     //this.camera.getWorldDirection(direction);
     //this.material.uniforms.uCameraDirection.value.copy(direction);
-    //this.material.uniforms.uCameraPosition.value.copy(this.camera.position);
+    this.material.uniforms.uCameraPosition.value.copy(this.camera.position);
     this.material.uniforms.projectionMatrixInverse.value =
       this.camera.projectionMatrixInverse;
     this.material.uniforms.viewMatrixInverse.value = this.camera.matrixWorld;

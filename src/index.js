@@ -61,6 +61,10 @@ camera.position.set(0, -7.5, 8.0);
 //camera.position.set(0, -5.5, 0);
 camera.lookAt(0, 0, 0);
 
+let cameraPosition = camera.position;
+let cameraDirection = new THREE.Vector3();
+camera.getWorldDirection(cameraDirection);
+
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 //controls.autoRotate = true;
@@ -90,6 +94,9 @@ let params = {
   sunPositionX: sunPositionX, //4.0,
   sunPositionY: sunPositionY, //3.5,
   sunPositionZ: sunPositionZ, //-1.0,
+  initialCameraPositionX: cameraPosition.x, //4.0,
+  initialCameraPositionY: cameraPosition.y, //3.5,
+  initialCameraPositionZ: cameraPosition.z, //-1.0,
   cloudColor: 0xeabf6b,
   sunColor: "rgb(255, 153, 25)",
   uniformPixels: true,
@@ -127,7 +134,7 @@ composer.addPass(cloud);
 let gui = new GUI();
 gui.add(params, "pause");
 
-gui.add(cloud, "shift").min(0).max(10).step(0.01);
+gui.add(cloud, "shift").min(-10).max(10).step(0.01);
 gui.add(cloud, "cloudSeed").min(1).max(32000).step(1);
 gui.add(cloud, "cloudCount").min(1).max(128).step(1);
 gui.add(cloud, "cloudMinimumDensity").min(0).max(5).step(0.001);
@@ -144,10 +151,10 @@ gui
   .add(params, "sunPositionX")
   .onChange((value) => {
     let sunPos = cloud.sunPosition;
-    console.log("x: " + value);
+    //console.log("x: " + value);
     sunPos.x = value;
     cloud.sunPosition = sunPos;
-    console.log("sunPosition: " + cloud.sunPosition);
+    //console.log("sunPosition: " + cloud.sunPosition);
   })
   .min(-10)
   .max(10)
@@ -171,6 +178,36 @@ gui
   })
   .min(-10)
   .max(10)
+  .step(0.001);
+gui
+  .add(params, "initialCameraPositionX")
+  .onChange((value) => {
+    let camPos = cloud.initialCameraPosition;
+    camPos.x = value;
+    cloud.initialCameraPosition = camPos;
+  })
+  .min(-20)
+  .max(20)
+  .step(0.001);
+gui
+  .add(params, "initialCameraPositionY")
+  .onChange((value) => {
+    let camPos = cloud.initialCameraPosition;
+    camPos.y = value;
+    cloud.initialCameraPosition = camPos;
+  })
+  .min(-20)
+  .max(20)
+  .step(0.001);
+gui
+  .add(params, "initialCameraPositionZ")
+  .onChange((value) => {
+    let camPos = cloud.initialCameraPosition;
+    camPos.z = value;
+    cloud.initialCameraPosition = camPos;
+  })
+  .min(-20)
+  .max(20)
   .step(0.001);
 gui.addColor(params, "skyColor").onChange((value) => {
   cloud.skyColor = new THREE.Color(value);
