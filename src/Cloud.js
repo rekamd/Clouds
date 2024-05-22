@@ -288,7 +288,7 @@ class Cloud extends Pass {
     //this.camera.getWorldDirection(direction);
     //this.material.uniforms.uCameraDirection.value.copy(direction);
     //this.material.uniforms.uCameraPosition.value.copy(this.camera.position);
-    this.camera.position.value.copy(value);
+    //this.camera.position.value.copy(value);
   }
 
   get initialCameraDirection() {
