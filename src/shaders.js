@@ -41,7 +41,6 @@ export const cloudFragmentShader = /* glsl */ `
   uniform float uSunSize;
   uniform float uSunIntensity;
   uniform vec3 uSunPosition;
-  uniform vec3 uCameraPosition;
   uniform vec3 uInitialCameraPosition;
   uniform vec3 uInitialCameraDirection;
   uniform vec3 uCloudColor;
@@ -296,9 +295,8 @@ export const cloudFragmentShader = /* glsl */ `
     // here instead.
     float cloudOffset = 8.0;
     float rayShift = cloudOffset;
-    //vec3 cloudPos = uCameraPosition - vec3(0.0,cloudOffset,0.0);
     vec3 dir = uInitialCameraDirection;
-    vec3 cloudPos = uInitialCameraPosition + uCameraPosition - cloudOffset * dir;
+    vec3 cloudPos = uInitialCameraPosition - cloudOffset * dir;
     //gl_FragColor = vec4(uInitialCameraPosition, 1.0);
     //return;
 
@@ -307,15 +305,16 @@ export const cloudFragmentShader = /* glsl */ `
       uTime, uShift,
       cloudPos, lightDir, ray, rayShift);
     
-    float backgroundCloudOffset = 7.0;
-    vec3 backgroundCloudOffsetVector = backgroundCloudOffset * dir + vec3(0.0,backgroundCloudOffset,0.0);
+    float backgroundCloudOffset = 8.0;
+    float backgroundCloudShiftUpFactor = -1.5;
+    vec3 backgroundCloudOffsetVector = backgroundCloudOffset * dir + vec3(0.0, backgroundCloudShiftUpFactor * backgroundCloudOffset, 0.0);
     float backgroundRayShift = length(backgroundCloudOffsetVector);
     vec3 backgroundCloudPos = cloudPos - backgroundCloudOffsetVector;
     vec3 backgroundCloudSize = uCloudSize * 0.5;
     // todo: hand in transitionZone here so that we can extend it for the far clouds (wider zone along x)
     vec4 color2 = cloudMarch(min(uCloudCount * 2, MAX_CLOUD_COUNT), uCloudSeed + 389.121, jitter, turbulence,
       backgroundCloudSize, uCloudScatter, uCloudShape, uCloudRoughness,
-        uTime * 0.5, uShift,
+        uTime * 0.25, uShift,
         backgroundCloudPos, lightDir, ray, backgroundRayShift);
 
     // uniform sky color

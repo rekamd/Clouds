@@ -180,16 +180,6 @@ gui
   .max(10)
   .step(0.001);
 gui
-  .add(params, "initialCameraPositionX")
-  .onChange((value) => {
-    let camPos = cloud.initialCameraPosition;
-    camPos.x = value;
-    cloud.initialCameraPosition = camPos;
-  })
-  .min(-20)
-  .max(20)
-  .step(0.001);
-gui
   .add(params, "initialCameraPositionY")
   .onChange((value) => {
     let camPos = cloud.initialCameraPosition;

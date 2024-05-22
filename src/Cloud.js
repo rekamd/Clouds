@@ -84,9 +84,6 @@ class Cloud extends Pass {
         uSunPosition: {
           value: sunPosition,
         },
-        uCameraPosition: {
-          value: camera.position,
-        },
         uInitialCameraPosition: {
           value: initialCameraPosition,
         },
@@ -287,6 +284,11 @@ class Cloud extends Pass {
 
   set initialCameraPosition(value) {
     this.material.uniforms.uInitialCameraPosition.value = value;
+    //let direction = new THREE.Vector3();
+    //this.camera.getWorldDirection(direction);
+    //this.material.uniforms.uCameraDirection.value.copy(direction);
+    //this.material.uniforms.uCameraPosition.value.copy(this.camera.position);
+    this.camera.position.value.copy(value);
   }
 
   get initialCameraDirection() {
@@ -420,10 +422,6 @@ class Cloud extends Pass {
   }
 
   render(renderer, writeBuffer) {
-    //let direction = new THREE.Vector3();
-    //this.camera.getWorldDirection(direction);
-    //this.material.uniforms.uCameraDirection.value.copy(direction);
-    //this.material.uniforms.uCameraPosition.value.copy(this.camera.position);
     this.material.uniforms.projectionMatrixInverse.value =
       this.camera.projectionMatrixInverse;
     this.material.uniforms.viewMatrixInverse.value = this.camera.matrixWorld;
