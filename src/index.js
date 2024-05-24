@@ -55,19 +55,57 @@ const renderer = new THREE.WebGLRenderer({
 });
 document.body.appendChild(renderer.domElement);
 
+let cameraPosition = new THREE.Vector3(0, -7.5, 8.0);
 const camera = new THREE.PerspectiveCamera(70);
-//camera.position.set(-4.0, -5.5, 8.0);
-camera.position.set(0, -7.5, 8.0);
-//camera.position.set(0, -5.5, 0);
-camera.lookAt(0, 0, 0);
+//camera.position.set(0, -7.5, 8.0);
+camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
 
-let cameraPosition = camera.position;
-let cameraDirection = new THREE.Vector3();
-camera.getWorldDirection(cameraDirection);
+let cameraAngle = 45;
+let cameraAngleRad = THREE.MathUtils.degToRad(cameraAngle);
+let direction = new THREE.Vector3(
+  0,
+  Math.sin(cameraAngleRad),
+  -Math.cos(cameraAngleRad),
+);
+console.log(
+  "direction (x,y,z): " + direction.x + "," + direction.y + "," + direction.z,
+);
+
+let lookAtPosition = cameraPosition;
+lookAtPosition.add(direction);
+//camera.lookAt(0, 0, 0);
+camera.lookAt(lookAtPosition.x, lookAtPosition.y, lookAtPosition.z);
+console.log(
+  "look at position (x,y,z): " +
+    lookAtPosition.x +
+    "," +
+    lookAtPosition.y +
+    "," +
+    lookAtPosition.z,
+);
+
+// let cameraDirection = new THREE.Vector3();
+// camera.getWorldDirection(cameraDirection);
+// console.log(
+//   "world direction (x,y,z): " +
+//     cameraDirection.x +
+//     "," +
+//     cameraDirection.y +
+//     "," +
+//     cameraDirection.z,
+// );
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 //controls.autoRotate = true;
+
+// controls.object.position.set(
+//   cameraPosition.x,
+//   cameraPosition.y,
+//   cameraPosition.z,
+// );
+controls.target.set(lookAtPosition.x, lookAtPosition.y, lookAtPosition.z);
+controls.update();
 
 let timer = new Timer();
 timer.enableFixedDelta();
@@ -120,7 +158,6 @@ let cloud = new Cloud(camera, {
   cloudLength: 32,
   shadowLength: 8, // orig: 2, but too dark
   noise: false,
-  turbulence: 0.05,
   shift: 1.0,
   pixelWidth: 10,
   pixelHeight: 10,
@@ -144,7 +181,6 @@ gui.add(cloud, "cloudShape").min(-5).max(5).step(0.001);
 gui.add(cloud, "cloudAnimationSpeed").min(0).max(5).step(0.001);
 gui.add(cloud, "cloudAnimationStrength").min(0).max(5).step(0.001);
 gui.add(cloud, "noise");
-gui.add(cloud, "turbulence").min(0).max(4).step(0.001);
 gui.add(cloud, "sunIntensity").min(0).max(1.0).step(0.001);
 gui.add(cloud, "sunSize").min(0).max(1.0).step(0.001);
 gui

@@ -57,7 +57,6 @@ export const cloudFragmentShader = /* glsl */ `
   uniform mat4 viewMatrixInverse;
   uniform float uTime;
   uniform bool uNoise;
-  uniform float uTurbulence;
   uniform float uShift;
 
   #define FLT_MAX 3.402823466e+38
@@ -267,26 +266,6 @@ export const cloudFragmentShader = /* glsl */ `
     // Noise / jitter:
     float defaultHashShape = 43758.5453;
     float jitter = uNoise ? hash(uv.x + uv.y * 50.0 + uTime, defaultHashShape, 0.0, 0.0, 0.0) : 0.0;
-
-    // Turbulence:
-    // Todo: could mix two sin or two fract turbulences which are shifted by 50%,
-    // or overlay one cos and one sin turbulence to create a proper loop without reset or reverse effects.
-
-    // This below works fine but for values larger zero the clouds eventually disappear and never reappear
-    // and the whole effect is view angle dependent (turbulence is a shift along the sun ray)
-    //float turbulence = uTime * uTurbulence;
-
-    // this below works fine but the fract function causes a sort of "reset" effect at certain moments
-    // and the turbulence is still view-angle dependent.
-    float turbulence = fract(uTime * uTurbulence); /* * optionalTurbulenceStrength */;
-
-    // this below didn't work. The sin function causes a sort of "reverse" effect which looks unnatural
-    // Idea was to reform the clouds eventually, but they reform in reverse which makes no sense.
-    //float turbulenceSpeed = 10.0;
-    //float turbulence = sin((uTime * turbulenceSpeed)) * uTurbulence;
-
-    // some attempt of overlaying sin and cos which leads to some forward/reverse effect
-    //float turbulence = (1.0 + sin(uTime) * cos(uTime)) * uTurbulence;
       
     vec3 lightDir = normalize(uSunPosition);
           
@@ -297,9 +276,10 @@ export const cloudFragmentShader = /* glsl */ `
     float rayShift = cloudOffset;
     vec3 dir = uInitialCameraDirection;
     vec3 cloudPos = uInitialCameraPosition - cloudOffset * dir;
-    //gl_FragColor = vec4(uInitialCameraPosition, 1.0);
+    //gl_FragColor = vec4(uInitialCameraDirection, 1.0);
     //return;
 
+    float turbulence = 0.0;
     vec4 color1 = cloudMarch(uCloudCount, uCloudSeed, jitter, turbulence,
       uCloudSize, uCloudScatter, uCloudShape, uCloudRoughness,
       uTime, uShift,

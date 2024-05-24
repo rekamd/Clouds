@@ -30,7 +30,6 @@ class Cloud extends Pass {
       cloudLength = 16,
       shadowLength = 2,
       noise = false,
-      turbulence = 0.0,
       shift = 1.0,
       pixelWidth = 1,
       pixelHeight = 1,
@@ -43,6 +42,14 @@ class Cloud extends Pass {
 
     let cameraDirection = new THREE.Vector3();
     camera.getWorldDirection(cameraDirection);
+    console.log(
+      "world direction (x,y,z): " +
+        cameraDirection.x +
+        "," +
+        cameraDirection.y +
+        "," +
+        cameraDirection.z,
+    );
     let initialCameraPosition = new THREE.Vector3();
     initialCameraPosition.copy(camera.position);
 
@@ -125,9 +132,6 @@ class Cloud extends Pass {
         },
         uNoise: {
           value: noise,
-        },
-        uTurbulence: {
-          value: turbulence,
         },
         uShift: {
           value: shift,
@@ -355,14 +359,6 @@ class Cloud extends Pass {
     this.material.uniforms.uNoise.value = value;
   }
 
-  set turbulence(value) {
-    this.material.uniforms.uTurbulence.value = value;
-  }
-
-  get turbulence() {
-    return this.material.uniforms.uTurbulence.value;
-  }
-
   get time() {
     return this.material.uniforms.uTime.value;
   }
@@ -411,13 +407,8 @@ class Cloud extends Pass {
   }
 
   isAnimated() {
-    //console.log("noise:" + this.material.uniforms.uNoise.value);
-    //console.log("turbulence:" + this.material.uniforms.uTurbulence.value);
-    //console.log("shift:" + this.material.uniforms.uShift.value);
     return (
-      this.material.uniforms.uNoise.value ||
-      this.material.uniforms.uTurbulence.value > 0.0 ||
-      this.material.uniforms.uShift.value
+      this.material.uniforms.uNoise.value || this.material.uniforms.uShift.value
     );
   }
 
