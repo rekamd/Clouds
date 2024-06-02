@@ -171,7 +171,7 @@ composer.addPass(cloud);
 let gui = new GUI();
 gui.add(params, "pause");
 
-gui.add(cloud, "shift").min(-10).max(10).step(0.01);
+gui.add(cloud, "shift").min(-100).max(100).step(0.01);
 gui.add(cloud, "cloudSeed").min(1).max(32000).step(1);
 gui.add(cloud, "cloudCount").min(1).max(128).step(1);
 gui.add(cloud, "cloudMinimumDensity").min(0).max(5).step(0.001);
