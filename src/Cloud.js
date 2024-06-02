@@ -24,6 +24,7 @@ class Cloud extends Pass {
       skyColor = new THREE.Color(0x337fff),
       skyColorFade = new THREE.Color(1.0, 1.0, 1.0),
       skyFadeFactor = 0.5,
+      skyFadeShift = 0.0,
       sunColor = new THREE.Color(1.0, 0.6, 0.1),
       cloudSteps = 48,
       shadowSteps = 8,
@@ -108,6 +109,9 @@ class Cloud extends Pass {
         },
         uSkyFadeFactor: {
           value: skyFadeFactor,
+        },
+        uSkyFadeShift: {
+          value: skyFadeShift,
         },
         uSunColor: {
           value: sunColor,
@@ -325,6 +329,14 @@ class Cloud extends Pass {
 
   set skyFadeFactor(value) {
     this.material.uniforms.uSkyFadeFactor.value = value;
+  }
+
+  get skyFadeShift() {
+    return this.material.uniforms.uSkyFadeShift.value;
+  }
+
+  set skyFadeShift(value) {
+    this.material.uniforms.uSkyFadeShift.value = value;
   }
 
   get cloudColor() {

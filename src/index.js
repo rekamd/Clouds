@@ -242,6 +242,7 @@ gui.addColor(params, "skyColorFade").onChange((value) => {
   cloud.skyColorFade = new THREE.Color(value);
 });
 gui.add(cloud, "skyFadeFactor").min(0).max(1);
+gui.add(cloud, "skyFadeShift").min(-2).max(2);
 gui.addColor(params, "cloudColor").onChange((value) => {
   cloud.cloudColor = new THREE.Color(value);
 });

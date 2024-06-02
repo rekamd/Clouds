@@ -47,6 +47,7 @@ export const cloudFragmentShader = /* glsl */ `
   uniform vec3 uSkyColor;
   uniform vec3 uSkyColorFade;
   uniform float uSkyFadeFactor;
+  uniform float uSkyFadeShift;
   uniform vec3 uSunColor;
   uniform float uCloudSteps;
   uniform float uShadowSteps;
@@ -301,8 +302,8 @@ export const cloudFragmentShader = /* glsl */ `
     //vec3 skyColor = uSkyColor;
    
     // sky gradient
-    float heightFactor = 0.5;
-    vec3 skyColor = uSkyColor - uSkyFadeFactor * min(0.0, ray.y) * uSkyColorFade;
+    float gradientShift = uSkyFadeShift;
+    vec3 skyColor = uSkyColor - uSkyFadeFactor * min(0.0, ray.y - gradientShift) * uSkyColorFade;
     // sun center
     float sunIntensity = clamp( dot(lightDir, eyeDir.xyz), 0.0, 1.0 );    
     float maxSunSizePow = 6.0;
