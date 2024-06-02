@@ -8,6 +8,44 @@ import Stats from "three/examples/jsm/libs/stats.module.js";
 import Cloud from "./Cloud";
 import { Timer } from "./Timer.js";
 
+let tokenTest = false;
+
+// generate token data in the right format as done in the Artblocks template
+function genTokenData(projectNum) {
+  let data = {};
+  let hash = "0x";
+  for (var i = 0; i < 64; i++) {
+    hash += Math.floor(Math.random() * 16).toString(16);
+  }
+  data.hash = hash;
+  data.tokenId = (
+    projectNum * 1000000 +
+    Math.floor(Math.random() * 1000)
+  ).toString();
+  return data;
+}
+// provide global tokenData variable as in Artblocks environment
+let tokenData = genTokenData(99);
+
+// Turn the hash string, containing 64 hexadecimal numbers in sequence, into hash pairs of 2 hexadecimal numbers.
+// This means 0xeca4cf6288eb455f388301c28ac01a8da5746781d22101a65cb78a96a49512c8
+// turns into ["ec", "a4", "cf", "62", "88", "eb", ...]
+const hashPairs = [];
+for (let j = 0; j < 32; j++) {
+  hashPairs.push(tokenData.hash.slice(2 + j * 2, 4 + j * 2));
+}
+
+// convert hash pairs into individual integer hash values ranging from 0 to 255
+const hashValuesInt = hashPairs.map((x) => {
+  return parseInt(x, 16);
+});
+
+// create normalized floating point hash values ranging from 0.0 to 1.0
+const hashValuesNorm = [];
+for (let j = 0; j < 32; j++) {
+  hashValuesNorm.push(hashValuesInt[j] / 255.0);
+}
+
 let stats = new Stats();
 document.body.appendChild(stats.dom);
 
@@ -17,47 +55,112 @@ const renderer = new THREE.WebGLRenderer({
 });
 document.body.appendChild(renderer.domElement);
 
+let cameraPosition = new THREE.Vector3(0, -7.5, 8.0);
 const camera = new THREE.PerspectiveCamera(70);
-camera.position.set(-4.0, -5.5, 8.0);
-camera.lookAt(0, 0, 0);
+//camera.position.set(0, -7.5, 8.0);
+camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
+
+let cameraAngle = 45;
+let cameraAngleRad = THREE.MathUtils.degToRad(cameraAngle);
+let direction = new THREE.Vector3(
+  0,
+  Math.sin(cameraAngleRad),
+  -Math.cos(cameraAngleRad),
+);
+console.log(
+  "direction (x,y,z): " + direction.x + "," + direction.y + "," + direction.z,
+);
+
+let lookAtPosition = cameraPosition;
+lookAtPosition.add(direction);
+//camera.lookAt(0, 0, 0);
+camera.lookAt(lookAtPosition.x, lookAtPosition.y, lookAtPosition.z);
+console.log(
+  "look at position (x,y,z): " +
+    lookAtPosition.x +
+    "," +
+    lookAtPosition.y +
+    "," +
+    lookAtPosition.z,
+);
+
+// let cameraDirection = new THREE.Vector3();
+// camera.getWorldDirection(cameraDirection);
+// console.log(
+//   "world direction (x,y,z): " +
+//     cameraDirection.x +
+//     "," +
+//     cameraDirection.y +
+//     "," +
+//     cameraDirection.z,
+// );
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 //controls.autoRotate = true;
 
-//let clock = new THREE.Clock();
+// controls.object.position.set(
+//   cameraPosition.x,
+//   cameraPosition.y,
+//   cameraPosition.z,
+// );
+controls.target.set(lookAtPosition.x, lookAtPosition.y, lookAtPosition.z);
+controls.update();
+
 let timer = new Timer();
 timer.enableFixedDelta();
 
+let cloudSeed = 83.0;
+let sunPositionX = 4.0;
+let sunPositionY = 3.5;
+let sunPositionZ = -1.0;
+
+// assign random values based on tokenData hash
+if (tokenTest) {
+  cloudSeed = hashValuesInt[0];
+  let maxSunPosXZ = 10.0;
+  let minSunPosY = 2.0;
+  let maxSunPosY = 10.0;
+  sunPositionX = -maxSunPosXZ + 2 * maxSunPosXZ * hashValuesNorm[1];
+  sunPositionY = minSunPosY + (maxSunPosY - minSunPosY) * hashValuesNorm[2];
+  sunPositionZ = -maxSunPosXZ + 2 * maxSunPosXZ * hashValuesNorm[3];
+}
+
 let params = {
   skyColor: 0x337fff,
-  sunPositionX: 1.0,
-  sunPositionY: 2.0,
-  sunPositionZ: 1.0,
+  skyColorFade: 0xffffff,
+  sunPositionX: sunPositionX, //4.0,
+  sunPositionY: sunPositionY, //3.5,
+  sunPositionZ: sunPositionZ, //-1.0,
+  initialCameraPositionX: cameraPosition.x, //4.0,
+  initialCameraPositionY: cameraPosition.y, //3.5,
+  initialCameraPositionZ: cameraPosition.z, //-1.0,
   cloudColor: 0xeabf6b,
+  sunColor: "rgb(255, 153, 25)",
   uniformPixels: true,
   lastTouchedPixelID: 0,
   pause: false,
   lastTime: 0,
+  skyTileIndex: 0,
+  cloudTileIndex: 0,
 };
 
 let cloud = new Cloud(camera, {
-  cloudSize: new THREE.Vector3(0.5, 1.0, 0.5),
-  sunIntensity: 0.8,
-  //sunPosition: new THREE.Vector3(1.0, 2.0, 1.0),
+  cloudSeed: cloudSeed, //83.0,
+  cloudCount: 8,
+  cloudSize: new THREE.Vector3(2, 1, 2),
+  sunIntensity: 1.0,
+  sunPosition: new THREE.Vector3(sunPositionX, sunPositionY, sunPositionZ),
   cloudColor: new THREE.Color(params.cloudColor), //"rgb(234, 191, 107)"
-  //cloudColor: new THREE.Color("rgb(234, 191, 107)"),
   skyColor: new THREE.Color(params.skyColor), //"rgb(51, 127, 255)"
-  //skyColor: new THREE.Color("rgb(51, 127, 255)"),
-  cloudSteps: 48,
-  shadowSteps: 16, // orig: 8, but too noisy
-  cloudLength: 16,
-  shadowLength: 4, // orig: 2, but too dark
+  cloudSteps: 64,
+  shadowSteps: 32, // orig: 8, but too noisy
+  cloudLength: 32,
+  shadowLength: 8, // orig: 2, but too dark
   noise: false,
-  turbulence: 0.05,
   shift: 1.0,
-  pixelWidth: 20,
-  pixelHeight: 20,
+  pixelWidth: 10,
+  pixelHeight: 10,
   blur: false,
   UVTest: false,
 });
@@ -66,31 +169,28 @@ let composer = new EffectComposer(renderer);
 composer.addPass(cloud);
 
 let gui = new GUI();
-gui.add(params, "pause").onChange((value) => {
-  /*
-  if (value) {
-    clock.stop();
-  } else {
-    clock.start();
-  }
-  */
-});
+gui.add(params, "pause");
 
-gui.add(cloud, "shift").min(0).max(10).step(0.01);
-gui.add(cloud, "cloudNoiseSize").min(0).max(10).step(0.001);
-gui.add(cloud, "cloudShape").min(-50000).max(50000).step(0.000001);
+gui.add(cloud, "shift").min(-100).max(100).step(0.01);
+gui.add(cloud, "cloudSeed").min(1).max(32000).step(1);
+gui.add(cloud, "cloudCount").min(1).max(128).step(1);
+gui.add(cloud, "cloudMinimumDensity").min(0).max(5).step(0.001);
+gui.add(cloud, "cloudRoughness").min(0).max(5).step(0.001);
+gui.add(cloud, "cloudScatter").min(0).max(20).step(0.001);
+gui.add(cloud, "cloudShape").min(-5).max(5).step(0.001);
+gui.add(cloud, "cloudAnimationSpeed").min(0).max(5).step(0.001);
+gui.add(cloud, "cloudAnimationStrength").min(0).max(5).step(0.001);
 gui.add(cloud, "noise");
-gui.add(cloud, "turbulence").min(0).max(4).step(0.001);
 gui.add(cloud, "sunIntensity").min(0).max(1.0).step(0.001);
 gui.add(cloud, "sunSize").min(0).max(1.0).step(0.001);
 gui
   .add(params, "sunPositionX")
   .onChange((value) => {
     let sunPos = cloud.sunPosition;
-    console.log("x: " + value);
+    //console.log("x: " + value);
     sunPos.x = value;
     cloud.sunPosition = sunPos;
-    console.log("sunPosition: " + cloud.sunPosition);
+    //console.log("sunPosition: " + cloud.sunPosition);
   })
   .min(-10)
   .max(10)
@@ -115,12 +215,41 @@ gui
   .min(-10)
   .max(10)
   .step(0.001);
+gui
+  .add(params, "initialCameraPositionY")
+  .onChange((value) => {
+    let camPos = cloud.initialCameraPosition;
+    camPos.y = value;
+    cloud.initialCameraPosition = camPos;
+  })
+  .min(-20)
+  .max(20)
+  .step(0.001);
+gui
+  .add(params, "initialCameraPositionZ")
+  .onChange((value) => {
+    let camPos = cloud.initialCameraPosition;
+    camPos.z = value;
+    cloud.initialCameraPosition = camPos;
+  })
+  .min(-20)
+  .max(20)
+  .step(0.001);
 gui.addColor(params, "skyColor").onChange((value) => {
   cloud.skyColor = new THREE.Color(value);
 });
+gui.addColor(params, "skyColorFade").onChange((value) => {
+  cloud.skyColorFade = new THREE.Color(value);
+});
+gui.add(cloud, "skyFadeFactor").min(0).max(1);
+gui.add(cloud, "skyFadeShift").min(-2).max(2);
 gui.addColor(params, "cloudColor").onChange((value) => {
   cloud.cloudColor = new THREE.Color(value);
 });
+gui.addColor(params, "sunColor").onChange((value) => {
+  cloud.sunColor = new THREE.Color(value);
+});
+
 gui
   .add(cloud, "pixelWidth")
   .min(2)
@@ -154,6 +283,23 @@ gui.add(params, "uniformPixels").onChange((value) => {
     cloud.pixelHeight = sizes[params.lastTouchedPixelID];
   }
 });
+gui.add(cloud, "tileMixFactor").min(-1).max(2);
+gui
+  .add(params, "skyTileIndex")
+  .min(0)
+  .max(19)
+  .step(1)
+  .onChange((value) => {
+    cloud.setTileTextureIndex(true, value);
+  });
+gui
+  .add(params, "cloudTileIndex")
+  .min(0)
+  .max(19)
+  .step(1)
+  .onChange((value) => {
+    cloud.setTileTextureIndex(false, value);
+  });
 gui.add(cloud, "blur");
 gui.add(cloud, "UVTest");
 
@@ -218,13 +364,8 @@ function render() {
   stats.end();
 }
 
-//renderer.setAnimationLoop((time) => {
-//  doAnimate(time);
-//});
-
 function animate() {
   requestAnimationFrame(animate);
-  //let time = clock.getElapsedTime();
   if (!params.pause) {
     timer.update();
   }

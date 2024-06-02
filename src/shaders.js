@@ -1,104 +1,54 @@
-// 3D FBM noise https://shadertoy.com/view/lss3zr
-export const fbm = /* glsl */ `
-  mat3 m = mat3(0.00, 0.80, 0.60, -0.80, 0.36, -0.48, -0.60, -0.48, 0.64);
-  float hash(float n, float size, float uniformity) {
-    // Todo: parameterize constant and function types here
-    //return fract(sin(n) * 43758.5453);
-    //return fract(sin(n) * 125.01238219);
-    //return fract(sin(n) * 0.01238219);
-    //return fract(sin(n) * cos(n) * 0.01238219);
-    //return fract(tanh(n) * sin(n) * 0.01238219);
-    //return fract(tanh(n) * 0.01238219); // super soft
-    //return fract(n);
-    //return sin(n) * 1000.0;
-    //return fract(sin(n) * 43758.5453) * 2.0;
-    //return fract(sin(n) * 43758.5453) * 4.0;
-    
-    //return fract(sin(n) * 43758.5453) * size;
-    //return fract(sin(n) * cos(n) * tanh(n) * 43758.5453) * size;
-    //return fract(sin(n) * cos(n) * 43758.5453) * size;
-    //return fract(sin(n * 1000.0) * 43758.5453) * size;
-    //return fract(sin(n) * 0.5453) * size;
-    //return fract(sin(n) * 1.12342 + cos(n) * 1.7281) * size;
-    //return fract(sin(n) * 1.12342) * size;
-    //return fract(sin(n) * 1.12342 + cos(n) * 1.12342) * size;
-    
-    //float uniformity = 43758.5453;
-    //float uniformity = 2.13151231;
-    //float uniformity = 1.02719;
-    //float uniformity = 0.192;
-    return fract( (sin(n) + cos(n)) * uniformity) * size;
-  }
+export const random = /* glsl */ `
+float random(float x, float seed)
+{
+  return fract(sin(x * (seed + 78.233))*(seed + 43758.5453123));
+}
 
-  float noise(vec3 x, float size, float uniformity) {
-    vec3 p = floor(x);
-    vec3 f = fract(x);
+float random(float seed)
+{
+  return fract(sin(seed + 78.233)*(seed + 43758.5453123));
+}
 
-    f = f * f * (3.0 - 2.0 * f);
+float random(vec2 st, float seed)
+{
+  return fract(sin(dot(st, vec2(seed + 12.9898, seed + 78.233))) * (seed + 43758.5453123));
+}
 
-    // Todo: parameterize magic numbers (same as below). These seem to be offsets.
-    float n = p.x + p.y * 57.0 + 113.0 * p.z;
-    // Variation A
-    //float n = p.x + p.y * 5.0 + 23.0 * p.z;
-    // Variation B
-    //float n = 123.0 * p.x + p.y * 2321.0 + 50017.0 * p.z;
+vec3 random3D(float x, float seed)
+{
+  return vec3(random(x, seed), random(x+17.928, seed), random(x+43.132, seed));
+}
 
-    // Todo: noise function constants can be used for different looks
-    float res = mix(mix(mix(hash(n + 0.0, size, uniformity), hash(n + 1.0, size, uniformity), f.x),
-                        mix(hash(n + 57.0, size, uniformity), hash(n + 58.0, size, uniformity), f.x), f.y),
-                    mix(mix(hash(n + 113.0, size, uniformity), hash(n + 114.0, size, uniformity), f.x),
-                        mix(hash(n + 170.0, size, uniformity), hash(n + 171.0, size, uniformity), f.x), f.y), f.z);
+vec3 random3D(float seed)
+{
+  return vec3(random(seed), random(seed+17.928), random(seed+43.132));
+}
 
-    // Variation A
-    //float res = mix(mix(mix(hash(n + 0.0), hash(n + 1.0), f.x),
-    //                    mix(hash(n + 5.0), hash(n + 6.0), f.x), f.y),
-    //                mix(mix(hash(n + 23.0), hash(n + 24.0), f.x),
-    //                    mix(hash(n + 50.0), hash(n + 51.0), f.x), f.y), f.z);
-
-    // Variation B
-    //float res = mix(mix(mix(hash(n + 123.0), hash(n + 124.0), f.x),
-    //                    mix(hash(n + 2321.0), hash(n + 2322.0), f.x), f.y),
-    //                mix(mix(hash(n + 50017.0), hash(n + 50018.0), f.x),
-    //                    mix(hash(n + 100231.0), hash(n + 100232.0), f.x), f.y), f.z);
-
-    // Todo: this version creates visible bands
-    //float res = mix(mix(mix(hash(n + 0.0), hash(n + 56.0), f.x),
-    //                    mix(hash(n + 57.0), hash(n + 112.0), f.x), f.y),
-    //                mix(mix(hash(n + 113.0), hash(n + 169.0), f.x),
-    //                    mix(hash(n + 170.0), hash(n + 200.0), f.x), f.y), f.z);
-
-    // Todo: this version leads to a rougher look but also some chaotic artifacts,
-    // likely since it is not coordinates with the magic numbers above
-    //float res = mix(mix(mix(hash(n + 0.0), hash(n + 1.0), f.x),
-    //                    mix(hash(n + 222.0), hash(n + 323.0), f.x), f.y),
-    //                mix(mix(hash(n + 1130.0), hash(n + 1138.0), f.x),
-    //                    mix(hash(n + 17.0), hash(n + 19.0), f.x), f.y), f.z);
-
-    return res;
-  }
-
-  float fbm(vec3 p, float size, float uniformity) {
-    float f = 0.0;
-    f += 0.5000 * noise(p, size, uniformity); p = m * p * 2.02;
-    f += 0.2500 * noise(p, size, uniformity); p = m * p * 2.03;
-    f += 0.12500 * noise(p, size, uniformity); p = m * p * 2.01;
-    f += 0.06250 * noise(p, size, uniformity);
-    return f;
-  }
+// Todo: add halton sequence random function here
 `;
 
-export const fragmentShader = /* glsl */ `
-  ${fbm}
+export const cloudFragmentShader = /* glsl */ `
 
+  uniform float uCloudSeed;
+  uniform int uCloudCount;
   uniform vec3 uCloudSize;
-  uniform float uCloudNoiseSize;
+  uniform float uCloudMinimumDensity;
+  uniform float uCloudRoughness;
+  uniform float uCloudScatter;
   uniform float uCloudShape;
+  uniform float uCloudAnimationSpeed;
+  uniform float uCloudAnimationStrength;
   uniform float uSunSize;
   uniform float uSunIntensity;
   uniform vec3 uSunPosition;
-  uniform vec3 uCameraPosition;
+  uniform vec3 uInitialCameraPosition;
+  uniform vec3 uInitialCameraDirection;
   uniform vec3 uCloudColor;
   uniform vec3 uSkyColor;
+  uniform vec3 uSkyColorFade;
+  uniform float uSkyFadeFactor;
+  uniform float uSkyFadeShift;
+  uniform vec3 uSunColor;
   uniform float uCloudSteps;
   uniform float uShadowSteps;
   uniform float uCloudLength;
@@ -108,43 +58,193 @@ export const fragmentShader = /* glsl */ `
   uniform mat4 viewMatrixInverse;
   uniform float uTime;
   uniform bool uNoise;
-  uniform float uTurbulence;
   uniform float uShift;
 
-  float cloudDepth(vec3 position, vec3 cloudSize, float cloudNoiseSize, float cloudUniformity) {
-    float ellipse = 1.0 - length(position * cloudSize);
-    float cloud = ellipse + fbm(position, cloudNoiseSize, cloudUniformity) * 2.2;
+  #define FLT_MAX 3.402823466e+38
+  #define FLT_MIN 1.175494351e-38
+
+  ${random}
+
+  mat3 m = mat3(0.00, 0.80, 0.60, -0.80, 0.36, -0.48, -0.60, -0.48, 0.64);
+  float hash(float n, float shape, float animationSpeed, float animationStrength, float time) {
+    // Original:
+    //return fract( (sin(n) + cos(n)) * shape);
+    
+    // Note: adding a component to the cloud hash for animation through
+    // a circular function (here sine) nicely grows and shrinks
+    // the clouds. If a value we modify over time for this animation effect
+    // would be part of a fract function, we would see jumping.
+    
+    //return fract((sin(n) + cos(n)) * shape) + sin(time * animationSpeed);
+    // more interesting, less simplistic animation pattern
+    return fract((sin(n) + cos(n)) * (43758.5453 + shape)) + animationStrength * pow(sin((time * animationSpeed)/3.0), 5.0);
+  }
+
+  float noise(vec3 x, float shape, float time) {
+    vec3 p = floor(x);
+    vec3 f = fract(x);
+
+    f = f * f * (3.0 - 2.0 * f);
+
+    float animationSpeed = uCloudAnimationSpeed;
+    float animationStrength = uCloudAnimationStrength;
+    float n = p.x + p.y * 57.0 + 113.0 * p.z;
+    float res = mix(mix(mix(hash(n + 0.0, shape, animationSpeed, animationStrength, time), hash(n + 1.0, shape, animationSpeed, animationStrength, time), f.x),
+                        mix(hash(n + 57.0, shape, animationSpeed, animationStrength, time), hash(n + 58.0, shape, animationSpeed, animationStrength, time), f.x), f.y),
+                    mix(mix(hash(n + 113.0, shape, animationSpeed, animationStrength, time), hash(n + 114.0, shape, animationSpeed, animationStrength, time), f.x),
+                        mix(hash(n + 170.0, shape, animationSpeed, animationStrength, time), hash(n + 171.0, shape, animationSpeed, animationStrength, time), f.x), f.y), f.z);
+
+    return res;
+  }
+
+  float fbm(vec3 p, float shape, float roughness, float time) {
+    float f = 0.0;
+    float r = roughness;
+    float t = 0.01;
+    f += 0.5 * noise(p, shape, time); p = m * p * (r + 2.0 * t);
+    f += 0.25 * noise(p, shape, time); p = m * p * (r + 3.0 * t);
+    f += 0.125 * noise(p, shape, time); p = m * p * (r + t);
+    f += 0.0625 * noise(p, shape, time);
+    return f;
+  }
+
+  float cloudDepth(vec3 position, vec3 invCloudSize, float cloudScatter, float cloudShape, float cloudRoughness, float time) {
+    float ellipse = 1.0 - length(position * invCloudSize);
+    float cloud = ellipse + fbm(position, cloudShape, cloudRoughness, time) * cloudScatter + uCloudMinimumDensity;
 
     return min(max(0.0, cloud), 1.0);
   }
 
+  float randShiftAndScale(float val, float maxScale, float maxShift, float seed)
+  {
+    return (val + maxShift * random(seed)) * maxScale * abs(random(seed+31.72));
+  }
+
+  float cmax(vec3 v)
+  {
+    return max(max(v.x,v.y),v.z);
+  }
+
+  #define MAX_CLOUD_COUNT 128
+  
   // https://shaderbits.com/blog/creating-volumetric-ray-marcher
-  vec4 cloudMarch(float jitter, float turbulence, vec3 cloudSize, float cloudNoiseSize, float cloudUniformity, vec3 position, vec3 lightDirection, vec3 ray) {
+  vec4 cloudMarch(int cloudCount, float seed, float jitter, float turbulence,
+    vec3 cloudSize, float cloudScatter, float cloudShape, float cloudRoughness,
+    float time, float shift,
+    vec3 position, vec3 lightDirection, vec3 ray, float rayShift)
+  {
     float stepLength = uCloudLength / uCloudSteps;
     float shadowStepLength = uShadowLength / uShadowSteps;
+    vec3 invCloudSize = 1.0 / cloudSize;
 
-    vec3 cloudPosition = position + ray * turbulence * stepLength;
+    vec3 cloudPosition = position + ray * (turbulence * stepLength + rayShift);
 
+    // todo: review this given camera positioning. If we always shift along x and camera x is zero
+    // we could make some assumptions here.
+    // Alternatively we should probably use the cloudPos input to this function together with the
+    // shiftDirection as indication for the cut off positions
+    const float skyCutoffDistance = 30.0;
+    float maxShiftSpeed = shift;
+    float minShiftSpeedFactor = 0.5;
+
+    vec3 cloudOffset = vec3(20.0, 10.0, 20.0);
     vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
     const float k_alphaThreshold = 0.0;
+
+    float baseSeed = seed;
+    float timeSeed = baseSeed + 7.0;
+
+    const vec3 cloudShiftDirection = vec3(1,0,0);
+
+    bool cloudSkipArray[MAX_CLOUD_COUNT];
+
     for (float i = 0.0; i < uCloudSteps; i++) {
       if (color.a < k_alphaThreshold) break;
 
-      float depth = cloudDepth(cloudPosition, cloudSize, cloudNoiseSize, cloudUniformity);
+      float transitionFactor = 5.0;
+      float maxTimeShift = 819.2083;
+      float maxTimeScale = 3.0;
+      // todo: use size scale for random size changes along all dimensions
+      //float sizeScale = 0.8;
+
+      float maxDepth = 0.0;
+      for (int c = 0; c < cloudCount; ++c)
+      {
+        float cloudHash = float(c+1);
+        vec3 cloudPositionCloud = cloudPosition - 0.5 * cloudOffset + random3D(cloudHash, baseSeed) * cloudOffset;
+
+        float cloudShift = mix(minShiftSpeedFactor * maxShiftSpeed, maxShiftSpeed, abs(random(cloudHash, baseSeed))) * time + random(cloudHash, baseSeed + 37.2) * 3287.102;
+        cloudShift = mod(cloudShift, skyCutoffDistance*2.0);
+
+        // changes random seed each time the cloud gets teleported so that we get different variations each time
+        int shiftCount = int(cloudShift / (skyCutoffDistance*2.0));
+        cloudHash = cloudHash + float(shiftCount) * 13.213;
+
+        float transitionZone = dot(cloudSize*transitionFactor, cloudShiftDirection);
+        float alphaBegin = tanh(cloudShift/transitionZone);
+        float alphaEnd = tanh((2.0 * skyCutoffDistance - cloudShift) / transitionZone);
+        float invAlpha = 1.0/(alphaBegin * alphaEnd);
+
+        cloudPositionCloud += (cloudShift - skyCutoffDistance) * cloudShiftDirection;
+    
+        float randomTime = randShiftAndScale(time, maxTimeScale, maxTimeShift, timeSeed + cloudHash);
+        // early out:
+        // size factor: 1 + cloudScatter + (1.0+cloudScatter) * uCloudAnimationStrength + uCloudMinimumDensity
+        float maxSize = cmax(cloudSize);
+        float ellipse = 1.0 - length(cloudPositionCloud * (invAlpha * invCloudSize));
+        if (ellipse + cloudScatter + (1.0+cloudScatter) * uCloudAnimationStrength + uCloudMinimumDensity > 0.0)
+        {
+          float depth = cloudDepth(cloudPositionCloud, invAlpha * invCloudSize, cloudScatter, cloudShape + 17.213 * random(cloudHash, baseSeed), cloudRoughness, randomTime);
+          maxDepth = max(depth, maxDepth);
+          cloudSkipArray[c] = false;
+        }
+        else
+        {
+          cloudSkipArray[c] = true;
+        }
+      }
+
       const float k_DepthThreshold = 0.001;
-      float depthTest = float(depth > k_DepthThreshold);
-      if (depth > k_DepthThreshold) {
+      if (maxDepth > k_DepthThreshold) {
         vec3 lightPosition = cloudPosition + lightDirection * jitter * shadowStepLength;
 
-        float shadow = 0.0;
-        for (float s = 0.0; s < uShadowSteps; s++) {
-          lightPosition += lightDirection * shadowStepLength;
-          shadow += cloudDepth(lightPosition, cloudSize, cloudNoiseSize, cloudUniformity);
-        }
-        shadow = exp((-shadow / uShadowSteps) * 3.0);
+        float minShadow = FLT_MAX;
+        for (int c = 0; c < cloudCount; ++c)
+        {
+          if (cloudSkipArray[c])
+            continue;
 
-        float density = clamp((depth / uCloudSteps) * 20.0, 0.0, 1.0);
-        color.rgb += vec3(shadow * density) * uCloudColor * color.a;
+          float cloudHash = float(c+1);
+          vec3 lightPositionCloud = lightPosition - 0.5 * cloudOffset + random3D(cloudHash, baseSeed) * cloudOffset;
+
+          float cloudShift = mix(minShiftSpeedFactor * maxShiftSpeed, maxShiftSpeed, abs(random(cloudHash, baseSeed))) * time + random(cloudHash, baseSeed + 37.2) * 3287.102;
+          cloudShift = mod(cloudShift, skyCutoffDistance*2.0);
+
+          // changes random seed each time the cloud gets teleported so that we get different variations each time
+          int shiftCount = int(cloudShift / (skyCutoffDistance*2.0));
+          cloudHash = cloudHash + float(shiftCount) * 13.213;
+    
+          float transitionZone = dot(cloudSize*transitionFactor, cloudShiftDirection);
+          float alphaBegin = tanh(cloudShift/transitionZone);
+          float alphaEnd = tanh((2.0 * skyCutoffDistance - cloudShift) / transitionZone);
+          float invAlpha = 1.0/(alphaBegin * alphaEnd);
+          
+          lightPositionCloud += (cloudShift - skyCutoffDistance) * cloudShiftDirection;
+       
+          float randomTime = randShiftAndScale(time, maxTimeScale, maxTimeShift, timeSeed + cloudHash);
+
+          float shadow = 0.0;
+          for (float s = 0.0; s < uShadowSteps; s++) {
+            lightPositionCloud += lightDirection * shadowStepLength;
+            shadow += cloudDepth(lightPositionCloud, invAlpha * invCloudSize, cloudScatter, cloudShape + 17.213 * random(cloudHash, baseSeed), cloudRoughness, randomTime);
+          }
+          shadow = exp((-shadow / uShadowSteps) * 3.0);
+          minShadow = min(shadow, minShadow);
+        }
+
+        // todo: parametrize density factor
+        float density = clamp((maxDepth / uCloudSteps) * 20.0, 0.0, 1.0);
+        color.rgb += vec3(minShadow * density) * uCloudColor * color.a;
         color.a *= 1.0 - density;
 
         color.rgb += density * uSkyColor * color.a;
@@ -163,73 +263,326 @@ export const fragmentShader = /* glsl */ `
     
     vec4 eyeDir = viewMatrixInverse * normalize(vec4(point.xy, -1, 0.0));  
 
+    // Todo: reevaluate noise. Can this be added as post effect on clouds as well?
     // Noise / jitter:
     float defaultHashShape = 43758.5453;
-    float jitter = uNoise ? hash(uv.x + uv.y * 50.0 + uTime, 1.0, defaultHashShape) : 0.0;
-
-    // Turbulence:
-    // Todo: could mix two sin or two fruct turbulences which are shifted by 50%,
-    // or overlay one cos and one sin turbulence to create a proper loop without reset or reverse effects.
-
-    // This below works fine but for values larger zero the clouds eventually disappear and never reappear
-    // and the whole effect is view angle dependent (turbulence is a shift along the sun ray)
-    //float turbulence = uTime * uTurbulence;
-
-    // this below works fine but the the fract function causes a sort of "reset" effect at certain moments
-    // and the turbulence is still view-angle dependent.
-    float turbulence = fract(uTime * uTurbulence); /* * optionalTurbulenceStrength */;
-
-    // this below didn't work. The sin function causes a sort of "reverse" effect which looks unnatural
-    // Idea was to reform the clouds eventually, but they reform in reverse which makes no sense.
-    //float turbulenceSpeed = 10.0;
-    //float turbulence = sin((uTime * turbulenceSpeed)) * uTurbulence;
-
-    // some attempt of overlaying sin and cos which leads to some forward/reverse effect
-    //float turbulence = (1.0 + sin(uTime) * cos(uTime)) * uTurbulence;
+    float jitter = uNoise ? hash(uv.x + uv.y * 50.0 + uTime, defaultHashShape, 0.0, 0.0, 0.0) : 0.0;
       
     vec3 lightDir = normalize(uSunPosition);
           
-    vec3 cloudPos = uCameraPosition;
-    float shiftSpeed = uShift;
-    float skyCutoff = 25.0;
-    float cloudShift = shiftSpeed * uTime;
-    cloudShift = mod(cloudShift, skyCutoff*2.0);
-    vec3 cloudShiftDirection = vec3(1,0,0);
-    cloudPos += (cloudShift - skyCutoff) * cloudShiftDirection;
+    // todo: remove hardcoded shift below
+    // todo: move all this into the Cloud class and provide an initial cloud position
+    // here instead.
+    float cloudOffset = 8.0;
+    float rayShift = cloudOffset;
+    vec3 dir = uInitialCameraDirection;
+    vec3 cloudPos = uInitialCameraPosition - cloudOffset * dir;
+    //gl_FragColor = vec4(uInitialCameraDirection, 1.0);
+    //return;
 
-    vec4 color1 = cloudMarch(jitter, turbulence, uCloudSize, uCloudNoiseSize, uCloudShape, cloudPos, lightDir, ray);   
-    vec4 color2 = cloudMarch(jitter, turbulence, uCloudSize * vec3(1.5,2.0,1.5), uCloudNoiseSize, uCloudShape, cloudPos + vec3(3.0,-3.0,-1), lightDir, ray);
+    float turbulence = 0.0;
+    vec4 color1 = cloudMarch(uCloudCount, uCloudSeed, jitter, turbulence,
+      uCloudSize, uCloudScatter, uCloudShape, uCloudRoughness,
+      uTime, uShift,
+      cloudPos, lightDir, ray, rayShift);
     
+    float backgroundCloudOffset = 8.0;
+    float backgroundCloudShiftUpFactor = -1.5;
+    vec3 backgroundCloudOffsetVector = backgroundCloudOffset * dir + vec3(0.0, backgroundCloudShiftUpFactor * backgroundCloudOffset, 0.0);
+    float backgroundRayShift = length(backgroundCloudOffsetVector);
+    vec3 backgroundCloudPos = cloudPos - backgroundCloudOffsetVector;
+    vec3 backgroundCloudSize = uCloudSize * 0.5;
+    // todo: hand in transitionZone here so that we can extend it for the far clouds (wider zone along x)
+    vec4 color2 = cloudMarch(min(uCloudCount * 2, MAX_CLOUD_COUNT), uCloudSeed + 389.121, jitter, turbulence,
+      backgroundCloudSize, uCloudScatter, uCloudShape, uCloudRoughness,
+        uTime * 0.25, uShift,
+        backgroundCloudPos, lightDir, ray, backgroundRayShift);
+
     // uniform sky color
     //vec3 skyColor = uSkyColor;
    
     // sky gradient
-    float heightFactor = 0.5;
-    vec3 skyColor = uSkyColor - heightFactor * ray.y * vec3(1.0,0.5,1.0) + 0.3*vec3(0.5);
+    float gradientShift = uSkyFadeShift;
+    vec3 skyColor = uSkyColor - uSkyFadeFactor * min(0.0, ray.y - gradientShift) * uSkyColorFade;
     // sun center
     float sunIntensity = clamp( dot(lightDir, eyeDir.xyz), 0.0, 1.0 );    
     float maxSunSizePow = 6.0;
     float minSunSizePow = 80.0;
-    skyColor += uSunIntensity * vec3(1.0, 0.6, 0.1) * pow(sunIntensity, uSunSize * maxSunSizePow + (1.0-uSunSize) * minSunSizePow );
-    
-    vec4 finalColor;
-    //finalColor = vec4(color.rgb + skyColor * color.a, 1.0);
-    // two clouds option 1:
-    //finalColor = vec4(color1.rgb * (1.0-color1.a) + color2.rgb * (1.0-color2.a) + skyColor * min((color1.a + color2.a)/2.0, 1.0), 1.0);
-    // two clouds option 2:
-    //finalColor = vec4(color1.rgb * (1.0-color1.a) + color2.rgb * (1.0-color2.a) + skyColor * min(color1.a + color2.a, 1.0), 1.0);
-    // two clouds option 3 (same as above):
-    //finalColor = vec4(color1.rgb + color2.rgb + skyColor * min(color1.a + color2.a, 1.0), 1.0);
-    // two clouds option 4 (linear interpolation; todo: what if the clouds overlap? could do CSG style: choose color of cloud which is denser):
-    finalColor = mix(vec4(color1.rgb + skyColor * color1.a, 1.0), vec4(color2.rgb + skyColor * color2.a, 1.0), color1.a);
+    skyColor += uSunIntensity * uSunColor * pow(sunIntensity, uSunSize * maxSunSizePow + (1.0-uSunSize) * minSunSizePow );
 
-    // Note: approach likely faster and easier to render properly if we work the multiple cloud support into the cloudMarch function.
+    float cloudDepth = max(1.0-color1.a, 1.0-color2.a);
+    vec4 finalColor = mix(vec4(color1.rgb + skyColor * color1.a, 1.0), vec4(color2.rgb + skyColor * color2.a, 1.0), color1.a);
+    //vec4 finalColor = vec4(color1.rgb + skyColor * color1.a, 1.0);
     
+    // mark cloud pixel
+    // Note: cloud depth is encoded in alpha as depth = 1.0 - alpha
+    float minCloudDensity = 0.5;
+    float cloudPixelFactor = step(minCloudDensity, cloudDepth);
+
     // sun glare        
     finalColor += 1.4 * vec4(0.2, 0.08, 0.04, 1) * pow(sunIntensity, 8.0 );  
         
-    gl_FragColor = finalColor;
+    gl_FragColor = vec4(min(finalColor.rgb, vec3(1,1,1)), cloudPixelFactor);
+    //gl_FragColor = vec4(vec3(cloudPixelFactor), 1.0);
 
-    //gl_FragColor = vec4(1,0,0,1);
+#if 0
+    // random test
+    vec2 ipos = floor(gl_FragCoord.xy);
+    //float seed = sin(floor(uTime * 100.0));
+    float seed = sin(uTime);
+    float colorR = random(uv.x, seed);
+    float colorG = random(uv.y, seed);
+    vec3 color = vec3(colorR, colorG, 1.0);
+    color = vec3(random(uv, seed));
+    gl_FragColor = vec4(color, 1.0);
+#endif
+
+    //gl_FragColor = vec4(uv.x, uv.y, 0.0, 1.0);
   }
+`;
+
+export const tileVertexShader = /* glsl */ `
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+}
+`;
+
+export const tileFragmentShader = /* glsl */ `
+uniform sampler2D tDiffuse;
+uniform sampler2D tTileAtlasSky;
+uniform sampler2D tTileAtlasCloud;
+uniform bool uUVTest;
+uniform vec2 uResolution;
+uniform float uTileMixFactor;
+uniform float uTime;
+varying vec2 vUv;
+
+${random}
+
+float minColor(vec3 c)
+{
+  return min(min(c.r, c.g), c.b);
+}
+
+float maxColor(vec3 c)
+{
+  return max(max(c.r, c.g), c.b);
+}
+
+float luminosity(float minColor, float maxColor)
+{
+  return 0.5 * (minColor + maxColor);
+}
+
+float saturation(float minColor, float maxColor, float luminosity)
+{
+  return luminosity != 1.0 ? (maxColor - minColor) / (1.0 - abs(2.0 * luminosity - 1.0)) : 0.0;
+}
+
+float convertHueToRGB(float f1, float f2, float hue)
+{
+  if (hue < 0.0)
+    hue += 1.0;
+  else if (hue > 1.0)
+    hue -= 1.0;
+  float res;
+  if ((6.0 * hue) < 1.0)
+    res = f1 + (f2 - f1) * 6.0 * hue;
+  else if ((2.0 * hue) < 1.0)
+    res = f2;
+  else if ((3.0 * hue) < 2.0)
+    res = f1 + (f2 - f1) * ((2.0 / 3.0) - hue) * 6.0;
+  else
+    res = f1;
+  return res;
+}
+
+vec3 convertHSLToRGB(vec3 hsl)
+{
+  vec3 rgb;
+
+  if (hsl.y == 0.0)
+    rgb = vec3(hsl.z, hsl.z, hsl.z);
+  else
+  {
+    float f2;
+
+    if (hsl.z < 0.5)
+      f2 = hsl.z * (1.0 + hsl.y);
+    else
+      f2 = (hsl.z + hsl.y) - (hsl.y * hsl.z);
+	
+    float f1 = 2.0 * hsl.z - f2;
+
+    rgb.r = convertHueToRGB(f1, f2, hsl.x + (1.0/3.0));
+    rgb.g = convertHueToRGB(f1, f2, hsl.x);
+    rgb.b = convertHueToRGB(f1, f2, hsl.x - (1.0/3.0));
+  }
+
+  return rgb;
+}
+
+vec3 convertRGBToHSL(vec3 color)
+{
+  // hue, saturation, luminance
+  vec3 hsl;
+	
+  float fmin = minColor(color);
+  float fmax = maxColor(color);
+  float delta = fmax - fmin;
+
+  hsl.z = (fmax + fmin) / 2.0;
+
+  if (delta == 0.0)
+  {
+    hsl.x = hsl.y = 0.0;
+  }
+  else
+  {
+    if (hsl.z < 0.5)
+    {
+      hsl.y = delta / (fmax + fmin);
+    }
+    else
+    {
+      hsl.y = delta / (2.0 - fmax - fmin);
+    }
+
+    float deltaR = (((fmax - color.r) / 6.0) + (delta / 2.0)) / delta;
+    float deltaG = (((fmax - color.g) / 6.0) + (delta / 2.0)) / delta;
+    float deltaB = (((fmax - color.b) / 6.0) + (delta / 2.0)) / delta;
+
+    if (color.r == fmax )
+      hsl.x = deltaB - deltaG; // Hue
+    else if (color.g == fmax)
+      hsl.x = (1.0 / 3.0) + deltaR - deltaB; // Hue
+    else if (color.b == fmax)
+      hsl.x = (2.0 / 3.0) + deltaG - deltaR; // Hue
+
+    if (hsl.x < 0.0)
+      hsl.x += 1.0; // Hue
+    else if (hsl.x > 1.0)
+      hsl.x -= 1.0; // Hue
+  }
+
+  return hsl;
+}
+
+vec3 luminosityBlend(vec3 baseColor, vec3 layerColor)
+{
+  vec3 baseColorHSL = convertRGBToHSL(baseColor);
+  return convertHSLToRGB(vec3(baseColorHSL.r, baseColorHSL.g, convertRGBToHSL(layerColor).b));
+}
+
+vec3 multiply(vec3 baseColor, vec3 layerColor) {
+	return baseColor * layerColor;
+}
+
+float overlay(float b, float l) {
+	return b < 0.5 ? (2.0 * b * l) : (1.0 - 2.0 * (1.0 - b) * (1.0 - l));
+}
+
+vec3 overlay(vec3 baseColor, vec3 layerColor)
+{
+  return vec3(overlay(baseColor.r, layerColor.r), overlay(baseColor.g, layerColor.g), overlay(baseColor.b, layerColor.b));
+}
+
+vec4 overlay(vec4 baseColor, vec4 layerColor)
+{
+  vec3 color = mix(overlay(baseColor.rgb, layerColor.rgb), baseColor.rgb, layerColor.a);
+  return vec4(color, baseColor.a);
+}
+
+void main() {
+  vec2 pixelFrac = 1.0 / uResolution;
+  vec2 pixelCoord = floor(vUv / pixelFrac);
+  vec2 texelLookup = pixelCoord * pixelFrac + 0.5 * pixelFrac;
+  vec4 texel = texture2D( tDiffuse, texelLookup );
+
+  // 2-pass emoji lookup with sky vs. cloud distinction
+  // First check if the pixel should be forced to be a cloud or sky pixel based on its saturation.
+  // For high low saturation, we want cloud emojis.
+  // For the rest we can use either (mixed emoji tile set)
+  float minColor = minColor(texel.rgb);
+  float maxColor = maxColor(texel.rgb);
+  float luminosity = luminosity(minColor, maxColor);
+
+  float cloudFlag = texel.a; // 0.0 if texel is sky (not cloud)
+  float forceCloudFactor = 2.0 - cloudFlag;
+
+  // simple emoji lookup with brightness only
+  // compute brightness of texel
+  vec3 luminanceWeights = vec3(0.299, 0.587, 0.114);
+  float luminance = dot(luminanceWeights, texel.rgb);
+
+  vec2 uvLookup = vUv * uResolution;
+  //int tileCount = 32;
+  int tileCount = 16;
+  uvLookup.x /= float(tileCount);
+  float maxCoordX = 1.0 / float(tileCount);
+  uvLookup.x = mod(uvLookup.x, maxCoordX);
+#if 0 // use full tile set for sky
+  int chosenTileSetCount = int(forceCloudFactor) * tileCount / 2; // choose either 16 or 32. 16 if we want to force clouds (forceCloudFactor == 1.0)
+#else
+  int chosenTileSetCount = 16;
+#endif
+  int tileIndex = int(mod((1.0-luminance) * float(chosenTileSetCount), float(chosenTileSetCount)));
+  float tileFactor = float(tileIndex) / float(chosenTileSetCount);
+
+  // todo: add parameter for noise
+  float seed = sin(floor(uTime * 20.0));
+  float noise = 1.0 - 2.0 * random(texelLookup, seed); // in [-1,1]
+  float maxNoiseTileOffsetFactor = 0.1;
+  float maxNoiseTileOffset = ceil(maxNoiseTileOffsetFactor * float(chosenTileSetCount));
+
+  float tileOffset = maxNoiseTileOffset * noise;
+  int finalTileIndex = tileIndex + int(tileOffset);
+  finalTileIndex = max(0, min(finalTileIndex, chosenTileSetCount-1));
+  uvLookup.x += float(finalTileIndex) * maxCoordX;
+
+  vec4 tile = int(cloudFlag) == 0 ? texture2D( tTileAtlasSky, uvLookup) : texture2D( tTileAtlasCloud, uvLookup);
+
+  // mix in uv test color
+  texel.r += float(uUVTest) * vUv.x;
+  texel.g += float(uUVTest) * vUv.y;
+  //gl_FragColor = vec4(vUv, 1.0, 1.0);
+
+ 
+  // desaturate tile if it is cloud
+#if 1
+  tile.rgb = mix(tile.rgb, vec3(dot(tile.rgb, luminanceWeights)), cloudFlag);
+#endif
+
+  // mix tile with gradient using the overlay blend mode
+#if 1
+  vec3 gradient = vec3(1.0-tileFactor);
+  // todo: use smooth gradient rather than blocky gradient
+  tile.rgb = overlay(tile.rgb, gradient);
+#endif
+
+  // display mix of texel and emoji
+#if 0 // multiply blend
+  //gl_FragColor = overlay(tile, vec4(texel.rgb, uTileMixFactor));
+  //gl_FragColor.rgb = mix(texel.rgb, multiply(tile.rgb, texel.rgb), uTileMixFactor);
+
+  // todo: in this mode, use smooth gradient rather than blocky gradient
+  gl_FragColor.rgb = mix(multiply(tile.rgb, texel.rgb), tile.rgb, uTileMixFactor);
+#elif 0 // linear interpolation
+  gl_FragColor = mix(texel, tile, uTileMixFactor);
+#else // luminosity
+  gl_FragColor = vec4(luminosityBlend(texel.rgb, tile.rgb), 1.0);
+#endif
+
+  // todo: get 2 mix factors so that we can show only rendering, or only tiles or 
+  // float mix1 = 
+  gl_FragColor = mix(texel, gl_FragColor, uTileMixFactor);
+  
+  // show only tile
+  //gl_FragColor = tile;
+  
+  // show only texel
+  //gl_FragColor = texel;
+}
 `;

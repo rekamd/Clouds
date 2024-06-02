@@ -1,46 +1,87 @@
 import * as THREE from "three";
 import { Pass, FullScreenQuad } from "three/examples/jsm/postprocessing/Pass";
-import { fragmentShader } from "./shaders";
-import { Tiles } from "./Tiles.js";
+import { cloudFragmentShader, random } from "./shaders";
+import * as Shaders from "./shaders";
+import { Tiles } from "./Tiles";
 
 class Cloud extends Pass {
   constructor(
     camera,
     {
-      cloudSize = new THREE.Vector3(0.5, 1.0, 0.5),
-      cloudNoiseSize = 1.0,
-      cloudShape = 43758.5453,
-      sunIntensity = 0.8,
-      sunSize = 1.0,
-      sunPosition = new THREE.Vector3(1.0, 2.0, 1.0),
+      cloudSeed = 83.0,
+      cloudCount = 8,
+      cloudSize = new THREE.Vector3(2, 1, 2),
+      cloudMinimumDensity = 0.0,
+      cloudRoughness = 2.0,
+      cloudScatter = 2.2,
+      cloudShape = 0.5453,
+      cloudAnimationSpeed = 0.2,
+      cloudAnimationStrength = 0.6,
+      sunIntensity = 1.0,
+      sunSize = 0.15,
+      sunPosition = new THREE.Vector3(4.0, 3.5, -1.0),
       cloudColor = new THREE.Color(0xeabf6b),
       skyColor = new THREE.Color(0x337fff),
+      skyColorFade = new THREE.Color(1.0, 1.0, 1.0),
+      skyFadeFactor = 0.5,
+      skyFadeShift = 0.0,
+      sunColor = new THREE.Color(1.0, 0.6, 0.1),
       cloudSteps = 48,
       shadowSteps = 8,
       cloudLength = 16,
       shadowLength = 2,
       noise = false,
-      turbulence = 0.0,
       shift = 1.0,
       pixelWidth = 1,
       pixelHeight = 1,
+      tileMixFactor = 0.5,
       blur = false,
       UVTest = false,
-    } = {}
+    } = {},
   ) {
     super();
 
-    this.sunPos = sunPosition;
+    let cameraDirection = new THREE.Vector3();
+    camera.getWorldDirection(cameraDirection);
+    console.log(
+      "world direction (x,y,z): " +
+        cameraDirection.x +
+        "," +
+        cameraDirection.y +
+        "," +
+        cameraDirection.z,
+    );
+    let initialCameraPosition = new THREE.Vector3();
+    initialCameraPosition.copy(camera.position);
+
     this.cloudMaterial = new THREE.ShaderMaterial({
       uniforms: {
+        uCloudSeed: {
+          value: cloudSeed,
+        },
+        uCloudCount: {
+          value: cloudCount,
+        },
         uCloudSize: {
           value: cloudSize,
         },
-        uCloudNoiseSize: {
-          value: cloudNoiseSize,
+        uCloudMinimumDensity: {
+          value: cloudMinimumDensity,
+        },
+        uCloudRoughness: {
+          value: cloudRoughness,
+        },
+        uCloudScatter: {
+          value: cloudScatter,
         },
         uCloudShape: {
           value: cloudShape,
+        },
+        uCloudAnimationSpeed: {
+          value: cloudAnimationSpeed,
+        },
+        uCloudAnimationStrength: {
+          value: cloudAnimationStrength,
         },
         uSunIntensity: {
           value: sunIntensity,
@@ -51,14 +92,29 @@ class Cloud extends Pass {
         uSunPosition: {
           value: sunPosition,
         },
-        uCameraPosition: {
-          value: new THREE.Vector3(),
+        uInitialCameraPosition: {
+          value: initialCameraPosition,
+        },
+        uInitialCameraDirection: {
+          value: cameraDirection,
         },
         uCloudColor: {
           value: cloudColor,
         },
         uSkyColor: {
           value: skyColor,
+        },
+        uSkyColorFade: {
+          value: skyColorFade,
+        },
+        uSkyFadeFactor: {
+          value: skyFadeFactor,
+        },
+        uSkyFadeShift: {
+          value: skyFadeShift,
+        },
+        uSunColor: {
+          value: sunColor,
         },
         uCloudSteps: {
           value: cloudSteps,
@@ -81,9 +137,6 @@ class Cloud extends Pass {
         uNoise: {
           value: noise,
         },
-        uTurbulence: {
-          value: turbulence,
-        },
         uShift: {
           value: shift,
         },
@@ -94,21 +147,24 @@ class Cloud extends Pass {
           value: null,
         },
       },
-      fragmentShader,
+      fragmentShader: Shaders.cloudFragmentShader,
     });
 
     this.tiles = new Tiles();
     this.UVTest = UVTest;
+    this.tileMixFactor = tileMixFactor;
     this.resolution = new THREE.Vector2();
     this.pixelMultiplier = [pixelWidth, pixelHeight];
     this.camera = camera;
     this.cloudFullScreenQuad = new Pass.FullScreenQuad(this.cloudMaterial);
     this.passThroughMaterial = this.createPassThroughMaterial();
-    this.passThroughMaterial.uniforms.tTiles.value = this.tiles.tileTexture;
-    this.passThroughMaterial.uniforms.tTileAtlas.value =
-      this.tiles.tileTextureAtlas;
+    this.passThroughMaterial.uniforms.tTileAtlasSky.value =
+      this.tiles.tileTextureAtlasArray[0];
+    this.passThroughMaterial.uniforms.tTileAtlasCloud.value =
+      this.tiles.tileTextureAtlasArray[0];
+
     this.passThroughFullScreenQuad = new Pass.FullScreenQuad(
-      this.passThroughMaterial
+      this.passThroughMaterial,
     );
 
     this.cloudRenderTarget = new THREE.WebGLRenderTarget();
@@ -138,16 +194,48 @@ class Cloud extends Pass {
     return this.cloudMaterial;
   }
 
+  get cloudSeed() {
+    return this.material.uniforms.uCloudSeed.value;
+  }
+
+  set cloudSeed(value) {
+    this.material.uniforms.uCloudSeed.value = value;
+  }
+
+  get cloudCount() {
+    return this.material.uniforms.uCloudCount.value;
+  }
+
+  set cloudCount(value) {
+    this.material.uniforms.uCloudCount.value = value;
+  }
+
   get cloudSize() {
     return this.material.uniforms.uCloudSize.value;
   }
 
-  get cloudNoiseSize() {
-    return this.material.uniforms.uCloudNoiseSize.value;
+  get cloudMinimumDensity() {
+    return this.material.uniforms.uCloudMinimumDensity.value;
   }
 
-  set cloudNoiseSize(value) {
-    this.material.uniforms.uCloudNoiseSize.value = value;
+  set cloudMinimumDensity(value) {
+    this.material.uniforms.uCloudMinimumDensity.value = value;
+  }
+
+  get cloudRoughness() {
+    return this.material.uniforms.uCloudRoughness.value;
+  }
+
+  set cloudRoughness(value) {
+    this.material.uniforms.uCloudRoughness.value = value;
+  }
+
+  get cloudScatter() {
+    return this.material.uniforms.uCloudScatter.value;
+  }
+
+  set cloudScatter(value) {
+    this.material.uniforms.uCloudScatter.value = value;
   }
 
   get cloudShape() {
@@ -156,6 +244,22 @@ class Cloud extends Pass {
 
   set cloudShape(value) {
     this.material.uniforms.uCloudShape.value = value;
+  }
+
+  get cloudAnimationSpeed() {
+    return this.material.uniforms.uCloudAnimationSpeed.value;
+  }
+
+  set cloudAnimationSpeed(value) {
+    this.material.uniforms.uCloudAnimationSpeed.value = value;
+  }
+
+  get cloudAnimationStrength() {
+    return this.material.uniforms.uCloudAnimationStrength.value;
+  }
+
+  set cloudAnimationStrength(value) {
+    this.material.uniforms.uCloudAnimationStrength.value = value;
   }
 
   get sunIntensity() {
@@ -175,12 +279,32 @@ class Cloud extends Pass {
   }
 
   get sunPosition() {
-    return this.sunPos;
+    return this.material.uniforms.uSunPosition.value;
   }
 
   set sunPosition(value) {
     this.material.uniforms.uSunPosition.value = value;
-    this.sunPos = value;
+  }
+
+  get initialCameraPosition() {
+    return this.material.uniforms.uInitialCameraPosition.value;
+  }
+
+  set initialCameraPosition(value) {
+    this.material.uniforms.uInitialCameraPosition.value = value;
+    //let direction = new THREE.Vector3();
+    //this.camera.getWorldDirection(direction);
+    //this.material.uniforms.uCameraDirection.value.copy(direction);
+    //this.material.uniforms.uCameraPosition.value.copy(this.camera.position);
+    //this.camera.position.value.copy(value);
+  }
+
+  get initialCameraDirection() {
+    return this.material.uniforms.uInitialCameraDirection.value;
+  }
+
+  set initialCameraDirection(value) {
+    this.material.uniforms.uInitialCameraDirection.value = value;
   }
 
   get skyColor() {
@@ -191,12 +315,44 @@ class Cloud extends Pass {
     this.material.uniforms.uSkyColor.value = value;
   }
 
+  get skyColorFade() {
+    return this.material.uniforms.uSkyColorFade.value;
+  }
+
+  set skyColorFade(value) {
+    this.material.uniforms.uSkyColorFade.value = value;
+  }
+
+  get skyFadeFactor() {
+    return this.material.uniforms.uSkyFadeFactor.value;
+  }
+
+  set skyFadeFactor(value) {
+    this.material.uniforms.uSkyFadeFactor.value = value;
+  }
+
+  get skyFadeShift() {
+    return this.material.uniforms.uSkyFadeShift.value;
+  }
+
+  set skyFadeShift(value) {
+    this.material.uniforms.uSkyFadeShift.value = value;
+  }
+
   get cloudColor() {
     return this.material.uniforms.uCloudColor.value;
   }
 
   set cloudColor(value) {
     this.material.uniforms.uCloudColor.value = value;
+  }
+
+  get sunColor() {
+    return this.material.uniforms.uSunColor.value;
+  }
+
+  set sunColor(value) {
+    this.material.uniforms.uSunColor.value = value;
   }
 
   get shift() {
@@ -215,19 +371,12 @@ class Cloud extends Pass {
     this.material.uniforms.uNoise.value = value;
   }
 
-  set turbulence(value) {
-    this.material.uniforms.uTurbulence.value = value;
-  }
-
-  get turbulence() {
-    return this.material.uniforms.uTurbulence.value;
-  }
-
   get time() {
     return this.material.uniforms.uTime.value;
   }
 
   set time(value) {
+    this.passThroughMaterial.uniforms.uTime.value = value;
     this.material.uniforms.uTime.value = value;
   }
 
@@ -258,20 +407,24 @@ class Cloud extends Pass {
     this.cloudRenderTarget.setSize(resX, resY);
   }
 
+  setTileTextureIndex(skyTiles, tileIndex) {
+    let tiles = new Tiles();
+    if (skyTiles) {
+      this.passThroughMaterial.uniforms.tTileAtlasSky.value =
+        tiles.tileTextureAtlasArray[tileIndex];
+    } else {
+      this.passThroughMaterial.uniforms.tTileAtlasCloud.value =
+        tiles.tileTextureAtlasArray[tileIndex];
+    }
+  }
+
   isAnimated() {
-    //console.log("noise:" + this.material.uniforms.uNoise.value);
-    //console.log("turbulence:" + this.material.uniforms.uTurbulence.value);
-    //console.log("shift:" + this.material.uniforms.uShift.value);
     return (
-      this.material.uniforms.uNoise.value ||
-      this.material.uniforms.uTurbulence.value > 0.0 ||
-      this.material.uniforms.uShift.value
+      this.material.uniforms.uNoise.value || this.material.uniforms.uShift.value
     );
   }
 
   render(renderer, writeBuffer) {
-    //console.log("render pass call...");
-    this.material.uniforms.uCameraPosition.value.copy(this.camera.position);
     this.material.uniforms.projectionMatrixInverse.value =
       this.camera.projectionMatrixInverse;
     this.material.uniforms.viewMatrixInverse.value = this.camera.matrixWorld;
@@ -282,6 +435,7 @@ class Cloud extends Pass {
     const uniforms = this.passThroughMaterial.uniforms;
     uniforms.tDiffuse.value = this.cloudRenderTarget.texture;
     uniforms.uUVTest.value = this.UVTest;
+    uniforms.uTileMixFactor.value = this.tileMixFactor;
 
     if (this.renderToScreen) {
       //console.log("render to screen");
@@ -301,108 +455,15 @@ class Cloud extends Pass {
     return new THREE.ShaderMaterial({
       uniforms: {
         tDiffuse: { value: null },
-        tTiles: { value: null },
-        tTileAtlas: { value: null },
+        tTileAtlasSky: { value: null },
+        tTileAtlasCloud: { value: null },
         uUVTest: { value: false },
+        uTime: { value: 0 },
         uResolution: { value: new THREE.Vector2() },
+        uTileMixFactor: { value: 0.5 },
       },
-      vertexShader: /* glsl */ `
-				varying vec2 vUv;
-				void main() {
-					vUv = uv;
-					gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-				}
-			`,
-      fragmentShader: /* glsl */ `
-				uniform sampler2D tDiffuse;
-        uniform sampler2D tTiles;
-        uniform sampler2D tTileAtlas;
-        uniform bool uUVTest;
-        uniform vec2 uResolution;
-				varying vec2 vUv;
-
-        float minColor(vec3 c)
-        {
-          return min(min(c.r, c.g), c.b);
-          //return min(0.5 * (c.r + c.g), c.b);
-        }
-        
-        float maxColor(vec3 c)
-        {
-          return max(max(c.r, c.g), c.b);
-          //return max(0.5 * (c.r + c.g), c.b);
-        }
-
-        float luminosity(float minColor, float maxColor)
-        {
-          return 0.5 * (minColor + maxColor);
-        }
-        
-        float saturation(float minColor, float maxColor, float luminosity)
-        {
-          return luminosity != 1.0 ? (maxColor - minColor) / (1.0 - abs(2.0 * luminosity - 1.0)) : 0.0;
-        }
-        
-				void main() {
-          vec2 pixelFrac = 1.0 / uResolution;
-          vec2 pixelCoord = floor(vUv / pixelFrac);
-          vec2 texelLookup = pixelCoord * pixelFrac + 0.5 * pixelFrac;
-					vec4 texel = texture2D( tDiffuse, texelLookup );
-
-          // 2-pass emoji lookup with sky vs. cloud distinction
-          // First check if the pixel should be forced to be a cloud or sky pixel based on its saturation.
-          // For high low saturation, we want cloud emojis.
-          // For the rest we can use either (mixed emoji tile set)
-          float minColor = minColor(texel.rgb);
-          float maxColor = maxColor(texel.rgb);
-          float luminosity = luminosity(minColor, maxColor);
-          float saturation = saturation(minColor, maxColor, luminosity);
-
-          bool forceCloud = saturation < 0.8;
-
-          // simple emoji lookup with brightness only
-          // compute brightness of texel
-          //float luminance = (texel.r + texel.g + texel.b) / 3.0;
-          //float luminance = 0.2126*texel.r + 0.7152*texel.g + 0.0722*texel.b;
-          float luminance = 0.299*texel.r + 0.587*texel.g + 0.114*texel.b;
-          //float luminance = sqrt( 0.299*texel.r*texel.r + 0.587*texel.g*texel.g + 0.114*texel.b*texel.b );
-
-          vec2 uvLookup = vUv * uResolution;
-          int tileCount = 32;
-          uvLookup.x /= float(tileCount);
-          float maxCoordX = 1.0 / float(tileCount);
-          uvLookup.x = mod(uvLookup.x, maxCoordX);
-          int chosenTileSetCount = forceCloud ? 16 : 32;
-          int tileIndex = int(mod((1.0-luminance) * float(chosenTileSetCount), float(chosenTileSetCount)));
-          uvLookup.x += float(tileIndex) * maxCoordX;
-
-          //vec4 tile = texture2D( tTiles, vUv * uResolution);
-          vec4 tile = texture2D( tTileAtlas, uvLookup);
-
-          // mix in uv test color
-          texel.r += float(uUVTest) * vUv.x;
-          texel.g += float(uUVTest) * vUv.y;
-          //gl_FragColor = texel;
-
-          // display luminosity
-          //gl_FragColor = vec4(vec3(luminosity), 1.0);
-          
-          // display saturation
-          vec4 saturationColor = vec4(vec3(saturation), 1.0);
-          
-          //gl_FragColor = saturationColor;
-          //gl_FragColor = mix(texel, saturationColor, 0.5);
-
-          // display 50/50 mix of texel and emoji
-					gl_FragColor = mix(texel, tile, 0.5);
-          
-          // show only emoji
-          //gl_FragColor = tile;
-          
-          // show only texel
-          //gl_FragColor = texel;
-				}
-			`,
+      vertexShader: Shaders.tileVertexShader,
+      fragmentShader: Shaders.tileFragmentShader,
     });
   }
 }
