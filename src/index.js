@@ -10,12 +10,22 @@ import { Timer } from "./Timer.js";
 let tokenTest = false;
 
 class MinMaxProperty {
-  constructor(min, max, object, propertyName, floatProperty = true) {
+  static kAutoStepSizeResolution = 255;
+
+  constructor(
+    min,
+    max,
+    object,
+    propertyName,
+    autoStepSize = true,
+    customStepSize = 1,
+  ) {
     this.min = min;
     this.max = max;
     this.object = object;
     this.propertyName = propertyName;
-    this.floatProperty = floatProperty;
+    this.autoStepSize = autoStepSize;
+    this.customStepSize = customStepSize;
 
     this.applyBounds();
   }
@@ -42,20 +52,29 @@ class MinMaxProperty {
 
     let controller = propertyGUI.add(this, "value").min(this.min).max(this.max);
 
-    if (this.floatProperty) controller.step((this.max - this.min) / 255.0);
-    else controller.step(1);
+    if (this.autoStepSize)
+      controller.step(
+        (this.max - this.min) / MinMaxProperty.kAutoStepSizeResolution,
+      );
+    else controller.step(this.customStepSize);
 
     propertyGUI.add(this, "min").onChange((value) => {
       controller.min(value);
       this.applyBounds();
-      if (this.floatProperty) controller.step((this.max - this.min) / 255.0);
+      if (this.autoStepSize)
+        controller.step(
+          (this.max - this.min) / MinMaxProperty.kAutoStepSizeResolution,
+        );
       controller.updateDisplay();
     });
 
     propertyGUI.add(this, "max").onChange((value) => {
       controller.max(value);
       this.applyBounds();
-      if (this.floatProperty) controller.step((this.max - this.min) / 255.0);
+      if (this.autoStepSize)
+        controller.step(
+          (this.max - this.min) / MinMaxProperty.kAutoStepSizeResolution,
+        );
       controller.updateDisplay();
     });
   }
@@ -134,8 +153,6 @@ let cloud = new Cloud(renderer.domElement, {
   sunPosition: new THREE.Vector3(sunPositionX, sunPositionY, sunPositionZ),
   cloudColor: new THREE.Color(cloudColor), //"rgb(234, 191, 107)"
   skyColor: new THREE.Color(skyColor), //"rgb(51, 127, 255)"
-  pixelWidth: 10,
-  pixelHeight: 10,
 });
 
 let params = {
@@ -149,8 +166,6 @@ let params = {
   initialCameraPositionZ: cloud.initialCameraPosition.z,
   cloudColor: cloudColor,
   sunColor: "rgb(255, 153, 25)",
-  uniformPixels: true,
-  lastTouchedPixelID: 0,
   pause: false,
 };
 
@@ -174,8 +189,9 @@ new MinMaxProperty(-2, 2, cloud, "sunSize").addGUI(gui);
 new MinMaxProperty(0, 10, cloud, "skyFadeFactor").addGUI(gui);
 new MinMaxProperty(-4, 4, cloud, "skyFadeShift").addGUI(gui);
 new MinMaxProperty(-1, 2, cloud, "tileMixFactor").addGUI(gui);
-new MinMaxProperty(0, 19, cloud, "skyTileIndex", false).addGUI(gui);
-new MinMaxProperty(0, 19, cloud, "cloudTileIndex", false).addGUI(gui);
+new MinMaxProperty(0, 17, cloud, "skyTileIndex", false).addGUI(gui);
+new MinMaxProperty(0, 17, cloud, "cloudTileIndex", false).addGUI(gui);
+new MinMaxProperty(2, 128, cloud, "pixelSize", false, 2).addGUI(gui);
 
 gui
   .add(params, "sunPositionX")
@@ -241,42 +257,6 @@ gui.addColor(params, "cloudColor").onChange((value) => {
 gui.addColor(params, "sunColor").onChange((value) => {
   cloud.sunColor = new THREE.Color(value);
 });
-
-// todo: make uniform
-gui
-  .add(cloud, "pixelWidth")
-  .min(2)
-  .max(64)
-  .step(2)
-  .listen()
-  .onChange(() => {
-    params.lastTouchedPixelID = 0;
-    if (params.uniformPixels) {
-      cloud.pixelHeight = cloud.pixelWidth;
-    }
-  });
-
-gui
-  .add(cloud, "pixelHeight")
-  .min(2)
-  .max(64)
-  .step(2)
-  .listen()
-  .onChange(() => {
-    params.lastTouchedPixelID = 1;
-    if (params.uniformPixels) {
-      cloud.pixelWidth = cloud.pixelHeight;
-    }
-  });
-gui.add(params, "uniformPixels").onChange((value) => {
-  if (value) {
-    const sizes = [cloud.pixelWidth, cloud.pixelHeight];
-    //console.log("max size:" + size);
-    cloud.pixelWidth = sizes[params.lastTouchedPixelID];
-    cloud.pixelHeight = sizes[params.lastTouchedPixelID];
-  }
-});
-
 const handleResize = () => {
   const dpr = Math.min(window.devicePixelRatio, 2);
   renderer.setPixelRatio(dpr);

@@ -34,8 +34,8 @@ class Cloud extends Pass {
       shadowLength = 8, // orig: 2, but too dark
       noise = false,
       shift = 3.0,
-      pixelWidth = 1,
-      pixelHeight = 1,
+      pixelWidth = 10,
+      pixelHeight = 10,
       tileMixFactor = 0.5,
       blur = false,
       UVTest = false,
@@ -440,6 +440,16 @@ class Cloud extends Pass {
   set time(value) {
     this.passThroughMaterial.uniforms.uTime.value = value;
     this.material.uniforms.uTime.value = value;
+  }
+
+  set pixelSize(value)
+  {
+    this.pixelWidth = this.pixelHeight = value;
+  }
+
+  get pixelSize()
+  {
+    return Math.max(this.pixelWidth, this.pixelHeight);
   }
 
   set pixelWidth(value) {
