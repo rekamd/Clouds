@@ -22,12 +22,12 @@ class Cloud extends Pass {
       sunIntensity = 0.6,
       sunSize = -1.6,
       sunPosition = new THREE.Vector3(4.0, 3.5, -1.0),
-      cloudColor = new THREE.Color(0xeabf6b),
-      skyColor = new THREE.Color(0x337fff),
-      skyColorFade = new THREE.Color(1.0, 1.0, 1.0),
+      cloudColor = 0xeabf6b,
+      skyColor = 0x337fff,
+      skyColorFade = 0xffffff,
       skyFadeFactor = 0.5,
       skyFadeShift = 0.7,
-      sunColor = new THREE.Color(1.0, 0.6, 0.1),
+      sunColor = 0xff9919,
       cloudSteps = 64,
       shadowSteps = 32, // orig: 8, but too noisy
       cloudLength = 32,
@@ -159,13 +159,13 @@ class Cloud extends Pass {
           value: cameraDirection,
         },
         uCloudColor: {
-          value: cloudColor,
+          value: new THREE.Color(cloudColor),
         },
         uSkyColor: {
-          value: skyColor,
+          value: new THREE.Color(skyColor),
         },
         uSkyColorFade: {
-          value: skyColorFade,
+          value: new THREE.Color(skyColorFade),
         },
         uSkyFadeFactor: {
           value: skyFadeFactor,
@@ -174,7 +174,7 @@ class Cloud extends Pass {
           value: skyFadeShift,
         },
         uSunColor: {
-          value: sunColor,
+          value: new THREE.Color(sunColor),
         },
         uCloudSteps: {
           value: cloudSteps,
@@ -370,19 +370,19 @@ class Cloud extends Pass {
   }
 
   get skyColor() {
-    return this.material.uniforms.uSkyColor.value;
+    return this.material.uniforms.uSkyColor.value.getHex();
   }
 
   set skyColor(value) {
-    this.material.uniforms.uSkyColor.value = value;
+    this.material.uniforms.uSkyColor.value = new THREE.Color(value);
   }
 
   get skyColorFade() {
-    return this.material.uniforms.uSkyColorFade.value;
+    return this.material.uniforms.uSkyColorFade.value.getHex();
   }
 
   set skyColorFade(value) {
-    this.material.uniforms.uSkyColorFade.value = value;
+    this.material.uniforms.uSkyColorFade.value = new THREE.Color(value);
   }
 
   get skyFadeFactor() {
@@ -402,19 +402,19 @@ class Cloud extends Pass {
   }
 
   get cloudColor() {
-    return this.material.uniforms.uCloudColor.value;
+    return this.material.uniforms.uCloudColor.value.getHex();
   }
 
   set cloudColor(value) {
-    this.material.uniforms.uCloudColor.value = value;
+    this.material.uniforms.uCloudColor.value = new THREE.Color(value);
   }
 
   get sunColor() {
-    return this.material.uniforms.uSunColor.value;
+    return this.material.uniforms.uSunColor.value.getHex();
   }
 
   set sunColor(value) {
-    this.material.uniforms.uSunColor.value = value;
+    this.material.uniforms.uSunColor.value = new THREE.Color(value);
   }
 
   get shift() {
@@ -442,13 +442,11 @@ class Cloud extends Pass {
     this.material.uniforms.uTime.value = value;
   }
 
-  set pixelSize(value)
-  {
+  set pixelSize(value) {
     this.pixelWidth = this.pixelHeight = value;
   }
 
-  get pixelSize()
-  {
+  get pixelSize() {
     return Math.max(this.pixelWidth, this.pixelHeight);
   }
 

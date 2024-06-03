@@ -144,28 +144,19 @@ if (tokenTest) {
   sunPositionZ = -maxSunPosXZ + 2 * maxSunPosXZ * hashValuesNorm[3];
 }
 
-let cloudColor = 0xeabf6b;
-let skyColor = 0x337fff;
-
 let cloud = new Cloud(renderer.domElement, {
   cloudSeed: cloudSeed, //83.0,
   cloudSize: new THREE.Vector3(2, 1, 2),
   sunPosition: new THREE.Vector3(sunPositionX, sunPositionY, sunPositionZ),
-  cloudColor: new THREE.Color(cloudColor), //"rgb(234, 191, 107)"
-  skyColor: new THREE.Color(skyColor), //"rgb(51, 127, 255)"
 });
 
 let params = {
-  skyColor: skyColor,
-  skyColorFade: 0xffffff,
   sunPositionX: sunPositionX, //4.0,
   sunPositionY: sunPositionY, //3.5,
   sunPositionZ: sunPositionZ, //-1.0,
   initialCameraPositionX: cloud.initialCameraPosition.x,
   initialCameraPositionY: cloud.initialCameraPosition.y,
   initialCameraPositionZ: cloud.initialCameraPosition.z,
-  cloudColor: cloudColor,
-  sunColor: "rgb(255, 153, 25)",
   pause: false,
 };
 
@@ -177,10 +168,10 @@ gui.add(params, "pause");
 
 new MinMaxProperty(-100, 100, cloud, "shift").addGUI(gui, false);
 new MinMaxProperty(1, 32000, cloud, "cloudSeed").addGUI(gui);
-new MinMaxProperty(1, 128, cloud, "cloudCount").addGUI(gui, false);
-new MinMaxProperty(0, 5, cloud, "cloudMinimumDensity").addGUI(gui, false);
+new MinMaxProperty(1, 128, cloud, "cloudCount").addGUI(gui);
+new MinMaxProperty(0, 5, cloud, "cloudMinimumDensity").addGUI(gui);
 new MinMaxProperty(0, 5, cloud, "cloudRoughness").addGUI(gui);
-new MinMaxProperty(0, 20, cloud, "cloudScatter").addGUI(gui, false);
+new MinMaxProperty(0, 20, cloud, "cloudScatter").addGUI(gui);
 new MinMaxProperty(-5, 5, cloud, "cloudShape").addGUI(gui);
 new MinMaxProperty(0, 5, cloud, "cloudAnimationSpeed").addGUI(gui);
 new MinMaxProperty(0, 5, cloud, "cloudAnimationStrength").addGUI(gui);
@@ -192,6 +183,11 @@ new MinMaxProperty(-1, 2, cloud, "tileMixFactor").addGUI(gui);
 new MinMaxProperty(0, 17, cloud, "skyTileIndex", false).addGUI(gui);
 new MinMaxProperty(0, 17, cloud, "cloudTileIndex", false).addGUI(gui);
 new MinMaxProperty(2, 128, cloud, "pixelSize", false, 2).addGUI(gui);
+
+gui.addColor(cloud, "skyColor");
+gui.addColor(cloud, "skyColorFade");
+gui.addColor(cloud, "cloudColor");
+gui.addColor(cloud, "sunColor");
 
 gui
   .add(params, "sunPositionX")
@@ -245,18 +241,7 @@ gui
   .min(-20)
   .max(20)
   .step(0.001);
-gui.addColor(params, "skyColor").onChange((value) => {
-  cloud.skyColor = new THREE.Color(value);
-});
-gui.addColor(params, "skyColorFade").onChange((value) => {
-  cloud.skyColorFade = new THREE.Color(value);
-});
-gui.addColor(params, "cloudColor").onChange((value) => {
-  cloud.cloudColor = new THREE.Color(value);
-});
-gui.addColor(params, "sunColor").onChange((value) => {
-  cloud.sunColor = new THREE.Color(value);
-});
+
 const handleResize = () => {
   const dpr = Math.min(window.devicePixelRatio, 2);
   renderer.setPixelRatio(dpr);
