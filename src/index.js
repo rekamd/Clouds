@@ -9,7 +9,32 @@ import { Timer } from "./Timer.js";
 
 let tokenTest = false;
 
-class MinMax {}
+class MinMaxProperty {
+  constructor(min, max, object, propertyName) {
+    this.min = min;
+    this.max = max;
+    this.object = object;
+    this.propertyName = propertyName;
+
+    this.applyBounds();
+  }
+
+  get value() {
+    return this.object[this.propertyName];
+  }
+
+  set value(val) {
+    this.object[this.propertyName] = Math.max(
+      this.min,
+      Math.min(val, this.max),
+    );
+  }
+
+  applyBounds() {
+    let val = this.value;
+    this.value = val;
+  }
+}
 
 // generate token data in the right format as done in the Artblocks template
 function genTokenData(projectNum) {
@@ -99,8 +124,7 @@ let cloud = new Cloud(renderer.domElement, {
 });
 
 let params = {
-  shiftMin: -100,
-  shiftMax: 100,
+  shift: new MinMaxProperty(-100, 100, cloud, "shift"),
   skyColor: skyColor,
   skyColorFade: 0xffffff,
   sunPositionX: sunPositionX, //4.0,
@@ -127,28 +151,21 @@ gui.add(params, "pause");
 
 let shiftGUI = gui.addFolder("Shift");
 let shiftController = shiftGUI
-  .add(cloud, "shift")
-  .name("value")
-  .min(-100)
-  .max(100)
-  .step(0.01);
-shiftGUI
-  .add(params, "shiftMin")
-  .name("min")
-  .onChange((value) => {
-    shiftController.min(value);
-    cloud.shift = Math.max(params.shiftMin, Math.min(params.shiftMax, value));
-    shiftController.updateDisplay();
-  });
+  .add(params.shift, "value")
+  .min(params.shift.min)
+  .max(params.shift.max)
+  .step((params.shift.max - params.shift.min) / 255.0);
+shiftGUI.add(params.shift, "min").onChange((value) => {
+  shiftController.min(value);
+  params.shift.applyBounds();
+  shiftController.updateDisplay();
+});
 
-shiftGUI
-  .add(params, "shiftMax")
-  .name("max")
-  .onChange((value) => {
-    shiftController.max(value);
-    cloud.shift = Math.max(params.shiftMin, Math.min(params.shiftMax, value));
-    shiftController.updateDisplay();
-  });
+shiftGUI.add(params.shift, "max").onChange((value) => {
+  shiftController.max(value);
+  params.shift.applyBounds();
+  shiftController.updateDisplay();
+});
 
 gui.add(cloud, "cloudSeed").min(1).max(32000).step(1);
 gui.add(cloud, "cloudCount").min(1).max(128).step(1);
