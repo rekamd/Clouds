@@ -1,46 +1,99 @@
 import * as THREE from "three";
-import { Pass, FullScreenQuad } from "three/examples/jsm/postprocessing/Pass";
-import { cloudFragmentShader, random } from "./shaders";
+import { Pass } from "three/examples/jsm/postprocessing/Pass";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import * as Shaders from "./shaders";
 import { Tiles } from "./Tiles";
 
 class Cloud extends Pass {
-  constructor(
-    camera,
-    {
-      cloudSeed = 83.0,
-      cloudCount = 8,
-      cloudSize = new THREE.Vector3(2, 1, 2),
-      cloudMinimumDensity = 0.0,
-      cloudRoughness = 2.0,
-      cloudScatter = 2.2,
-      cloudShape = 0.5453,
-      cloudAnimationSpeed = 0.2,
-      cloudAnimationStrength = 0.6,
-      sunIntensity = 1.0,
-      sunSize = 0.15,
-      sunPosition = new THREE.Vector3(4.0, 3.5, -1.0),
-      cloudColor = new THREE.Color(0xeabf6b),
-      skyColor = new THREE.Color(0x337fff),
-      skyColorFade = new THREE.Color(1.0, 1.0, 1.0),
-      skyFadeFactor = 0.5,
-      skyFadeShift = 0.0,
-      sunColor = new THREE.Color(1.0, 0.6, 0.1),
-      cloudSteps = 48,
-      shadowSteps = 8,
-      cloudLength = 16,
-      shadowLength = 2,
-      noise = false,
-      shift = 1.0,
-      pixelWidth = 1,
-      pixelHeight = 1,
-      tileMixFactor = 0.5,
-      blur = false,
-      UVTest = false,
-    } = {},
-  ) {
+  constructor(domElement, {
+    cloudSeed = 83.0,
+    cloudCount = 8,
+    cloudSize = new THREE.Vector3(2, 1, 2),
+    cloudMinimumDensity = 0.0,
+    cloudRoughness = 2.0,
+    cloudScatter = 2.2,
+    cloudShape = 0.5453,
+    cloudAnimationSpeed = 0.2,
+    cloudAnimationStrength = 0.6,
+    sunIntensity = 1.0,
+    sunSize = 0.15,
+    sunPosition = new THREE.Vector3(4.0, 3.5, -1.0),
+    cloudColor = new THREE.Color(0xeabf6b),
+    skyColor = new THREE.Color(0x337fff),
+    skyColorFade = new THREE.Color(1.0, 1.0, 1.0),
+    skyFadeFactor = 0.5,
+    skyFadeShift = 0.0,
+    sunColor = new THREE.Color(1.0, 0.6, 0.1),
+    cloudSteps = 48,
+    shadowSteps = 8,
+    cloudLength = 16,
+    shadowLength = 2,
+    noise = false,
+    shift = 1.0,
+    pixelWidth = 1,
+    pixelHeight = 1,
+    tileMixFactor = 0.5,
+    blur = false,
+    UVTest = false,
+  } = {}) {
     super();
 
+    let cameraPosition = new THREE.Vector3(0, -7.5, 8.0);
+    const camera = new THREE.PerspectiveCamera(70);
+    //camera.position.set(0, -7.5, 8.0);
+    camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
+
+    let cameraAngle = 45;
+    let cameraAngleRad = THREE.MathUtils.degToRad(cameraAngle);
+    let direction = new THREE.Vector3(
+      0,
+      Math.sin(cameraAngleRad),
+      -Math.cos(cameraAngleRad),
+    );
+    console.log(
+      "direction (x,y,z): " +
+        direction.x +
+        "," +
+        direction.y +
+        "," +
+        direction.z,
+    );
+
+    let lookAtPosition = cameraPosition;
+    lookAtPosition.add(direction);
+    //camera.lookAt(0, 0, 0);
+    camera.lookAt(lookAtPosition.x, lookAtPosition.y, lookAtPosition.z);
+    console.log(
+      "look at position (x,y,z): " +
+        lookAtPosition.x +
+        "," +
+        lookAtPosition.y +
+        "," +
+        lookAtPosition.z,
+    );
+
+    // let cameraDirection = new THREE.Vector3();
+    // camera.getWorldDirection(cameraDirection);
+    // console.log(
+    //   "world direction (x,y,z): " +
+    //     cameraDirection.x +
+    //     "," +
+    //     cameraDirection.y +
+    //     "," +
+    //     cameraDirection.z,
+    // );
+
+    const controls = new OrbitControls(camera, domElement);
+    controls.enableDamping = true;
+    //controls.autoRotate = true;
+
+    // controls.object.position.set(
+    //   cameraPosition.x,
+    //   cameraPosition.y,
+    //   cameraPosition.z,
+    // );
+    controls.target.set(lookAtPosition.x, lookAtPosition.y, lookAtPosition.z);
+    controls.update();
     let cameraDirection = new THREE.Vector3();
     camera.getWorldDirection(cameraDirection);
     console.log(
@@ -54,6 +107,8 @@ class Cloud extends Pass {
     let initialCameraPosition = new THREE.Vector3();
     initialCameraPosition.copy(camera.position);
 
+    this.camera = camera;
+    this.orbitControls = controls;
     this.cloudMaterial = new THREE.ShaderMaterial({
       uniforms: {
         uCloudSeed: {
@@ -155,7 +210,6 @@ class Cloud extends Pass {
     this.tileMixFactor = tileMixFactor;
     this.resolution = new THREE.Vector2();
     this.pixelMultiplier = [pixelWidth, pixelHeight];
-    this.camera = camera;
     this.cloudFullScreenQuad = new Pass.FullScreenQuad(this.cloudMaterial);
     this.passThroughMaterial = this.createPassThroughMaterial();
     this.passThroughMaterial.uniforms.tTileAtlasSky.value =
