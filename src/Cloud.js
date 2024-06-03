@@ -8,6 +8,8 @@ class Cloud extends Pass {
   constructor(
     domElement,
     {
+      skyTileIndex = 0,
+      cloudTileIndex = 0,
       cloudSeed = 83.0,
       cloudCount = 8,
       cloudSize = new THREE.Vector3(2, 1, 2),
@@ -26,12 +28,12 @@ class Cloud extends Pass {
       skyFadeFactor = 0.5,
       skyFadeShift = 0.7,
       sunColor = new THREE.Color(1.0, 0.6, 0.1),
-      cloudSteps = 48,
-      shadowSteps = 8,
-      cloudLength = 16,
-      shadowLength = 2,
+      cloudSteps = 64,
+      shadowSteps = 32, // orig: 8, but too noisy
+      cloudLength = 32,
+      shadowLength = 8, // orig: 2, but too dark
       noise = false,
-      shift = 1.0,
+      shift = 3.0,
       pixelWidth = 1,
       pixelHeight = 1,
       tileMixFactor = 0.5,
@@ -216,13 +218,16 @@ class Cloud extends Pass {
     this.cloudFullScreenQuad = new Pass.FullScreenQuad(this.cloudMaterial);
     this.passThroughMaterial = this.createPassThroughMaterial();
     this.passThroughMaterial.uniforms.tTileAtlasSky.value =
-      this.tiles.tileTextureAtlasArray[0];
+      this.tiles.tileTextureAtlasArray[skyTileIndex];
     this.passThroughMaterial.uniforms.tTileAtlasCloud.value =
-      this.tiles.tileTextureAtlasArray[0];
+      this.tiles.tileTextureAtlasArray[cloudTileIndex];
 
     this.passThroughFullScreenQuad = new Pass.FullScreenQuad(
       this.passThroughMaterial,
     );
+
+    this._skyTileIndex = skyTileIndex;
+    this._cloudTileIndex = cloudTileIndex;
 
     this.cloudRenderTarget = new THREE.WebGLRenderTarget();
     const filter = blur ? THREE.LinearFilter : THREE.NearestFilter;
@@ -462,6 +467,32 @@ class Cloud extends Pass {
     this.material.uniforms.uResolution.value.set(resX, resY);
     this.passThroughMaterial.uniforms.uResolution.value.set(resX, resY);
     this.cloudRenderTarget.setSize(resX, resY);
+  }
+
+  set skyTileIndex(value) {
+    this._skyTileIndex = value;
+  }
+
+  get skyTileIndex() {
+    return this._skyTileIndex;
+  }
+
+  set skyTileIndex(value) {
+    this._skyTileIndex = value;
+    this.setTileTextureIndex(true, value);
+  }
+
+  get skyTileIndex() {
+    return this._skyTileIndex;
+  }
+
+  set cloudTileIndex(value) {
+    this._cloudTileIndex = value;
+    this.setTileTextureIndex(false, value);
+  }
+
+  get cloudTileIndex() {
+    return this._cloudTileIndex;
   }
 
   setTileTextureIndex(skyTiles, tileIndex) {

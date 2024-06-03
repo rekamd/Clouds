@@ -10,11 +10,12 @@ import { Timer } from "./Timer.js";
 let tokenTest = false;
 
 class MinMaxProperty {
-  constructor(min, max, object, propertyName) {
+  constructor(min, max, object, propertyName, floatProperty = true) {
     this.min = min;
     this.max = max;
     this.object = object;
     this.propertyName = propertyName;
+    this.floatProperty = floatProperty;
 
     this.applyBounds();
   }
@@ -39,23 +40,22 @@ class MinMaxProperty {
     let propertyGUI = gui.addFolder(this.propertyName);
     if (collapsed) propertyGUI.close();
 
-    let controller = propertyGUI
-      .add(this, "value")
-      .min(this.min)
-      .max(this.max)
-      .step((this.max - this.min) / 255.0);
+    let controller = propertyGUI.add(this, "value").min(this.min).max(this.max);
+
+    if (this.floatProperty) controller.step((this.max - this.min) / 255.0);
+    else controller.step(1);
 
     propertyGUI.add(this, "min").onChange((value) => {
       controller.min(value);
       this.applyBounds();
-      controller.step((this.max - this.min) / 255.0);
+      if (this.floatProperty) controller.step((this.max - this.min) / 255.0);
       controller.updateDisplay();
     });
 
     propertyGUI.add(this, "max").onChange((value) => {
       controller.max(value);
       this.applyBounds();
-      controller.step((this.max - this.min) / 255.0);
+      if (this.floatProperty) controller.step((this.max - this.min) / 255.0);
       controller.updateDisplay();
     });
   }
@@ -134,16 +134,8 @@ let cloud = new Cloud(renderer.domElement, {
   sunPosition: new THREE.Vector3(sunPositionX, sunPositionY, sunPositionZ),
   cloudColor: new THREE.Color(cloudColor), //"rgb(234, 191, 107)"
   skyColor: new THREE.Color(skyColor), //"rgb(51, 127, 255)"
-  cloudSteps: 64,
-  shadowSteps: 32, // orig: 8, but too noisy
-  cloudLength: 32,
-  shadowLength: 8, // orig: 2, but too dark
-  noise: false,
-  shift: 1.0,
   pixelWidth: 10,
   pixelHeight: 10,
-  blur: false,
-  UVTest: false,
 });
 
 let params = {
@@ -160,8 +152,6 @@ let params = {
   uniformPixels: true,
   lastTouchedPixelID: 0,
   pause: false,
-  skyTileIndex: 0,
-  cloudTileIndex: 0,
 };
 
 let composer = new EffectComposer(renderer);
@@ -183,6 +173,9 @@ new MinMaxProperty(0, 1, cloud, "sunIntensity").addGUI(gui);
 new MinMaxProperty(-2, 2, cloud, "sunSize").addGUI(gui);
 new MinMaxProperty(0, 10, cloud, "skyFadeFactor").addGUI(gui);
 new MinMaxProperty(-4, 4, cloud, "skyFadeShift").addGUI(gui);
+new MinMaxProperty(-1, 2, cloud, "tileMixFactor").addGUI(gui);
+new MinMaxProperty(0, 19, cloud, "skyTileIndex", false).addGUI(gui);
+new MinMaxProperty(0, 19, cloud, "cloudTileIndex", false).addGUI(gui);
 
 gui
   .add(params, "sunPositionX")
@@ -283,23 +276,6 @@ gui.add(params, "uniformPixels").onChange((value) => {
     cloud.pixelHeight = sizes[params.lastTouchedPixelID];
   }
 });
-gui.add(cloud, "tileMixFactor").min(-1).max(2);
-gui
-  .add(params, "skyTileIndex")
-  .min(0)
-  .max(19)
-  .step(1)
-  .onChange((value) => {
-    cloud.setTileTextureIndex(true, value);
-  });
-gui
-  .add(params, "cloudTileIndex")
-  .min(0)
-  .max(19)
-  .step(1)
-  .onChange((value) => {
-    cloud.setTileTextureIndex(false, value);
-  });
 
 const handleResize = () => {
   const dpr = Math.min(window.devicePixelRatio, 2);
