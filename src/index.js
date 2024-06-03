@@ -34,6 +34,29 @@ class MinMaxProperty {
     let val = this.value;
     this.value = val;
   }
+
+  addGUI(gui) {
+    let propertyGUI = gui.addFolder(this.propertyName);
+    let controller = propertyGUI
+      .add(this, "value")
+      .min(this.min)
+      .max(this.max)
+      .step((this.max - this.min) / 255.0);
+
+    propertyGUI.add(this, "min").onChange((value) => {
+      controller.min(value);
+      this.applyBounds();
+      controller.step((this.max - this.min) / 255.0);
+      controller.updateDisplay();
+    });
+
+    propertyGUI.add(this, "max").onChange((value) => {
+      controller.max(value);
+      this.applyBounds();
+      controller.step((this.max - this.min) / 255.0);
+      controller.updateDisplay();
+    });
+  }
 }
 
 // generate token data in the right format as done in the Artblocks template
@@ -124,7 +147,6 @@ let cloud = new Cloud(renderer.domElement, {
 });
 
 let params = {
-  shift: new MinMaxProperty(-100, 100, cloud, "shift"),
   skyColor: skyColor,
   skyColorFade: 0xffffff,
   sunPositionX: sunPositionX, //4.0,
@@ -149,35 +171,18 @@ composer.addPass(cloud);
 let gui = new GUI();
 gui.add(params, "pause");
 
-let shiftGUI = gui.addFolder("Shift");
-let shiftController = shiftGUI
-  .add(params.shift, "value")
-  .min(params.shift.min)
-  .max(params.shift.max)
-  .step((params.shift.max - params.shift.min) / 255.0);
-shiftGUI.add(params.shift, "min").onChange((value) => {
-  shiftController.min(value);
-  params.shift.applyBounds();
-  shiftController.updateDisplay();
-});
+new MinMaxProperty(-100, 100, cloud, "shift").addGUI(gui);
+new MinMaxProperty(1, 32000, cloud, "cloudSeed").addGUI(gui);
+new MinMaxProperty(1, 128, cloud, "cloudCount").addGUI(gui);
+new MinMaxProperty(0, 5, cloud, "cloudMinimumDensity").addGUI(gui);
+new MinMaxProperty(0, 5, cloud, "cloudRoughness").addGUI(gui);
+new MinMaxProperty(0, 20, cloud, "cloudScatter").addGUI(gui);
+new MinMaxProperty(-5, 5, cloud, "cloudShape").addGUI(gui);
+new MinMaxProperty(0, 5, cloud, "cloudAnimationSpeed").addGUI(gui);
+new MinMaxProperty(0, 5, cloud, "cloudAnimationStrength").addGUI(gui);
+new MinMaxProperty(0, 1.0, cloud, "sunIntensity").addGUI(gui);
+new MinMaxProperty(0, 1.0, cloud, "sunSize").addGUI(gui);
 
-shiftGUI.add(params.shift, "max").onChange((value) => {
-  shiftController.max(value);
-  params.shift.applyBounds();
-  shiftController.updateDisplay();
-});
-
-gui.add(cloud, "cloudSeed").min(1).max(32000).step(1);
-gui.add(cloud, "cloudCount").min(1).max(128).step(1);
-gui.add(cloud, "cloudMinimumDensity").min(0).max(5).step(0.001);
-gui.add(cloud, "cloudRoughness").min(0).max(5).step(0.001);
-gui.add(cloud, "cloudScatter").min(0).max(20).step(0.001);
-gui.add(cloud, "cloudShape").min(-5).max(5).step(0.001);
-gui.add(cloud, "cloudAnimationSpeed").min(0).max(5).step(0.001);
-gui.add(cloud, "cloudAnimationStrength").min(0).max(5).step(0.001);
-gui.add(cloud, "noise");
-gui.add(cloud, "sunIntensity").min(0).max(1.0).step(0.001);
-gui.add(cloud, "sunSize").min(0).max(1.0).step(0.001);
 gui
   .add(params, "sunPositionX")
   .onChange((value) => {
@@ -245,6 +250,7 @@ gui.addColor(params, "sunColor").onChange((value) => {
   cloud.sunColor = new THREE.Color(value);
 });
 
+// todo: make uniform
 gui
   .add(cloud, "pixelWidth")
   .min(2)
@@ -295,8 +301,6 @@ gui
   .onChange((value) => {
     cloud.setTileTextureIndex(false, value);
   });
-gui.add(cloud, "blur");
-gui.add(cloud, "UVTest");
 
 const handleResize = () => {
   const dpr = Math.min(window.devicePixelRatio, 2);
