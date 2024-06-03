@@ -35,8 +35,10 @@ class MinMaxProperty {
     this.value = val;
   }
 
-  addGUI(gui) {
+  addGUI(gui, collapsed = true) {
     let propertyGUI = gui.addFolder(this.propertyName);
+    if (collapsed) propertyGUI.close();
+
     let controller = propertyGUI
       .add(this, "value")
       .min(this.min)
@@ -108,8 +110,8 @@ let timer = new Timer();
 timer.enableFixedDelta();
 
 let cloudSeed = 83.0;
-let sunPositionX = 4.0;
-let sunPositionY = 3.5;
+let sunPositionX = -1.2;
+let sunPositionY = 2.1;
 let sunPositionZ = -1.0;
 
 // assign random values based on tokenData hash
@@ -128,9 +130,7 @@ let skyColor = 0x337fff;
 
 let cloud = new Cloud(renderer.domElement, {
   cloudSeed: cloudSeed, //83.0,
-  cloudCount: 8,
   cloudSize: new THREE.Vector3(2, 1, 2),
-  sunIntensity: 1.0,
   sunPosition: new THREE.Vector3(sunPositionX, sunPositionY, sunPositionZ),
   cloudColor: new THREE.Color(cloudColor), //"rgb(234, 191, 107)"
   skyColor: new THREE.Color(skyColor), //"rgb(51, 127, 255)"
@@ -160,7 +160,6 @@ let params = {
   uniformPixels: true,
   lastTouchedPixelID: 0,
   pause: false,
-  lastTime: 0,
   skyTileIndex: 0,
   cloudTileIndex: 0,
 };
@@ -171,17 +170,19 @@ composer.addPass(cloud);
 let gui = new GUI();
 gui.add(params, "pause");
 
-new MinMaxProperty(-100, 100, cloud, "shift").addGUI(gui);
+new MinMaxProperty(-100, 100, cloud, "shift").addGUI(gui, false);
 new MinMaxProperty(1, 32000, cloud, "cloudSeed").addGUI(gui);
-new MinMaxProperty(1, 128, cloud, "cloudCount").addGUI(gui);
-new MinMaxProperty(0, 5, cloud, "cloudMinimumDensity").addGUI(gui);
+new MinMaxProperty(1, 128, cloud, "cloudCount").addGUI(gui, false);
+new MinMaxProperty(0, 5, cloud, "cloudMinimumDensity").addGUI(gui, false);
 new MinMaxProperty(0, 5, cloud, "cloudRoughness").addGUI(gui);
-new MinMaxProperty(0, 20, cloud, "cloudScatter").addGUI(gui);
+new MinMaxProperty(0, 20, cloud, "cloudScatter").addGUI(gui, false);
 new MinMaxProperty(-5, 5, cloud, "cloudShape").addGUI(gui);
 new MinMaxProperty(0, 5, cloud, "cloudAnimationSpeed").addGUI(gui);
 new MinMaxProperty(0, 5, cloud, "cloudAnimationStrength").addGUI(gui);
-new MinMaxProperty(0, 1.0, cloud, "sunIntensity").addGUI(gui);
-new MinMaxProperty(0, 1.0, cloud, "sunSize").addGUI(gui);
+new MinMaxProperty(0, 1, cloud, "sunIntensity").addGUI(gui);
+new MinMaxProperty(-2, 2, cloud, "sunSize").addGUI(gui);
+new MinMaxProperty(0, 10, cloud, "skyFadeFactor").addGUI(gui);
+new MinMaxProperty(-4, 4, cloud, "skyFadeShift").addGUI(gui);
 
 gui
   .add(params, "sunPositionX")
@@ -241,8 +242,6 @@ gui.addColor(params, "skyColor").onChange((value) => {
 gui.addColor(params, "skyColorFade").onChange((value) => {
   cloud.skyColorFade = new THREE.Color(value);
 });
-gui.add(cloud, "skyFadeFactor").min(0).max(10);
-gui.add(cloud, "skyFadeShift").min(-4).max(4);
 gui.addColor(params, "cloudColor").onChange((value) => {
   cloud.cloudColor = new THREE.Color(value);
 });
