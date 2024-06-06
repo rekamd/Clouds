@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import GUI from "lil-gui";
 
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import Stats from "three/examples/jsm/libs/stats.module.js";
 
@@ -9,6 +8,77 @@ import Cloud from "./Cloud";
 import { Timer } from "./Timer.js";
 
 let tokenTest = false;
+
+class MinMaxProperty {
+  static kAutoStepSizeResolution = 255;
+
+  constructor(
+    min,
+    max,
+    object,
+    propertyName,
+    autoStepSize = true,
+    customStepSize = 1,
+  ) {
+    this.min = min;
+    this.max = max;
+    this.object = object;
+    this.propertyName = propertyName;
+    this.autoStepSize = autoStepSize;
+    this.customStepSize = customStepSize;
+
+    this.applyBounds();
+  }
+
+  get value() {
+    return this.object[this.propertyName];
+  }
+
+  set value(val) {
+    this.object[this.propertyName] = Math.max(
+      this.min,
+      Math.min(val, this.max),
+    );
+  }
+
+  applyBounds() {
+    let val = this.value;
+    this.value = val;
+  }
+
+  addGUI(gui, collapsed = true) {
+    let propertyGUI = gui.addFolder(this.propertyName);
+    if (collapsed) propertyGUI.close();
+
+    let controller = propertyGUI.add(this, "value").min(this.min).max(this.max);
+
+    if (this.autoStepSize)
+      controller.step(
+        (this.max - this.min) / MinMaxProperty.kAutoStepSizeResolution,
+      );
+    else controller.step(this.customStepSize);
+
+    propertyGUI.add(this, "min").onChange((value) => {
+      controller.min(value);
+      this.applyBounds();
+      if (this.autoStepSize)
+        controller.step(
+          (this.max - this.min) / MinMaxProperty.kAutoStepSizeResolution,
+        );
+      controller.updateDisplay();
+    });
+
+    propertyGUI.add(this, "max").onChange((value) => {
+      controller.max(value);
+      this.applyBounds();
+      if (this.autoStepSize)
+        controller.step(
+          (this.max - this.min) / MinMaxProperty.kAutoStepSizeResolution,
+        );
+      controller.updateDisplay();
+    });
+  }
+}
 
 // generate token data in the right format as done in the Artblocks template
 function genTokenData(projectNum) {
@@ -55,64 +125,12 @@ const renderer = new THREE.WebGLRenderer({
 });
 document.body.appendChild(renderer.domElement);
 
-let cameraPosition = new THREE.Vector3(0, -7.5, 8.0);
-const camera = new THREE.PerspectiveCamera(70);
-//camera.position.set(0, -7.5, 8.0);
-camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
-
-let cameraAngle = 45;
-let cameraAngleRad = THREE.MathUtils.degToRad(cameraAngle);
-let direction = new THREE.Vector3(
-  0,
-  Math.sin(cameraAngleRad),
-  -Math.cos(cameraAngleRad),
-);
-console.log(
-  "direction (x,y,z): " + direction.x + "," + direction.y + "," + direction.z,
-);
-
-let lookAtPosition = cameraPosition;
-lookAtPosition.add(direction);
-//camera.lookAt(0, 0, 0);
-camera.lookAt(lookAtPosition.x, lookAtPosition.y, lookAtPosition.z);
-console.log(
-  "look at position (x,y,z): " +
-    lookAtPosition.x +
-    "," +
-    lookAtPosition.y +
-    "," +
-    lookAtPosition.z,
-);
-
-// let cameraDirection = new THREE.Vector3();
-// camera.getWorldDirection(cameraDirection);
-// console.log(
-//   "world direction (x,y,z): " +
-//     cameraDirection.x +
-//     "," +
-//     cameraDirection.y +
-//     "," +
-//     cameraDirection.z,
-// );
-
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-//controls.autoRotate = true;
-
-// controls.object.position.set(
-//   cameraPosition.x,
-//   cameraPosition.y,
-//   cameraPosition.z,
-// );
-controls.target.set(lookAtPosition.x, lookAtPosition.y, lookAtPosition.z);
-controls.update();
-
 let timer = new Timer();
 timer.enableFixedDelta();
 
 let cloudSeed = 83.0;
-let sunPositionX = 4.0;
-let sunPositionY = 3.5;
+let sunPositionX = -1.2;
+let sunPositionY = 2.1;
 let sunPositionZ = -1.0;
 
 // assign random values based on tokenData hash
@@ -126,44 +144,21 @@ if (tokenTest) {
   sunPositionZ = -maxSunPosXZ + 2 * maxSunPosXZ * hashValuesNorm[3];
 }
 
+let cloud = new Cloud(renderer.domElement, {
+  cloudSeed: cloudSeed, //83.0,
+  cloudSize: new THREE.Vector3(2, 1, 2),
+  sunPosition: new THREE.Vector3(sunPositionX, sunPositionY, sunPositionZ),
+});
+
 let params = {
-  skyColor: 0x337fff,
-  skyColorFade: 0xffffff,
   sunPositionX: sunPositionX, //4.0,
   sunPositionY: sunPositionY, //3.5,
   sunPositionZ: sunPositionZ, //-1.0,
-  initialCameraPositionX: cameraPosition.x, //4.0,
-  initialCameraPositionY: cameraPosition.y, //3.5,
-  initialCameraPositionZ: cameraPosition.z, //-1.0,
-  cloudColor: 0xeabf6b,
-  sunColor: "rgb(255, 153, 25)",
-  uniformPixels: true,
-  lastTouchedPixelID: 0,
+  initialCameraPositionX: cloud.initialCameraPosition.x,
+  initialCameraPositionY: cloud.initialCameraPosition.y,
+  initialCameraPositionZ: cloud.initialCameraPosition.z,
   pause: false,
-  lastTime: 0,
-  skyTileIndex: 0,
-  cloudTileIndex: 0,
 };
-
-let cloud = new Cloud(camera, {
-  cloudSeed: cloudSeed, //83.0,
-  cloudCount: 8,
-  cloudSize: new THREE.Vector3(2, 1, 2),
-  sunIntensity: 1.0,
-  sunPosition: new THREE.Vector3(sunPositionX, sunPositionY, sunPositionZ),
-  cloudColor: new THREE.Color(params.cloudColor), //"rgb(234, 191, 107)"
-  skyColor: new THREE.Color(params.skyColor), //"rgb(51, 127, 255)"
-  cloudSteps: 64,
-  shadowSteps: 32, // orig: 8, but too noisy
-  cloudLength: 32,
-  shadowLength: 8, // orig: 2, but too dark
-  noise: false,
-  shift: 1.0,
-  pixelWidth: 10,
-  pixelHeight: 10,
-  blur: false,
-  UVTest: false,
-});
 
 let composer = new EffectComposer(renderer);
 composer.addPass(cloud);
@@ -171,18 +166,29 @@ composer.addPass(cloud);
 let gui = new GUI();
 gui.add(params, "pause");
 
-gui.add(cloud, "shift").min(-100).max(100).step(0.01);
-gui.add(cloud, "cloudSeed").min(1).max(32000).step(1);
-gui.add(cloud, "cloudCount").min(1).max(128).step(1);
-gui.add(cloud, "cloudMinimumDensity").min(0).max(5).step(0.001);
-gui.add(cloud, "cloudRoughness").min(0).max(5).step(0.001);
-gui.add(cloud, "cloudScatter").min(0).max(20).step(0.001);
-gui.add(cloud, "cloudShape").min(-5).max(5).step(0.001);
-gui.add(cloud, "cloudAnimationSpeed").min(0).max(5).step(0.001);
-gui.add(cloud, "cloudAnimationStrength").min(0).max(5).step(0.001);
-gui.add(cloud, "noise");
-gui.add(cloud, "sunIntensity").min(0).max(1.0).step(0.001);
-gui.add(cloud, "sunSize").min(0).max(1.0).step(0.001);
+new MinMaxProperty(-100, 100, cloud, "shift").addGUI(gui, false);
+new MinMaxProperty(1, 32000, cloud, "cloudSeed").addGUI(gui);
+new MinMaxProperty(1, 128, cloud, "cloudCount").addGUI(gui);
+new MinMaxProperty(0, 5, cloud, "cloudMinimumDensity").addGUI(gui);
+new MinMaxProperty(0, 5, cloud, "cloudRoughness").addGUI(gui);
+new MinMaxProperty(0, 20, cloud, "cloudScatter").addGUI(gui);
+new MinMaxProperty(-5, 5, cloud, "cloudShape").addGUI(gui);
+new MinMaxProperty(0, 5, cloud, "cloudAnimationSpeed").addGUI(gui);
+new MinMaxProperty(0, 5, cloud, "cloudAnimationStrength").addGUI(gui);
+new MinMaxProperty(0, 1, cloud, "sunIntensity").addGUI(gui);
+new MinMaxProperty(-2, 2, cloud, "sunSize").addGUI(gui);
+new MinMaxProperty(0, 10, cloud, "skyFadeFactor").addGUI(gui);
+new MinMaxProperty(-4, 4, cloud, "skyFadeShift").addGUI(gui);
+new MinMaxProperty(-1, 2, cloud, "tileMixFactor").addGUI(gui);
+new MinMaxProperty(0, 17, cloud, "skyTileIndex", false).addGUI(gui);
+new MinMaxProperty(0, 17, cloud, "cloudTileIndex", false).addGUI(gui);
+new MinMaxProperty(2, 128, cloud, "pixelSize", false, 2).addGUI(gui);
+
+gui.addColor(cloud, "skyColor");
+gui.addColor(cloud, "skyColorFade");
+gui.addColor(cloud, "cloudColor");
+gui.addColor(cloud, "sunColor");
+
 gui
   .add(params, "sunPositionX")
   .onChange((value) => {
@@ -235,73 +241,6 @@ gui
   .min(-20)
   .max(20)
   .step(0.001);
-gui.addColor(params, "skyColor").onChange((value) => {
-  cloud.skyColor = new THREE.Color(value);
-});
-gui.addColor(params, "skyColorFade").onChange((value) => {
-  cloud.skyColorFade = new THREE.Color(value);
-});
-gui.add(cloud, "skyFadeFactor").min(0).max(1);
-gui.add(cloud, "skyFadeShift").min(-2).max(2);
-gui.addColor(params, "cloudColor").onChange((value) => {
-  cloud.cloudColor = new THREE.Color(value);
-});
-gui.addColor(params, "sunColor").onChange((value) => {
-  cloud.sunColor = new THREE.Color(value);
-});
-
-gui
-  .add(cloud, "pixelWidth")
-  .min(2)
-  .max(64)
-  .step(2)
-  .listen()
-  .onChange(() => {
-    params.lastTouchedPixelID = 0;
-    if (params.uniformPixels) {
-      cloud.pixelHeight = cloud.pixelWidth;
-    }
-  });
-
-gui
-  .add(cloud, "pixelHeight")
-  .min(2)
-  .max(64)
-  .step(2)
-  .listen()
-  .onChange(() => {
-    params.lastTouchedPixelID = 1;
-    if (params.uniformPixels) {
-      cloud.pixelWidth = cloud.pixelHeight;
-    }
-  });
-gui.add(params, "uniformPixels").onChange((value) => {
-  if (value) {
-    const sizes = [cloud.pixelWidth, cloud.pixelHeight];
-    //console.log("max size:" + size);
-    cloud.pixelWidth = sizes[params.lastTouchedPixelID];
-    cloud.pixelHeight = sizes[params.lastTouchedPixelID];
-  }
-});
-gui.add(cloud, "tileMixFactor").min(-1).max(2);
-gui
-  .add(params, "skyTileIndex")
-  .min(0)
-  .max(19)
-  .step(1)
-  .onChange((value) => {
-    cloud.setTileTextureIndex(true, value);
-  });
-gui
-  .add(params, "cloudTileIndex")
-  .min(0)
-  .max(19)
-  .step(1)
-  .onChange((value) => {
-    cloud.setTileTextureIndex(false, value);
-  });
-gui.add(cloud, "blur");
-gui.add(cloud, "UVTest");
 
 const handleResize = () => {
   const dpr = Math.min(window.devicePixelRatio, 2);
@@ -310,8 +249,8 @@ const handleResize = () => {
   composer.setPixelRatio(dpr);
   composer.setSize(window.innerWidth, window.innerHeight);
   cloud.setSize(window.innerWidth * dpr, window.innerHeight * dpr);
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
+  cloud.camera.aspect = window.innerWidth / window.innerHeight;
+  cloud.camera.updateProjectionMatrix();
   if (!cloud.isAnimated()) {
     render();
   }
@@ -319,21 +258,7 @@ const handleResize = () => {
 handleResize();
 window.addEventListener("resize", handleResize);
 
-let lastPolarAngle = 0;
-let lastAzimuthalAngle = 0;
-
-controls.addEventListener("change", () => {
-  const polarAngle = controls.getPolarAngle();
-  const azimuthalAngle = controls.getAzimuthalAngle();
-
-  const rotationDelta =
-    Math.abs(polarAngle - lastPolarAngle) +
-    Math.abs(azimuthalAngle - lastAzimuthalAngle);
-  cloud.regress = rotationDelta > 0.0002;
-
-  lastPolarAngle = polarAngle;
-  lastAzimuthalAngle = azimuthalAngle;
-
+cloud.orbitControls.addEventListener("change", () => {
   if (!cloud.isAnimated()) {
     render();
   }
@@ -342,11 +267,11 @@ controls.addEventListener("change", () => {
 console.log("Starting scene...");
 
 function doAnimate(ms) {
-  // Note: controls.update() needs to be called after every manual update to the camera position
-  // Also required if controls.enableDamping or controls.autoRotate are set to true.
+  // Note: orbitControls.update() needs to be called after every manual update to the camera position
+  // Also required if orbitControls.enableDamping or orbitControls.autoRotate are set to true.
   // See https://threejs.org/docs/?q=orbit#examples/en/controls/OrbitControls
-  if (controls.autoRotate || controls.enableDamping) {
-    controls.update();
+  if (cloud.orbitControls.autoRotate || cloud.orbitControls.enableDamping) {
+    cloud.orbitControls.update();
   }
 
   let timeSeconds = ms / 1000.0;

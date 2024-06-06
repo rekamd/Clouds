@@ -1,13 +1,15 @@
 import * as THREE from "three";
-import { Pass, FullScreenQuad } from "three/examples/jsm/postprocessing/Pass";
-import { cloudFragmentShader, random } from "./shaders";
+import { Pass } from "three/examples/jsm/postprocessing/Pass";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import * as Shaders from "./shaders";
 import { Tiles } from "./Tiles";
 
 class Cloud extends Pass {
   constructor(
-    camera,
+    domElement,
     {
+      skyTileIndex = 0,
+      cloudTileIndex = 0,
       cloudSeed = 83.0,
       cloudCount = 8,
       cloudSize = new THREE.Vector3(2, 1, 2),
@@ -17,23 +19,23 @@ class Cloud extends Pass {
       cloudShape = 0.5453,
       cloudAnimationSpeed = 0.2,
       cloudAnimationStrength = 0.6,
-      sunIntensity = 1.0,
-      sunSize = 0.15,
+      sunIntensity = 0.6,
+      sunSize = -1.6,
       sunPosition = new THREE.Vector3(4.0, 3.5, -1.0),
-      cloudColor = new THREE.Color(0xeabf6b),
-      skyColor = new THREE.Color(0x337fff),
-      skyColorFade = new THREE.Color(1.0, 1.0, 1.0),
+      cloudColor = 0xeabf6b,
+      skyColor = 0x337fff,
+      skyColorFade = 0xffffff,
       skyFadeFactor = 0.5,
-      skyFadeShift = 0.0,
-      sunColor = new THREE.Color(1.0, 0.6, 0.1),
-      cloudSteps = 48,
-      shadowSteps = 8,
-      cloudLength = 16,
-      shadowLength = 2,
+      skyFadeShift = 0.7,
+      sunColor = 0xff9919,
+      cloudSteps = 64,
+      shadowSteps = 32, // orig: 8, but too noisy
+      cloudLength = 32,
+      shadowLength = 8, // orig: 2, but too dark
       noise = false,
-      shift = 1.0,
-      pixelWidth = 1,
-      pixelHeight = 1,
+      shift = 3.0,
+      pixelWidth = 10,
+      pixelHeight = 10,
       tileMixFactor = 0.5,
       blur = false,
       UVTest = false,
@@ -41,6 +43,62 @@ class Cloud extends Pass {
   ) {
     super();
 
+    let cameraPosition = new THREE.Vector3(0, -7.5, 8.0);
+    const camera = new THREE.PerspectiveCamera(70);
+    //camera.position.set(0, -7.5, 8.0);
+    camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
+
+    let cameraAngle = 45;
+    let cameraAngleRad = THREE.MathUtils.degToRad(cameraAngle);
+    let direction = new THREE.Vector3(
+      0,
+      Math.sin(cameraAngleRad),
+      -Math.cos(cameraAngleRad),
+    );
+    console.log(
+      "direction (x,y,z): " +
+        direction.x +
+        "," +
+        direction.y +
+        "," +
+        direction.z,
+    );
+
+    let lookAtPosition = cameraPosition;
+    lookAtPosition.add(direction);
+    //camera.lookAt(0, 0, 0);
+    camera.lookAt(lookAtPosition.x, lookAtPosition.y, lookAtPosition.z);
+    console.log(
+      "look at position (x,y,z): " +
+        lookAtPosition.x +
+        "," +
+        lookAtPosition.y +
+        "," +
+        lookAtPosition.z,
+    );
+
+    // let cameraDirection = new THREE.Vector3();
+    // camera.getWorldDirection(cameraDirection);
+    // console.log(
+    //   "world direction (x,y,z): " +
+    //     cameraDirection.x +
+    //     "," +
+    //     cameraDirection.y +
+    //     "," +
+    //     cameraDirection.z,
+    // );
+
+    const controls = new OrbitControls(camera, domElement);
+    controls.enableDamping = true;
+    //controls.autoRotate = true;
+
+    // controls.object.position.set(
+    //   cameraPosition.x,
+    //   cameraPosition.y,
+    //   cameraPosition.z,
+    // );
+    controls.target.set(lookAtPosition.x, lookAtPosition.y, lookAtPosition.z);
+    controls.update();
     let cameraDirection = new THREE.Vector3();
     camera.getWorldDirection(cameraDirection);
     console.log(
@@ -54,6 +112,8 @@ class Cloud extends Pass {
     let initialCameraPosition = new THREE.Vector3();
     initialCameraPosition.copy(camera.position);
 
+    this.camera = camera;
+    this.orbitControls = controls;
     this.cloudMaterial = new THREE.ShaderMaterial({
       uniforms: {
         uCloudSeed: {
@@ -99,13 +159,13 @@ class Cloud extends Pass {
           value: cameraDirection,
         },
         uCloudColor: {
-          value: cloudColor,
+          value: new THREE.Color(cloudColor),
         },
         uSkyColor: {
-          value: skyColor,
+          value: new THREE.Color(skyColor),
         },
         uSkyColorFade: {
-          value: skyColorFade,
+          value: new THREE.Color(skyColorFade),
         },
         uSkyFadeFactor: {
           value: skyFadeFactor,
@@ -114,7 +174,7 @@ class Cloud extends Pass {
           value: skyFadeShift,
         },
         uSunColor: {
-          value: sunColor,
+          value: new THREE.Color(sunColor),
         },
         uCloudSteps: {
           value: cloudSteps,
@@ -155,17 +215,19 @@ class Cloud extends Pass {
     this.tileMixFactor = tileMixFactor;
     this.resolution = new THREE.Vector2();
     this.pixelMultiplier = [pixelWidth, pixelHeight];
-    this.camera = camera;
     this.cloudFullScreenQuad = new Pass.FullScreenQuad(this.cloudMaterial);
     this.passThroughMaterial = this.createPassThroughMaterial();
     this.passThroughMaterial.uniforms.tTileAtlasSky.value =
-      this.tiles.tileTextureAtlasArray[0];
+      this.tiles.tileTextureAtlasArray[skyTileIndex];
     this.passThroughMaterial.uniforms.tTileAtlasCloud.value =
-      this.tiles.tileTextureAtlasArray[0];
+      this.tiles.tileTextureAtlasArray[cloudTileIndex];
 
     this.passThroughFullScreenQuad = new Pass.FullScreenQuad(
       this.passThroughMaterial,
     );
+
+    this._skyTileIndex = skyTileIndex;
+    this._cloudTileIndex = cloudTileIndex;
 
     this.cloudRenderTarget = new THREE.WebGLRenderTarget();
     const filter = blur ? THREE.LinearFilter : THREE.NearestFilter;
@@ -308,19 +370,19 @@ class Cloud extends Pass {
   }
 
   get skyColor() {
-    return this.material.uniforms.uSkyColor.value;
+    return this.material.uniforms.uSkyColor.value.getHex();
   }
 
   set skyColor(value) {
-    this.material.uniforms.uSkyColor.value = value;
+    this.material.uniforms.uSkyColor.value = new THREE.Color(value);
   }
 
   get skyColorFade() {
-    return this.material.uniforms.uSkyColorFade.value;
+    return this.material.uniforms.uSkyColorFade.value.getHex();
   }
 
   set skyColorFade(value) {
-    this.material.uniforms.uSkyColorFade.value = value;
+    this.material.uniforms.uSkyColorFade.value = new THREE.Color(value);
   }
 
   get skyFadeFactor() {
@@ -340,19 +402,19 @@ class Cloud extends Pass {
   }
 
   get cloudColor() {
-    return this.material.uniforms.uCloudColor.value;
+    return this.material.uniforms.uCloudColor.value.getHex();
   }
 
   set cloudColor(value) {
-    this.material.uniforms.uCloudColor.value = value;
+    this.material.uniforms.uCloudColor.value = new THREE.Color(value);
   }
 
   get sunColor() {
-    return this.material.uniforms.uSunColor.value;
+    return this.material.uniforms.uSunColor.value.getHex();
   }
 
   set sunColor(value) {
-    this.material.uniforms.uSunColor.value = value;
+    this.material.uniforms.uSunColor.value = new THREE.Color(value);
   }
 
   get shift() {
@@ -380,6 +442,14 @@ class Cloud extends Pass {
     this.material.uniforms.uTime.value = value;
   }
 
+  set pixelSize(value) {
+    this.pixelWidth = this.pixelHeight = value;
+  }
+
+  get pixelSize() {
+    return Math.max(this.pixelWidth, this.pixelHeight);
+  }
+
   set pixelWidth(value) {
     this.pixelMultiplier[0] = value;
     this.setSize(this.resolution.x, this.resolution.y);
@@ -405,6 +475,32 @@ class Cloud extends Pass {
     this.material.uniforms.uResolution.value.set(resX, resY);
     this.passThroughMaterial.uniforms.uResolution.value.set(resX, resY);
     this.cloudRenderTarget.setSize(resX, resY);
+  }
+
+  set skyTileIndex(value) {
+    this._skyTileIndex = value;
+  }
+
+  get skyTileIndex() {
+    return this._skyTileIndex;
+  }
+
+  set skyTileIndex(value) {
+    this._skyTileIndex = value;
+    this.setTileTextureIndex(true, value);
+  }
+
+  get skyTileIndex() {
+    return this._skyTileIndex;
+  }
+
+  set cloudTileIndex(value) {
+    this._cloudTileIndex = value;
+    this.setTileTextureIndex(false, value);
+  }
+
+  get cloudTileIndex() {
+    return this._cloudTileIndex;
   }
 
   setTileTextureIndex(skyTiles, tileIndex) {
