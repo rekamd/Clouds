@@ -9,6 +9,18 @@ import { Timer } from "./Timer.js";
 
 let tokenTest = false;
 
+class PropertyRandomizer {
+  constructor(properties = []) {
+    this.properties = properties;
+  }
+
+  randomize() {
+    this.properties.forEach((element, index) => {
+      element.randomize();
+    });
+  }
+}
+
 class MinMaxProperty {
   static kAutoStepSizeResolution = 255;
 
@@ -17,6 +29,7 @@ class MinMaxProperty {
     max,
     object,
     propertyName,
+    randomizable = false,
     autoStepSize = true,
     customStepSize = 1,
   ) {
@@ -26,6 +39,10 @@ class MinMaxProperty {
     this.propertyName = propertyName;
     this.autoStepSize = autoStepSize;
     this.customStepSize = customStepSize;
+
+    this._randomizable = randomizable;
+
+    this.controller = undefined;
 
     this.applyBounds();
   }
@@ -39,6 +56,31 @@ class MinMaxProperty {
       this.min,
       Math.min(val, this.max),
     );
+
+    if (this.controller != undefined) {
+      this.controller.updateDisplay();
+    }
+  }
+
+  set randomizable(val) {
+    this._randomizable = val;
+  }
+
+  get randomizable() {
+    return this._randomizable;
+  }
+
+  randomize() {
+    if (this.randomizable) {
+      let r = Math.random();
+      let stepSize = this.autoStepSize
+        ? (this.max - this.min) / MinMaxProperty.kAutoStepSizeResolution
+        : this.customStepSize;
+
+      let steps = (r * (this.max - this.min)) / stepSize;
+      steps = Math.round(steps);
+      this.value = this.min + steps * stepSize;
+    }
   }
 
   applyBounds() {
@@ -51,6 +93,8 @@ class MinMaxProperty {
     if (collapsed) propertyGUI.close();
 
     let controller = propertyGUI.add(this, "value").min(this.min).max(this.max);
+    this.controller = controller;
+    propertyGUI.add(this, "randomizable");
 
     if (this.autoStepSize)
       controller.step(
@@ -77,6 +121,8 @@ class MinMaxProperty {
         );
       controller.updateDisplay();
     });
+
+    return this;
   }
 }
 
@@ -166,23 +212,49 @@ composer.addPass(cloud);
 let gui = new GUI();
 gui.add(params, "pause");
 
-new MinMaxProperty(-100, 100, cloud, "shift").addGUI(gui, false);
-new MinMaxProperty(1, 32000, cloud, "cloudSeed").addGUI(gui);
-new MinMaxProperty(1, 128, cloud, "cloudCount").addGUI(gui);
-new MinMaxProperty(0, 5, cloud, "cloudMinimumDensity").addGUI(gui);
-new MinMaxProperty(0, 5, cloud, "cloudRoughness").addGUI(gui);
-new MinMaxProperty(0, 20, cloud, "cloudScatter").addGUI(gui);
-new MinMaxProperty(-5, 5, cloud, "cloudShape").addGUI(gui);
-new MinMaxProperty(0, 5, cloud, "cloudAnimationSpeed").addGUI(gui);
-new MinMaxProperty(0, 5, cloud, "cloudAnimationStrength").addGUI(gui);
-new MinMaxProperty(0, 1, cloud, "sunIntensity").addGUI(gui);
-new MinMaxProperty(-2, 2, cloud, "sunSize").addGUI(gui);
-new MinMaxProperty(0, 10, cloud, "skyFadeFactor").addGUI(gui);
-new MinMaxProperty(-4, 4, cloud, "skyFadeShift").addGUI(gui);
-new MinMaxProperty(-1, 2, cloud, "tileMixFactor").addGUI(gui);
-new MinMaxProperty(0, 17, cloud, "skyTileIndex", false).addGUI(gui);
-new MinMaxProperty(0, 17, cloud, "cloudTileIndex", false).addGUI(gui);
-new MinMaxProperty(2, 128, cloud, "pixelSize", false, 2).addGUI(gui);
+let properties = [];
+let randomizer = new PropertyRandomizer(properties);
+gui.add(randomizer, "randomize");
+
+properties.push(new MinMaxProperty(0.1, 10, cloud, "shift").addGUI(gui, false));
+properties.push(
+  new MinMaxProperty(-1, 1, cloud, "shiftDirection", false, false, 2).addGUI(
+    gui,
+  ),
+);
+properties.push(new MinMaxProperty(1, 32000, cloud, "cloudSeed").addGUI(gui));
+properties.push(
+  new MinMaxProperty(-5, 5, cloud, "cloudShape", true).addGUI(gui, false),
+);
+properties.push(
+  new MinMaxProperty(1, 30, cloud, "cloudCount", false, false, 1).addGUI(gui),
+);
+properties.push(new MinMaxProperty(1, 3, cloud, "cloudSizeFactor").addGUI(gui));
+properties.push(
+  new MinMaxProperty(0, 3, cloud, "cloudMinimumDensity").addGUI(gui),
+);
+properties.push(new MinMaxProperty(0, 3, cloud, "cloudRoughness").addGUI(gui));
+properties.push(new MinMaxProperty(1.5, 6, cloud, "cloudScatter").addGUI(gui));
+properties.push(
+  new MinMaxProperty(0, 5, cloud, "cloudAnimationSpeed").addGUI(gui),
+);
+properties.push(
+  new MinMaxProperty(0, 5, cloud, "cloudAnimationStrength").addGUI(gui),
+);
+properties.push(new MinMaxProperty(0, 1, cloud, "sunIntensity").addGUI(gui));
+properties.push(new MinMaxProperty(-2, 2, cloud, "sunSize").addGUI(gui));
+properties.push(new MinMaxProperty(0, 10, cloud, "skyFadeFactor").addGUI(gui));
+properties.push(new MinMaxProperty(-4, 4, cloud, "skyFadeShift").addGUI(gui));
+properties.push(new MinMaxProperty(-1, 2, cloud, "tileMixFactor").addGUI(gui));
+properties.push(
+  new MinMaxProperty(0, 17, cloud, "skyTileIndex", false, false).addGUI(gui),
+);
+properties.push(
+  new MinMaxProperty(0, 17, cloud, "cloudTileIndex", false, false).addGUI(gui),
+);
+properties.push(
+  new MinMaxProperty(2, 128, cloud, "pixelSize", false, false, 2).addGUI(gui),
+);
 
 gui.addColor(cloud, "skyColor");
 gui.addColor(cloud, "skyColorFade");
