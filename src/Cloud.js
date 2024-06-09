@@ -13,6 +13,7 @@ class Cloud extends Pass {
       cloudSeed = 83.0,
       cloudCount = 8,
       cloudSize = new THREE.Vector3(2, 1, 2),
+      cloudSizeFactor = 1.0,
       cloudMinimumDensity = 0.0,
       cloudRoughness = 2.0,
       cloudScatter = 2.2,
@@ -34,6 +35,7 @@ class Cloud extends Pass {
       shadowLength = 8, // orig: 2, but too dark
       noise = false,
       shift = 3.0,
+      shiftDirection = 1.0,
       pixelWidth = 10,
       pixelHeight = 10,
       tileMixFactor = 0.5,
@@ -114,6 +116,11 @@ class Cloud extends Pass {
 
     this.camera = camera;
     this.orbitControls = controls;
+    this._shift = shift;
+    this._shiftDirection = shiftDirection;
+    this._cloudSize = cloudSize;
+    this._cloudSizeFactor = cloudSizeFactor;
+    cloudSize.multiplyScalar(cloudSizeFactor);
     this.cloudMaterial = new THREE.ShaderMaterial({
       uniforms: {
         uCloudSeed: {
@@ -198,7 +205,7 @@ class Cloud extends Pass {
           value: noise,
         },
         uShift: {
-          value: shift,
+          value: shift * shiftDirection,
         },
         projectionMatrixInverse: {
           value: null,
@@ -272,8 +279,20 @@ class Cloud extends Pass {
     this.material.uniforms.uCloudCount.value = value;
   }
 
+  set cloudSizeFactor(val) {
+    this._cloudSizeFactor = val;
+    let cloudSize = new THREE.Vector3();
+    cloudSize.copy(this._cloudSize);
+    cloudSize.multiplyScalar(val);
+    this.material.uniforms.uCloudSize.value = cloudSize;
+  }
+
+  get cloudSizeFactor() {
+    return this._cloudSizeFactor;
+  }
+
   get cloudSize() {
-    return this.material.uniforms.uCloudSize.value;
+    return this._cloudSize;
   }
 
   get cloudMinimumDensity() {
@@ -418,11 +437,21 @@ class Cloud extends Pass {
   }
 
   get shift() {
-    return this.material.uniforms.uShift.value;
+    return this._shift;
   }
 
   set shift(value) {
-    this.material.uniforms.uShift.value = value;
+    this._shift = value;
+    this.material.uniforms.uShift.value = this._shift * this._shiftDirection;
+  }
+
+  get shiftDirection() {
+    return this._shiftDirection;
+  }
+
+  set shiftDirection(value) {
+    this._shiftDirection = value;
+    this.material.uniforms.uShift.value = this._shift * this._shiftDirection;
   }
 
   get noise() {
