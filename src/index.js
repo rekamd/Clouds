@@ -9,6 +9,117 @@ import { Timer } from "./Timer.js";
 
 let tokenTest = false;
 
+class ParameterIO {
+  constructor(showCreateApplyPresetUI = false, parameterGUI = undefined) {
+    this.parameterInfo = {};
+    this.parameterGUI = parameterGUI;
+    this.loadButton = undefined;
+  }
+
+  setParameterGUI(parameterGUI) {
+    this.parameterGUI = parameterGUI;
+  }
+
+  createPreset() {
+    this.parameterInfo = this.parameterGUI.save();
+    if (this.loadButton != undefined) {
+      this.loadButton.enable();
+    }
+  }
+
+  applyPreset() {
+    if (!this.empty) {
+      this.parameterGUI.load(this.parameterInfo);
+      if (this.loadButton != undefined) {
+        this.loadButton.enable();
+      }
+    }
+  }
+
+  savePresetFile() {
+    this.createPreset();
+
+    // Convert JSON object to a string
+    const jsonString = JSON.stringify(this.parameterInfo, null, 2);
+
+    // Create a Blob from the JSON string
+    const blob = new Blob([jsonString], { type: "application/json" });
+
+    // Create a temporary anchor element
+    const a = document.createElement("a");
+
+    // Set the download attribute and file name
+    const url = URL.createObjectURL(blob);
+    a.href = url;
+    a.download = "cloudParameterPreset.json";
+
+    // Append the anchor element to the body
+    document.body.appendChild(a);
+
+    // Click the anchor element to trigger download
+    a.click();
+
+    // Remove the anchor element from the body
+    document.body.removeChild(a);
+
+    // Revoke the object URL to free up memory
+    URL.revokeObjectURL(url);
+  }
+
+  loadPresetFile() {
+    // Create a file input element programmatically
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.style.display = "none"; // Ensure the input is not visible
+
+    const io = this;
+    // Add an event listener to handle file selection
+    input.addEventListener("change", function (event) {
+      const file = event.target.files[0];
+
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          try {
+            const json = JSON.parse(e.target.result);
+            io.parameterInfo = json;
+          } catch (error) {
+            console.error("Error parsing JSON:", error);
+            return;
+          }
+
+          io.applyPreset();
+        };
+        reader.readAsText(file);
+      }
+    });
+
+    // Trigger the file input dialog
+    input.click();
+  }
+
+  get empty() {
+    return Object.keys(this.parameterInfo).length == 0;
+  }
+
+  addGUI(gui) {
+    if (this.showCreateApplyPresetUI) {
+      gui.add(this, "createPreset");
+      this.loadButton = gui.add(this, "applyPreset");
+
+      if (this.empty) {
+        this.loadButton.disable();
+      } else {
+        this.loadButton.enable();
+      }
+    }
+
+    gui.add(this, "savePresetFile");
+    gui.add(this, "loadPresetFile");
+  }
+}
+
 class PropertyRandomizer {
   constructor(properties = []) {
     this.properties = properties;
@@ -212,56 +323,96 @@ composer.addPass(cloud);
 let gui = new GUI();
 gui.add(params, "pause");
 
+let tools = gui.addFolder("Tools");
+tools.open();
 let properties = [];
 let randomizer = new PropertyRandomizer(properties);
-gui.add(randomizer, "randomize");
+tools.add(randomizer, "randomize");
 
-properties.push(new MinMaxProperty(0.1, 10, cloud, "shift").addGUI(gui, false));
+let snapshots = tools.addFolder("Presets");
+snapshots.close();
+let parameterIO = new ParameterIO();
+parameterIO.addGUI(snapshots);
+
+let parameters = gui.addFolder("Parameters");
+parameterIO.setParameterGUI(parameters);
+
+parameters.close();
+properties.push(
+  new MinMaxProperty(0.1, 10, cloud, "shift").addGUI(parameters, false),
+);
 properties.push(
   new MinMaxProperty(-1, 1, cloud, "shiftDirection", false, false, 2).addGUI(
-    gui,
+    parameters,
   ),
 );
-properties.push(new MinMaxProperty(1, 32000, cloud, "cloudSeed").addGUI(gui));
 properties.push(
-  new MinMaxProperty(-5, 5, cloud, "cloudShape", true).addGUI(gui, false),
+  new MinMaxProperty(1, 32000, cloud, "cloudSeed").addGUI(parameters),
 );
 properties.push(
-  new MinMaxProperty(1, 30, cloud, "cloudCount", false, false, 1).addGUI(gui),
-);
-properties.push(new MinMaxProperty(1, 3, cloud, "cloudSizeFactor").addGUI(gui));
-properties.push(
-  new MinMaxProperty(0, 3, cloud, "cloudMinimumDensity").addGUI(gui),
-);
-properties.push(new MinMaxProperty(0, 3, cloud, "cloudRoughness").addGUI(gui));
-properties.push(new MinMaxProperty(1.5, 6, cloud, "cloudScatter").addGUI(gui));
-properties.push(
-  new MinMaxProperty(0, 5, cloud, "cloudAnimationSpeed").addGUI(gui),
+  new MinMaxProperty(-5, 5, cloud, "cloudShape", true).addGUI(
+    parameters,
+    false,
+  ),
 );
 properties.push(
-  new MinMaxProperty(0, 5, cloud, "cloudAnimationStrength").addGUI(gui),
-);
-properties.push(new MinMaxProperty(0, 1, cloud, "sunIntensity").addGUI(gui));
-properties.push(new MinMaxProperty(-2, 2, cloud, "sunSize").addGUI(gui));
-properties.push(new MinMaxProperty(0, 10, cloud, "skyFadeFactor").addGUI(gui));
-properties.push(new MinMaxProperty(-4, 4, cloud, "skyFadeShift").addGUI(gui));
-properties.push(new MinMaxProperty(-1, 2, cloud, "tileMixFactor").addGUI(gui));
-properties.push(
-  new MinMaxProperty(0, 17, cloud, "skyTileIndex", false, false).addGUI(gui),
+  new MinMaxProperty(1, 30, cloud, "cloudCount", false, false, 1).addGUI(
+    parameters,
+  ),
 );
 properties.push(
-  new MinMaxProperty(0, 17, cloud, "cloudTileIndex", false, false).addGUI(gui),
+  new MinMaxProperty(0.8, 3, cloud, "cloudSizeFactor").addGUI(parameters),
 );
 properties.push(
-  new MinMaxProperty(2, 128, cloud, "pixelSize", false, false, 2).addGUI(gui),
+  new MinMaxProperty(0, 3, cloud, "cloudMinimumDensity").addGUI(parameters),
+);
+properties.push(
+  new MinMaxProperty(0, 3, cloud, "cloudRoughness").addGUI(parameters),
+);
+properties.push(
+  new MinMaxProperty(1.5, 6, cloud, "cloudScatter").addGUI(parameters),
+);
+properties.push(
+  new MinMaxProperty(0, 5, cloud, "cloudAnimationSpeed").addGUI(parameters),
+);
+properties.push(
+  new MinMaxProperty(0, 5, cloud, "cloudAnimationStrength").addGUI(parameters),
+);
+properties.push(
+  new MinMaxProperty(0, 1, cloud, "sunIntensity").addGUI(parameters),
+);
+properties.push(new MinMaxProperty(-2, 2, cloud, "sunSize").addGUI(parameters));
+properties.push(
+  new MinMaxProperty(0, 10, cloud, "skyFadeFactor").addGUI(parameters),
+);
+properties.push(
+  new MinMaxProperty(-4, 4, cloud, "skyFadeShift").addGUI(parameters),
+);
+properties.push(
+  new MinMaxProperty(-1, 2, cloud, "tileMixFactor").addGUI(parameters),
+);
+properties.push(
+  new MinMaxProperty(0, 17, cloud, "skyTileIndex", false, false).addGUI(
+    parameters,
+  ),
+);
+properties.push(
+  new MinMaxProperty(0, 17, cloud, "cloudTileIndex", false, false).addGUI(
+    parameters,
+  ),
+);
+properties.push(
+  new MinMaxProperty(2, 128, cloud, "pixelSize", false, false, 2).addGUI(
+    parameters,
+  ),
 );
 
-gui.addColor(cloud, "skyColor");
-gui.addColor(cloud, "skyColorFade");
-gui.addColor(cloud, "cloudColor");
-gui.addColor(cloud, "sunColor");
+parameters.addColor(cloud, "skyColor");
+parameters.addColor(cloud, "skyColorFade");
+parameters.addColor(cloud, "cloudColor");
+parameters.addColor(cloud, "sunColor");
 
-gui
+parameters
   .add(params, "sunPositionX")
   .onChange((value) => {
     let sunPos = cloud.sunPosition;
@@ -273,7 +424,7 @@ gui
   .min(-10)
   .max(10)
   .step(0.001);
-gui
+parameters
   .add(params, "sunPositionY")
   .onChange((value) => {
     let sunPos = cloud.sunPosition;
@@ -283,7 +434,7 @@ gui
   .min(-10)
   .max(10)
   .step(0.001);
-gui
+parameters
   .add(params, "sunPositionZ")
   .onChange((value) => {
     let sunPos = cloud.sunPosition;
@@ -293,7 +444,7 @@ gui
   .min(-10)
   .max(10)
   .step(0.001);
-gui
+parameters
   .add(params, "initialCameraPositionY")
   .onChange((value) => {
     let camPos = cloud.initialCameraPosition;
@@ -303,7 +454,7 @@ gui
   .min(-20)
   .max(20)
   .step(0.001);
-gui
+parameters
   .add(params, "initialCameraPositionZ")
   .onChange((value) => {
     let camPos = cloud.initialCameraPosition;
