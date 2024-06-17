@@ -38,9 +38,10 @@ class Cloud extends Pass {
       shiftDirection = 1.0,
       pixelWidth = 10,
       pixelHeight = 10,
-      tileMixFactor = 0.5,
+      tileMixFactor = 1.0,
       blur = false,
       UVTest = false,
+      cameraAngle = 45.0,
     } = {},
   ) {
     super();
@@ -50,61 +51,18 @@ class Cloud extends Pass {
     //camera.position.set(0, -7.5, 8.0);
     camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
 
-    let cameraAngle = 45;
-    let cameraAngleRad = THREE.MathUtils.degToRad(cameraAngle);
-    let direction = new THREE.Vector3(
-      0,
-      Math.sin(cameraAngleRad),
-      -Math.cos(cameraAngleRad),
-    );
-    console.log(
-      "direction (x,y,z): " +
-        direction.x +
-        "," +
-        direction.y +
-        "," +
-        direction.z,
-    );
-
-    let lookAtPosition = cameraPosition;
-    lookAtPosition.add(direction);
-    //camera.lookAt(0, 0, 0);
-    camera.lookAt(lookAtPosition.x, lookAtPosition.y, lookAtPosition.z);
-    console.log(
-      "look at position (x,y,z): " +
-        lookAtPosition.x +
-        "," +
-        lookAtPosition.y +
-        "," +
-        lookAtPosition.z,
-    );
-
-    // let cameraDirection = new THREE.Vector3();
-    // camera.getWorldDirection(cameraDirection);
-    // console.log(
-    //   "world direction (x,y,z): " +
-    //     cameraDirection.x +
-    //     "," +
-    //     cameraDirection.y +
-    //     "," +
-    //     cameraDirection.z,
-    // );
-
     const controls = new OrbitControls(camera, domElement);
     controls.enableDamping = true;
-    //controls.autoRotate = true;
 
-    // controls.object.position.set(
-    //   cameraPosition.x,
-    //   cameraPosition.y,
-    //   cameraPosition.z,
-    // );
-    controls.target.set(lookAtPosition.x, lookAtPosition.y, lookAtPosition.z);
-    controls.update();
+    this.camera = camera;
+    this.cameraControls = controls;
+
+    this.cameraAngle = cameraAngle;
+
     let cameraDirection = new THREE.Vector3();
     camera.getWorldDirection(cameraDirection);
     console.log(
-      "world direction (x,y,z): " +
+      "(constructor) world direction (x,y,z): " +
         cameraDirection.x +
         "," +
         cameraDirection.y +
@@ -114,8 +72,6 @@ class Cloud extends Pass {
     let initialCameraPosition = new THREE.Vector3();
     initialCameraPosition.copy(camera.position);
 
-    this.camera = camera;
-    this.orbitControls = controls;
     this._shift = shift;
     this._shiftDirection = shiftDirection;
     this._cloudSize = cloudSize;
@@ -373,11 +329,6 @@ class Cloud extends Pass {
 
   set initialCameraPosition(value) {
     this.material.uniforms.uInitialCameraPosition.value = value;
-    //let direction = new THREE.Vector3();
-    //this.camera.getWorldDirection(direction);
-    //this.material.uniforms.uCameraDirection.value.copy(direction);
-    //this.material.uniforms.uCameraPosition.value.copy(this.camera.position);
-    //this.camera.position.value.copy(value);
   }
 
   get initialCameraDirection() {
@@ -541,6 +492,82 @@ class Cloud extends Pass {
       this.passThroughMaterial.uniforms.tTileAtlasCloud.value =
         tiles.tileTextureAtlasArray[tileIndex];
     }
+  }
+
+  set cameraAngle(value) {
+    this._cameraAngle = value;
+
+    let cameraAngleRad = THREE.MathUtils.degToRad(this._cameraAngle);
+    let direction = new THREE.Vector3(
+      0,
+      Math.sin(cameraAngleRad),
+      -Math.cos(cameraAngleRad),
+    );
+    console.log(
+      "(set cameraAngle) direction (x,y,z): " +
+        direction.x +
+        "," +
+        direction.y +
+        "," +
+        direction.z,
+    );
+
+    let lookAtPosition = new THREE.Vector3();
+    lookAtPosition.copy(this.camera.position);
+    lookAtPosition.add(direction);
+
+    let cameraDirection = new THREE.Vector3();
+    this.camera.getWorldDirection(cameraDirection);
+    console.log(
+      "(set cameraAngle): before change: world direction (x,y,z): " +
+        cameraDirection.x +
+        "," +
+        cameraDirection.y +
+        "," +
+        cameraDirection.z,
+    );
+
+    // todo: might not need this:
+    //this.camera.lookAt(lookAtPosition.x, lookAtPosition.y, lookAtPosition.z);
+    console.log(
+      "(set cameraAngle) look at position (x,y,z): " +
+        lookAtPosition.x +
+        "," +
+        lookAtPosition.y +
+        "," +
+        lookAtPosition.z,
+    );
+
+    //this.cameraControls.enableDamping = false;
+    this.cameraControls.target.set(
+      lookAtPosition.x,
+      lookAtPosition.y,
+      lookAtPosition.z,
+    );
+    // this.cameraControls.target0.set(
+    //   lookAtPosition.x,
+    //   lookAtPosition.y,
+    //   lookAtPosition.z,
+    // );
+
+    //for (let i = 0; i < 100; ++i) {
+    this.cameraControls.update();
+    //}
+    //this.cameraControls.enableDamping = true;
+
+    this.camera.getWorldDirection(cameraDirection);
+    console.log(
+      "(set cameraAngle): after change: world direction (x,y,z): " +
+        cameraDirection.x +
+        "," +
+        cameraDirection.y +
+        "," +
+        cameraDirection.z,
+    );
+  }
+
+  get cameraAngle() {
+    return this._cameraAngle;
   }
 
   isAnimated() {

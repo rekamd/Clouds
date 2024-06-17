@@ -320,7 +320,7 @@ export const cloudFragmentShader = /* glsl */ `
     float cloudPixelFactor = step(minCloudDensity, cloudDepth);
 
     // sun glare        
-    finalColor += 1.4 * vec4(0.2, 0.08, 0.04, 1) * pow(sunIntensity, 8.0 );  
+    finalColor += uSunIntensity * 1.4 * vec4(0.2, 0.08, 0.04, 1) * pow(sunIntensity, 8.0 );  
         
     gl_FragColor = vec4(min(finalColor.rgb, vec3(1,1,1)), cloudPixelFactor);
     //gl_FragColor = vec4(vec3(cloudPixelFactor), 1.0);
@@ -551,18 +551,20 @@ void main() {
 
  
   // desaturate tile if it is cloud
-#if 1
+#if 0
   tile.rgb = mix(tile.rgb, vec3(dot(tile.rgb, luminanceWeights)), cloudFlag);
+#elif 1
+  tile.rgb = vec3(dot(tile.rgb, luminanceWeights));
 #endif
 
   // mix tile with gradient using the overlay blend mode
-#if 1
+#if 0
   vec3 gradient = vec3(1.0-tileFactor);
   // todo: use smooth gradient rather than blocky gradient
   tile.rgb = overlay(tile.rgb, gradient);
 #endif
 
-  // display mix of texel and emoji
+  // display blend of texel and tiles
 #if 0 // multiply blend
   //gl_FragColor = overlay(tile, vec4(texel.rgb, uTileMixFactor));
   //gl_FragColor.rgb = mix(texel.rgb, multiply(tile.rgb, texel.rgb), uTileMixFactor);
@@ -571,18 +573,26 @@ void main() {
   gl_FragColor.rgb = mix(multiply(tile.rgb, texel.rgb), tile.rgb, uTileMixFactor);
 #elif 0 // linear interpolation
   gl_FragColor = mix(texel, tile, uTileMixFactor);
-#else // luminosity
+#elif 0 // luminosity blend
   gl_FragColor = vec4(luminosityBlend(texel.rgb, tile.rgb), 1.0);
+#else // overlay blend
+  gl_FragColor = vec4(overlay(tile.rgb, texel.rgb), 1.0);
 #endif
 
-  // todo: get 2 mix factors so that we can show only rendering, or only tiles or 
-  // float mix1 = 
+  // show mix between texel and blend (see above)
   gl_FragColor = mix(texel, gl_FragColor, uTileMixFactor);
+
+  // show mix between texel and tile
+  //gl_FragColor = mix(texel, tile, uTileMixFactor);
   
+  // todo: get 2 mix factor ranges so that we can show only rendering, or only tiles or only blend result
+
   // show only tile
   //gl_FragColor = tile;
   
   // show only texel
   //gl_FragColor = texel;
+
+  //gl_FragColor = vec4(1.0,0.0,0.0,1.0);
 }
 `;
