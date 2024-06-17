@@ -38,7 +38,7 @@ class Cloud extends Pass {
       shiftDirection = 1.0,
       pixelWidth = 10,
       pixelHeight = 10,
-      tileMixFactor = 0.5,
+      tileMixFactor = 1.0,
       blur = false,
       UVTest = false,
       cameraAngle = 45.0,

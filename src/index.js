@@ -389,7 +389,7 @@ properties.push(
   new MinMaxProperty(-4, 4, cloud, "skyFadeShift").addGUI(parameters),
 );
 properties.push(
-  new MinMaxProperty(0.5, 1.2, cloud, "tileMixFactor").addGUI(parameters),
+  new MinMaxProperty(0.8, 1.2, cloud, "tileMixFactor").addGUI(parameters),
 );
 properties.push(
   new MinMaxProperty(0, 17, cloud, "skyTileIndex", false, false).addGUI(
@@ -465,7 +465,7 @@ parameters
   .max(20)
   .step(0.001);
 
-parameters.add(cloud, "cameraAngle").min(-180).max(180);
+parameters.add(cloud, "cameraAngle").min(-90).max(90);
 
 const handleResize = () => {
   const dpr = Math.min(window.devicePixelRatio, 2);
