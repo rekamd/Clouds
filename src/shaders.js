@@ -320,7 +320,7 @@ export const cloudFragmentShader = /* glsl */ `
     float cloudPixelFactor = step(minCloudDensity, cloudDepth);
 
     // sun glare        
-    finalColor += 1.4 * vec4(0.2, 0.08, 0.04, 1) * pow(sunIntensity, 8.0 );  
+    finalColor += uSunIntensity * 1.4 * vec4(0.2, 0.08, 0.04, 1) * pow(sunIntensity, 8.0 );  
         
     gl_FragColor = vec4(min(finalColor.rgb, vec3(1,1,1)), cloudPixelFactor);
     //gl_FragColor = vec4(vec3(cloudPixelFactor), 1.0);
@@ -584,5 +584,7 @@ void main() {
   
   // show only texel
   //gl_FragColor = texel;
+
+  //gl_FragColor = vec4(1.0,0.0,0.0,1.0);
 }
 `;
