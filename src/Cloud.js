@@ -42,6 +42,9 @@ class Cloud extends Pass {
       blur = false,
       UVTest = false,
       cameraAngle = 45.0,
+      cloudOffset = 8.0,
+      backgroundCloudOffset = 8.0,
+      backgroundCloudShiftUpFactor = -1.5,
     } = {},
   ) {
     super();
@@ -79,6 +82,15 @@ class Cloud extends Pass {
     cloudSize.multiplyScalar(cloudSizeFactor);
     this.cloudMaterial = new THREE.ShaderMaterial({
       uniforms: {
+        uCloudOffset: {
+          value: cloudOffset,
+        },
+        uBackgroundCloudOffset: {
+          value: backgroundCloudOffset,
+        },
+        uBackgroundCloudShiftUpFactor: {
+          value: backgroundCloudShiftUpFactor,
+        },
         uCloudSeed: {
           value: cloudSeed,
         },
@@ -503,14 +515,14 @@ class Cloud extends Pass {
       Math.sin(cameraAngleRad),
       -Math.cos(cameraAngleRad),
     );
-    console.log(
-      "(set cameraAngle) direction (x,y,z): " +
-        direction.x +
-        "," +
-        direction.y +
-        "," +
-        direction.z,
-    );
+    // console.log(
+    //   "(set cameraAngle) direction (x,y,z): " +
+    //     direction.x +
+    //     "," +
+    //     direction.y +
+    //     "," +
+    //     direction.z,
+    // );
 
     let lookAtPosition = new THREE.Vector3();
     lookAtPosition.copy(this.camera.position);
@@ -518,56 +530,69 @@ class Cloud extends Pass {
 
     let cameraDirection = new THREE.Vector3();
     this.camera.getWorldDirection(cameraDirection);
-    console.log(
-      "(set cameraAngle): before change: world direction (x,y,z): " +
-        cameraDirection.x +
-        "," +
-        cameraDirection.y +
-        "," +
-        cameraDirection.z,
-    );
+    // console.log(
+    //   "(set cameraAngle): before change: world direction (x,y,z): " +
+    //     cameraDirection.x +
+    //     "," +
+    //     cameraDirection.y +
+    //     "," +
+    //     cameraDirection.z,
+    // );
 
-    // todo: might not need this:
-    //this.camera.lookAt(lookAtPosition.x, lookAtPosition.y, lookAtPosition.z);
-    console.log(
-      "(set cameraAngle) look at position (x,y,z): " +
-        lookAtPosition.x +
-        "," +
-        lookAtPosition.y +
-        "," +
-        lookAtPosition.z,
-    );
+    // console.log(
+    //   "(set cameraAngle) look at position (x,y,z): " +
+    //     lookAtPosition.x +
+    //     "," +
+    //     lookAtPosition.y +
+    //     "," +
+    //     lookAtPosition.z,
+    // );
 
-    //this.cameraControls.enableDamping = false;
     this.cameraControls.target.set(
       lookAtPosition.x,
       lookAtPosition.y,
       lookAtPosition.z,
     );
-    // this.cameraControls.target0.set(
-    //   lookAtPosition.x,
-    //   lookAtPosition.y,
-    //   lookAtPosition.z,
-    // );
 
-    //for (let i = 0; i < 100; ++i) {
     this.cameraControls.update();
-    //}
-    //this.cameraControls.enableDamping = true;
 
     this.camera.getWorldDirection(cameraDirection);
-    console.log(
-      "(set cameraAngle): after change: world direction (x,y,z): " +
-        cameraDirection.x +
-        "," +
-        cameraDirection.y +
-        "," +
-        cameraDirection.z,
-    );
+    // console.log(
+    //   "(set cameraAngle): after change: world direction (x,y,z): " +
+    //     cameraDirection.x +
+    //     "," +
+    //     cameraDirection.y +
+    //     "," +
+    //     cameraDirection.z,
+    // );
   }
 
   get cameraAngle() {
     return this._cameraAngle;
+  }
+
+  set cloudOffset(value) {
+    this.material.uniforms.uCloudOffset.value = value;
+  }
+
+  get cloudOffset() {
+    return this.material.uniforms.uCloudOffset.value;
+  }
+
+  set backgroundCloudOffset(value) {
+    this.material.uniforms.uBackgroundCloudOffset.value = value;
+  }
+
+  get backgroundCloudOffset() {
+    return this.material.uniforms.uBackgroundCloudOffset.value;
+  }
+
+  set backgroundCloudShiftUpFactor(value) {
+    this.material.uniforms.uBackgroundCloudShiftUpFactor.value = value;
+  }
+
+  get backgroundCloudShiftUpFactor() {
+    return this.material.uniforms.uBackgroundCloudShiftUpFactor.value;
   }
 
   isAnimated() {

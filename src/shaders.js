@@ -59,6 +59,9 @@ export const cloudFragmentShader = /* glsl */ `
   uniform float uTime;
   uniform bool uNoise;
   uniform float uShift;
+  uniform float uCloudOffset;
+  uniform float uBackgroundCloudOffset;
+  uniform float uBackgroundCloudShiftUpFactor;
 
   #define FLT_MAX 3.402823466e+38
   #define FLT_MIN 1.175494351e-38
@@ -263,17 +266,14 @@ export const cloudFragmentShader = /* glsl */ `
     
     vec4 eyeDir = viewMatrixInverse * normalize(vec4(point.xy, -1, 0.0));  
 
-    // Todo: reevaluate noise. Can this be added as post effect on clouds as well?
+    // Todo: reevaluate noise. We might not need it anymore.
     // Noise / jitter:
     float defaultHashShape = 43758.5453;
     float jitter = uNoise ? hash(uv.x + uv.y * 50.0 + uTime, defaultHashShape, 0.0, 0.0, 0.0) : 0.0;
       
     vec3 lightDir = normalize(uSunPosition);
           
-    // todo: remove hardcoded shift below
-    // todo: move all this into the Cloud class and provide an initial cloud position
-    // here instead.
-    float cloudOffset = 8.0;
+    float cloudOffset = uCloudOffset;
     float rayShift = cloudOffset;
     vec3 dir = uInitialCameraDirection;
     vec3 cloudPos = uInitialCameraPosition - cloudOffset * dir;
@@ -286,8 +286,8 @@ export const cloudFragmentShader = /* glsl */ `
       uTime, uShift,
       cloudPos, lightDir, ray, rayShift);
     
-    float backgroundCloudOffset = 8.0;
-    float backgroundCloudShiftUpFactor = -1.5;
+    float backgroundCloudOffset = uBackgroundCloudOffset;
+    float backgroundCloudShiftUpFactor = uBackgroundCloudShiftUpFactor;
     vec3 backgroundCloudOffsetVector = backgroundCloudOffset * dir + vec3(0.0, backgroundCloudShiftUpFactor * backgroundCloudOffset, 0.0);
     float backgroundRayShift = length(backgroundCloudOffsetVector);
     vec3 backgroundCloudPos = cloudPos - backgroundCloudOffsetVector;

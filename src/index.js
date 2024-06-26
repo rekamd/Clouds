@@ -10,7 +10,7 @@ import { Timer } from "./Timer.js";
 let tokenTest = false;
 
 class ParameterIO {
-  constructor(showCreateApplyPresetUI = false, parameterGUI = undefined) {
+  constructor(parameterGUI = undefined) {
     this.parameterInfo = {};
     this.parameterGUI = parameterGUI;
     this.loadButton = undefined;
@@ -466,6 +466,10 @@ parameters
   .step(0.001);
 
 parameters.add(cloud, "cameraAngle").min(-90).max(90);
+
+parameters.add(cloud, "cloudOffset").min(0).max(20);
+parameters.add(cloud, "backgroundCloudOffset").min(0).max(20);
+parameters.add(cloud, "backgroundCloudShiftUpFactor").min(-4).max(4);
 
 const handleResize = () => {
   const dpr = Math.min(window.devicePixelRatio, 2);
