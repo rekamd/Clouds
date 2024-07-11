@@ -49,32 +49,6 @@ class Cloud extends Pass {
   ) {
     super();
 
-    let cameraPosition = new THREE.Vector3(0, -7.5, 8.0);
-    const camera = new THREE.PerspectiveCamera(70);
-    //camera.position.set(0, -7.5, 8.0);
-    camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
-
-    const controls = new OrbitControls(camera, domElement);
-    controls.enableDamping = true;
-
-    this.camera = camera;
-    this.cameraControls = controls;
-
-    this.cameraAngle = cameraAngle;
-
-    let cameraDirection = new THREE.Vector3();
-    camera.getWorldDirection(cameraDirection);
-    console.log(
-      "(constructor) world direction (x,y,z): " +
-        cameraDirection.x +
-        "," +
-        cameraDirection.y +
-        "," +
-        cameraDirection.z,
-    );
-    let initialCameraPosition = new THREE.Vector3();
-    initialCameraPosition.copy(camera.position);
-
     this._shift = shift;
     this._shiftDirection = shiftDirection;
     this._cloudSize = cloudSize;
@@ -128,10 +102,10 @@ class Cloud extends Pass {
           value: sunPosition,
         },
         uInitialCameraPosition: {
-          value: initialCameraPosition,
+          value: new THREE.Vector3(0, 0, 0),
         },
         uInitialCameraDirection: {
-          value: cameraDirection,
+          value: new THREE.Vector3(0, 0, 1),
         },
         uCloudColor: {
           value: new THREE.Color(cloudColor),
@@ -184,6 +158,33 @@ class Cloud extends Pass {
       },
       fragmentShader: Shaders.cloudFragmentShader,
     });
+
+    // setup camera
+    let cameraPosition = new THREE.Vector3(0, -7.5, 8.0);
+    const camera = new THREE.PerspectiveCamera(70);
+    camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
+
+    const controls = new OrbitControls(camera, domElement);
+    controls.enableDamping = true;
+
+    this.camera = camera;
+    this.cameraControls = controls;
+
+    this.cameraAngle = cameraAngle;
+
+    // let cameraDirection = new THREE.Vector3();
+    // camera.getWorldDirection(cameraDirection);
+    // console.log(
+    //   "(constructor) world direction (x,y,z): " +
+    //     cameraDirection.x +
+    //     "," +
+    //     cameraDirection.y +
+    //     "," +
+    //     cameraDirection.z,
+    // );
+    let initialCameraPosition = new THREE.Vector3();
+    initialCameraPosition.copy(camera.position);
+    this.initialCameraPosition = initialCameraPosition;
 
     this.tiles = new Tiles();
     this.UVTest = UVTest;
@@ -528,8 +529,8 @@ class Cloud extends Pass {
     lookAtPosition.copy(this.camera.position);
     lookAtPosition.add(direction);
 
-    let cameraDirection = new THREE.Vector3();
-    this.camera.getWorldDirection(cameraDirection);
+    // let cameraDirection = new THREE.Vector3();
+    // this.camera.getWorldDirection(cameraDirection);
     // console.log(
     //   "(set cameraAngle): before change: world direction (x,y,z): " +
     //     cameraDirection.x +
@@ -556,6 +557,7 @@ class Cloud extends Pass {
 
     this.cameraControls.update();
 
+    let cameraDirection = new THREE.Vector3();
     this.camera.getWorldDirection(cameraDirection);
     // console.log(
     //   "(set cameraAngle): after change: world direction (x,y,z): " +
@@ -565,6 +567,8 @@ class Cloud extends Pass {
     //     "," +
     //     cameraDirection.z,
     // );
+
+    this.initialCameraDirection = cameraDirection;
   }
 
   get cameraAngle() {
