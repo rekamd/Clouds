@@ -146,7 +146,7 @@ export const cloudFragmentShader = /* glsl */ `
     // we could make some assumptions here.
     // Alternatively we should probably use the cloudPos input to this function together with the
     // shiftDirection as indication for the cut off positions
-    const float skyCutoffDistance = 30.0;
+    const float skyCutoffDistance = 40.0;
     float maxShiftSpeed = shift;
     float minShiftSpeedFactor = 0.5;
 
