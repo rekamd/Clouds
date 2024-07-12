@@ -44,7 +44,7 @@ class Cloud extends Pass {
       cameraAngle = 45.0,
       cloudOffset = 8.0,
       backgroundCloudOffset = 8.0,
-      backgroundCloudShiftUpFactor = -1.5,
+      backgroundCloudUpShift = -12.0,
     } = {},
   ) {
     super();
@@ -62,8 +62,8 @@ class Cloud extends Pass {
         uBackgroundCloudOffset: {
           value: backgroundCloudOffset,
         },
-        uBackgroundCloudShiftUpFactor: {
-          value: backgroundCloudShiftUpFactor,
+        uBackgroundCloudUpShift: {
+          value: backgroundCloudUpShift,
         },
         uCloudSeed: {
           value: cloudSeed,
@@ -101,10 +101,10 @@ class Cloud extends Pass {
         uSunPosition: {
           value: sunPosition,
         },
-        uInitialCameraPosition: {
+        uCloudPosition: {
           value: new THREE.Vector3(0, 0, 0),
         },
-        uInitialCameraDirection: {
+        uCameraDirection: {
           value: new THREE.Vector3(0, 0, 1),
         },
         uCloudColor: {
@@ -172,19 +172,10 @@ class Cloud extends Pass {
 
     this.cameraAngle = cameraAngle;
 
-    // let cameraDirection = new THREE.Vector3();
-    // camera.getWorldDirection(cameraDirection);
-    // console.log(
-    //   "(constructor) world direction (x,y,z): " +
-    //     cameraDirection.x +
-    //     "," +
-    //     cameraDirection.y +
-    //     "," +
-    //     cameraDirection.z,
-    // );
+    // set cloud position to initial camera position
     let initialCameraPosition = new THREE.Vector3();
     initialCameraPosition.copy(camera.position);
-    this.initialCameraPosition = initialCameraPosition;
+    this.cloudPosition = initialCameraPosition;
 
     this.tiles = new Tiles();
     this.UVTest = UVTest;
@@ -336,20 +327,12 @@ class Cloud extends Pass {
     this.material.uniforms.uSunPosition.value = value;
   }
 
-  get initialCameraPosition() {
-    return this.material.uniforms.uInitialCameraPosition.value;
+  get cloudPosition() {
+    return this.material.uniforms.uCloudPosition.value;
   }
 
-  set initialCameraPosition(value) {
-    this.material.uniforms.uInitialCameraPosition.value = value;
-  }
-
-  get initialCameraDirection() {
-    return this.material.uniforms.uInitialCameraDirection.value;
-  }
-
-  set initialCameraDirection(value) {
-    this.material.uniforms.uInitialCameraDirection.value = value;
+  set cloudPosition(value) {
+    this.material.uniforms.uCloudPosition.value = value;
   }
 
   get skyColor() {
@@ -516,38 +499,10 @@ class Cloud extends Pass {
       Math.sin(cameraAngleRad),
       -Math.cos(cameraAngleRad),
     );
-    // console.log(
-    //   "(set cameraAngle) direction (x,y,z): " +
-    //     direction.x +
-    //     "," +
-    //     direction.y +
-    //     "," +
-    //     direction.z,
-    // );
 
     let lookAtPosition = new THREE.Vector3();
     lookAtPosition.copy(this.camera.position);
     lookAtPosition.add(direction);
-
-    // let cameraDirection = new THREE.Vector3();
-    // this.camera.getWorldDirection(cameraDirection);
-    // console.log(
-    //   "(set cameraAngle): before change: world direction (x,y,z): " +
-    //     cameraDirection.x +
-    //     "," +
-    //     cameraDirection.y +
-    //     "," +
-    //     cameraDirection.z,
-    // );
-
-    // console.log(
-    //   "(set cameraAngle) look at position (x,y,z): " +
-    //     lookAtPosition.x +
-    //     "," +
-    //     lookAtPosition.y +
-    //     "," +
-    //     lookAtPosition.z,
-    // );
 
     this.cameraControls.target.set(
       lookAtPosition.x,
@@ -559,16 +514,8 @@ class Cloud extends Pass {
 
     let cameraDirection = new THREE.Vector3();
     this.camera.getWorldDirection(cameraDirection);
-    // console.log(
-    //   "(set cameraAngle): after change: world direction (x,y,z): " +
-    //     cameraDirection.x +
-    //     "," +
-    //     cameraDirection.y +
-    //     "," +
-    //     cameraDirection.z,
-    // );
 
-    this.initialCameraDirection = cameraDirection;
+    this.material.uniforms.uCameraDirection.value = cameraDirection;
   }
 
   get cameraAngle() {
@@ -591,12 +538,12 @@ class Cloud extends Pass {
     return this.material.uniforms.uBackgroundCloudOffset.value;
   }
 
-  set backgroundCloudShiftUpFactor(value) {
-    this.material.uniforms.uBackgroundCloudShiftUpFactor.value = value;
+  set backgroundCloudUpShift(value) {
+    this.material.uniforms.uBackgroundCloudUpShift.value = value;
   }
 
-  get backgroundCloudShiftUpFactor() {
-    return this.material.uniforms.uBackgroundCloudShiftUpFactor.value;
+  get backgroundCloudUpShift() {
+    return this.material.uniforms.uBackgroundCloudUpShift.value;
   }
 
   isAnimated() {
