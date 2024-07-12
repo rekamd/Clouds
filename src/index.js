@@ -10,7 +10,7 @@ import { Timer } from "./Timer.js";
 let tokenTest = false;
 
 class ParameterIO {
-  constructor(showCreateApplyPresetUI = false, parameterGUI = undefined) {
+  constructor(parameterGUI = undefined) {
     this.parameterInfo = {};
     this.parameterGUI = parameterGUI;
     this.loadButton = undefined;
@@ -311,9 +311,9 @@ let params = {
   sunPositionX: sunPositionX, //4.0,
   sunPositionY: sunPositionY, //3.5,
   sunPositionZ: sunPositionZ, //-1.0,
-  initialCameraPositionX: cloud.initialCameraPosition.x,
-  initialCameraPositionY: cloud.initialCameraPosition.y,
-  initialCameraPositionZ: cloud.initialCameraPosition.z,
+  cloudPositionX: cloud.cloudPosition.x,
+  cloudPositionY: cloud.cloudPosition.y,
+  cloudPositionZ: cloud.cloudPosition.z,
   pause: false,
 };
 
@@ -445,27 +445,31 @@ parameters
   .max(10)
   .step(0.001);
 parameters
-  .add(params, "initialCameraPositionY")
+  .add(params, "cloudPositionY")
   .onChange((value) => {
-    let camPos = cloud.initialCameraPosition;
-    camPos.y = value;
-    cloud.initialCameraPosition = camPos;
+    let cloudPos = cloud.cloudPosition;
+    cloudPos.y = value;
+    cloud.cloudPosition = cloudPos;
   })
   .min(-20)
   .max(20)
   .step(0.001);
 parameters
-  .add(params, "initialCameraPositionZ")
+  .add(params, "cloudPositionZ")
   .onChange((value) => {
-    let camPos = cloud.initialCameraPosition;
-    camPos.z = value;
-    cloud.initialCameraPosition = camPos;
+    let cloudPos = cloud.cloudPosition;
+    cloudPos.z = value;
+    cloud.cloudPosition = cloudPos;
   })
   .min(-20)
   .max(20)
   .step(0.001);
 
 parameters.add(cloud, "cameraAngle").min(-90).max(90);
+
+parameters.add(cloud, "cloudOffset").min(0).max(20);
+parameters.add(cloud, "backgroundCloudOffset").min(0).max(40);
+parameters.add(cloud, "backgroundCloudUpShift").min(-40).max(40);
 
 const handleResize = () => {
   const dpr = Math.min(window.devicePixelRatio, 2);

@@ -42,35 +42,12 @@ class Cloud extends Pass {
       blur = false,
       UVTest = false,
       cameraAngle = 45.0,
+      cloudOffset = 8.0,
+      backgroundCloudOffset = 8.0,
+      backgroundCloudUpShift = -12.0,
     } = {},
   ) {
     super();
-
-    let cameraPosition = new THREE.Vector3(0, -7.5, 8.0);
-    const camera = new THREE.PerspectiveCamera(70);
-    //camera.position.set(0, -7.5, 8.0);
-    camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
-
-    const controls = new OrbitControls(camera, domElement);
-    controls.enableDamping = true;
-
-    this.camera = camera;
-    this.cameraControls = controls;
-
-    this.cameraAngle = cameraAngle;
-
-    let cameraDirection = new THREE.Vector3();
-    camera.getWorldDirection(cameraDirection);
-    console.log(
-      "(constructor) world direction (x,y,z): " +
-        cameraDirection.x +
-        "," +
-        cameraDirection.y +
-        "," +
-        cameraDirection.z,
-    );
-    let initialCameraPosition = new THREE.Vector3();
-    initialCameraPosition.copy(camera.position);
 
     this._shift = shift;
     this._shiftDirection = shiftDirection;
@@ -79,6 +56,15 @@ class Cloud extends Pass {
     cloudSize.multiplyScalar(cloudSizeFactor);
     this.cloudMaterial = new THREE.ShaderMaterial({
       uniforms: {
+        uCloudOffset: {
+          value: cloudOffset,
+        },
+        uBackgroundCloudOffset: {
+          value: backgroundCloudOffset,
+        },
+        uBackgroundCloudUpShift: {
+          value: backgroundCloudUpShift,
+        },
         uCloudSeed: {
           value: cloudSeed,
         },
@@ -115,11 +101,11 @@ class Cloud extends Pass {
         uSunPosition: {
           value: sunPosition,
         },
-        uInitialCameraPosition: {
-          value: initialCameraPosition,
+        uCloudPosition: {
+          value: new THREE.Vector3(0, 0, 0),
         },
-        uInitialCameraDirection: {
-          value: cameraDirection,
+        uCameraDirection: {
+          value: new THREE.Vector3(0, 0, 1),
         },
         uCloudColor: {
           value: new THREE.Color(cloudColor),
@@ -172,6 +158,24 @@ class Cloud extends Pass {
       },
       fragmentShader: Shaders.cloudFragmentShader,
     });
+
+    // setup camera
+    let cameraPosition = new THREE.Vector3(0, -7.5, 8.0);
+    const camera = new THREE.PerspectiveCamera(70);
+    camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
+
+    const controls = new OrbitControls(camera, domElement);
+    controls.enableDamping = true;
+
+    this.camera = camera;
+    this.cameraControls = controls;
+
+    this.cameraAngle = cameraAngle;
+
+    // set cloud position to initial camera position
+    let initialCameraPosition = new THREE.Vector3();
+    initialCameraPosition.copy(camera.position);
+    this.cloudPosition = initialCameraPosition;
 
     this.tiles = new Tiles();
     this.UVTest = UVTest;
@@ -323,20 +327,12 @@ class Cloud extends Pass {
     this.material.uniforms.uSunPosition.value = value;
   }
 
-  get initialCameraPosition() {
-    return this.material.uniforms.uInitialCameraPosition.value;
+  get cloudPosition() {
+    return this.material.uniforms.uCloudPosition.value;
   }
 
-  set initialCameraPosition(value) {
-    this.material.uniforms.uInitialCameraPosition.value = value;
-  }
-
-  get initialCameraDirection() {
-    return this.material.uniforms.uInitialCameraDirection.value;
-  }
-
-  set initialCameraDirection(value) {
-    this.material.uniforms.uInitialCameraDirection.value = value;
+  set cloudPosition(value) {
+    this.material.uniforms.uCloudPosition.value = value;
   }
 
   get skyColor() {
@@ -503,71 +499,51 @@ class Cloud extends Pass {
       Math.sin(cameraAngleRad),
       -Math.cos(cameraAngleRad),
     );
-    console.log(
-      "(set cameraAngle) direction (x,y,z): " +
-        direction.x +
-        "," +
-        direction.y +
-        "," +
-        direction.z,
-    );
 
     let lookAtPosition = new THREE.Vector3();
     lookAtPosition.copy(this.camera.position);
     lookAtPosition.add(direction);
 
-    let cameraDirection = new THREE.Vector3();
-    this.camera.getWorldDirection(cameraDirection);
-    console.log(
-      "(set cameraAngle): before change: world direction (x,y,z): " +
-        cameraDirection.x +
-        "," +
-        cameraDirection.y +
-        "," +
-        cameraDirection.z,
-    );
-
-    // todo: might not need this:
-    //this.camera.lookAt(lookAtPosition.x, lookAtPosition.y, lookAtPosition.z);
-    console.log(
-      "(set cameraAngle) look at position (x,y,z): " +
-        lookAtPosition.x +
-        "," +
-        lookAtPosition.y +
-        "," +
-        lookAtPosition.z,
-    );
-
-    //this.cameraControls.enableDamping = false;
     this.cameraControls.target.set(
       lookAtPosition.x,
       lookAtPosition.y,
       lookAtPosition.z,
     );
-    // this.cameraControls.target0.set(
-    //   lookAtPosition.x,
-    //   lookAtPosition.y,
-    //   lookAtPosition.z,
-    // );
 
-    //for (let i = 0; i < 100; ++i) {
     this.cameraControls.update();
-    //}
-    //this.cameraControls.enableDamping = true;
 
+    let cameraDirection = new THREE.Vector3();
     this.camera.getWorldDirection(cameraDirection);
-    console.log(
-      "(set cameraAngle): after change: world direction (x,y,z): " +
-        cameraDirection.x +
-        "," +
-        cameraDirection.y +
-        "," +
-        cameraDirection.z,
-    );
+
+    this.material.uniforms.uCameraDirection.value = cameraDirection;
   }
 
   get cameraAngle() {
     return this._cameraAngle;
+  }
+
+  set cloudOffset(value) {
+    this.material.uniforms.uCloudOffset.value = value;
+  }
+
+  get cloudOffset() {
+    return this.material.uniforms.uCloudOffset.value;
+  }
+
+  set backgroundCloudOffset(value) {
+    this.material.uniforms.uBackgroundCloudOffset.value = value;
+  }
+
+  get backgroundCloudOffset() {
+    return this.material.uniforms.uBackgroundCloudOffset.value;
+  }
+
+  set backgroundCloudUpShift(value) {
+    this.material.uniforms.uBackgroundCloudUpShift.value = value;
+  }
+
+  get backgroundCloudUpShift() {
+    return this.material.uniforms.uBackgroundCloudUpShift.value;
   }
 
   isAnimated() {

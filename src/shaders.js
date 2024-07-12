@@ -41,8 +41,8 @@ export const cloudFragmentShader = /* glsl */ `
   uniform float uSunSize;
   uniform float uSunIntensity;
   uniform vec3 uSunPosition;
-  uniform vec3 uInitialCameraPosition;
-  uniform vec3 uInitialCameraDirection;
+  uniform vec3 uCloudPosition;
+  uniform vec3 uCameraDirection;
   uniform vec3 uCloudColor;
   uniform vec3 uSkyColor;
   uniform vec3 uSkyColorFade;
@@ -59,6 +59,9 @@ export const cloudFragmentShader = /* glsl */ `
   uniform float uTime;
   uniform bool uNoise;
   uniform float uShift;
+  uniform float uCloudOffset;
+  uniform float uBackgroundCloudOffset;
+  uniform float uBackgroundCloudUpShift;
 
   #define FLT_MAX 3.402823466e+38
   #define FLT_MIN 1.175494351e-38
@@ -143,7 +146,7 @@ export const cloudFragmentShader = /* glsl */ `
     // we could make some assumptions here.
     // Alternatively we should probably use the cloudPos input to this function together with the
     // shiftDirection as indication for the cut off positions
-    const float skyCutoffDistance = 30.0;
+    const float skyCutoffDistance = 40.0;
     float maxShiftSpeed = shift;
     float minShiftSpeedFactor = 0.5;
 
@@ -263,21 +266,18 @@ export const cloudFragmentShader = /* glsl */ `
     
     vec4 eyeDir = viewMatrixInverse * normalize(vec4(point.xy, -1, 0.0));  
 
-    // Todo: reevaluate noise. Can this be added as post effect on clouds as well?
+    // Todo: reevaluate noise. We might not need it anymore.
     // Noise / jitter:
     float defaultHashShape = 43758.5453;
     float jitter = uNoise ? hash(uv.x + uv.y * 50.0 + uTime, defaultHashShape, 0.0, 0.0, 0.0) : 0.0;
       
     vec3 lightDir = normalize(uSunPosition);
           
-    // todo: remove hardcoded shift below
-    // todo: move all this into the Cloud class and provide an initial cloud position
-    // here instead.
-    float cloudOffset = 8.0;
+    float cloudOffset = uCloudOffset;
     float rayShift = cloudOffset;
-    vec3 dir = uInitialCameraDirection;
-    vec3 cloudPos = uInitialCameraPosition - cloudOffset * dir;
-    //gl_FragColor = vec4(uInitialCameraDirection, 1.0);
+    vec3 dir = uCameraDirection;
+    vec3 cloudPos = uCloudPosition - cloudOffset * dir;
+    //gl_FragColor = vec4(uCameraDirection, 1.0);
     //return;
 
     float turbulence = 0.0;
@@ -285,10 +285,8 @@ export const cloudFragmentShader = /* glsl */ `
       uCloudSize, uCloudScatter, uCloudShape, uCloudRoughness,
       uTime, uShift,
       cloudPos, lightDir, ray, rayShift);
-    
-    float backgroundCloudOffset = 8.0;
-    float backgroundCloudShiftUpFactor = -1.5;
-    vec3 backgroundCloudOffsetVector = backgroundCloudOffset * dir + vec3(0.0, backgroundCloudShiftUpFactor * backgroundCloudOffset, 0.0);
+
+    vec3 backgroundCloudOffsetVector = uBackgroundCloudOffset * dir + vec3(0.0, uBackgroundCloudUpShift, 0.0);
     float backgroundRayShift = length(backgroundCloudOffsetVector);
     vec3 backgroundCloudPos = cloudPos - backgroundCloudOffsetVector;
     vec3 backgroundCloudSize = uCloudSize * 0.5;
