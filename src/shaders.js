@@ -512,12 +512,12 @@ void main() {
   sphereCenterUV[3] = vec2(0.55, 0.3);
 
   float sphereRadius = 0.2;
-  float spherRadiusScaled = sphereRadius * min(viewScale.x, viewScale.y);
+  sphereRadius *= min(viewScale.x, viewScale.y);
   float maskAlpha = 0.0;
   for (int i = 0; i < 4; ++i)
   {
-    vec2 sphereCenterUVScaled = sphereCenterUV[i] * viewScale;
-    maskAlpha = max(maskAlpha, step(length(pixelCenterUVScaled - sphereCenterUVScaled), spherRadiusScaled));  
+    sphereCenterUV[i] *= viewScale;
+    maskAlpha = max(maskAlpha, step(length(pixelCenterUVScaled - sphereCenterUV[i]), sphereRadius));  
   }
 
   // Aabb format: vec4(min_x, min_y, max_x, max_y)
@@ -527,6 +527,15 @@ void main() {
   rectAabbUV[1] = vec4(sphereCenterUV[2].x, sphereCenterUV[2].y - sphereRadius,
     sphereCenterUV[1].x, sphereCenterUV[1].y + sphereRadius);
 
+  for (int i = 0; i < 2; ++i)
+  {
+    vec4 aabb = rectAabbUV[i];
+    vec2 minAabb = vec2(aabb.x, aabb.y);
+    vec2 maxAabb = vec2(aabb.z, aabb.w);
+    vec2 minStep = step(minAabb, pixelCenterUVScaled);
+    vec2 maxStep = step(pixelCenterUVScaled, maxAabb);
+    maskAlpha = max(maskAlpha, min(minStep.x, min(minStep.y, min(maxStep.x, maxStep.y))));
+  }
   
 
   //gl_FragColor = mix(vec4(1), vec4(pixelCenterUV, 0, 1), maskAlpha);;
