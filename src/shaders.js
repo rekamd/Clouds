@@ -501,15 +501,35 @@ void main() {
 
   // masking calculation
 #if 1
-  vec2 pixelCenterUV = (pixelCoord + 0.5) * pixelFrac;
-  vec2 sphereCenterUV = vec2(0.5, 0.5);
   vec2 viewScale = normalize(uResolution);
-  sphereCenterUV *= viewScale;
-  pixelCenterUV *= viewScale;
-  float sphereRadius = 0.3 * min(viewScale.x, viewScale.y);
-  float maskAlpha = step(sphereRadius, length(pixelCenterUV - sphereCenterUV));
-  //vec4 color = mix(vec4(pixelCenterUV, 0, 1), vec4(1), maskAlpha);
-  //gl_FragColor = color;
+  vec2 pixelCenterUVScaled = (pixelCoord + 0.5) * pixelFrac;
+  pixelCenterUVScaled *= viewScale;
+
+  vec2 sphereCenterUV[4];
+  sphereCenterUV[0] = vec2(0.45, 0.7);
+  sphereCenterUV[1] = vec2(0.55, 0.7);
+  sphereCenterUV[2] = vec2(0.45, 0.3);
+  sphereCenterUV[3] = vec2(0.55, 0.3);
+
+  float sphereRadius = 0.2;
+  float spherRadiusScaled = sphereRadius * min(viewScale.x, viewScale.y);
+  float maskAlpha = 0.0;
+  for (int i = 0; i < 4; ++i)
+  {
+    vec2 sphereCenterUVScaled = sphereCenterUV[i] * viewScale;
+    maskAlpha = max(maskAlpha, step(length(pixelCenterUVScaled - sphereCenterUVScaled), spherRadiusScaled));  
+  }
+
+  // Aabb format: vec4(min_x, min_y, max_x, max_y)
+  vec4 rectAabbUV[2];
+  rectAabbUV[0] = vec4(sphereCenterUV[2].x - sphereRadius, sphereCenterUV[2].y,
+    sphereCenterUV[1].x + sphereRadius, sphereCenterUV[1].y);
+  rectAabbUV[1] = vec4(sphereCenterUV[2].x, sphereCenterUV[2].y - sphereRadius,
+    sphereCenterUV[1].x, sphereCenterUV[1].y + sphereRadius);
+
+  
+
+  //gl_FragColor = mix(vec4(1), vec4(pixelCenterUV, 0, 1), maskAlpha);;
   //return;
 #endif
 
@@ -597,7 +617,7 @@ void main() {
 
   // masking test
 #if 1
-  blendColor = mix(blendColor, vec4(1), maskAlpha);
+  blendColor = mix(vec4(1), blendColor, maskAlpha);
 #endif
   gl_FragColor = blendColor;
 
