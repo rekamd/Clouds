@@ -499,14 +499,19 @@ void main() {
   vec2 pixelFrac = 1.0 / uResolution;
   vec2 pixelCoord = floor(vUv / pixelFrac);
 
+  // masking calculation
+#if 1
   vec2 pixelCenterUV = (pixelCoord + 0.5) * pixelFrac;
-
   vec2 sphereCenterUV = vec2(0.5, 0.5);
-  float sphereRadius = 0.3;
+  vec2 viewScale = normalize(uResolution);
+  sphereCenterUV *= viewScale;
+  pixelCenterUV *= viewScale;
+  float sphereRadius = 0.3 * min(viewScale.x, viewScale.y);
   float maskAlpha = step(sphereRadius, length(pixelCenterUV - sphereCenterUV));
   //vec4 color = mix(vec4(pixelCenterUV, 0, 1), vec4(1), maskAlpha);
   //gl_FragColor = color;
   //return;
+#endif
 
   vec2 texelLookup = pixelCoord * pixelFrac + 0.5 * pixelFrac;
   vec4 texel = texture2D( tDiffuse, texelLookup );
