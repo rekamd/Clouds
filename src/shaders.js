@@ -494,8 +494,20 @@ vec4 overlay(vec4 baseColor, vec4 layerColor)
 }
 
 void main() {
+  //gl_FragColor = vec4(vUv,0,1);
+  //return;
   vec2 pixelFrac = 1.0 / uResolution;
   vec2 pixelCoord = floor(vUv / pixelFrac);
+
+  vec2 pixelCenterUV = (pixelCoord + 0.5) * pixelFrac;
+
+  vec2 sphereCenterUV = vec2(0.5, 0.5);
+  float sphereRadius = 0.3;
+  float maskAlpha = step(sphereRadius, length(pixelCenterUV - sphereCenterUV));
+  //vec4 color = mix(vec4(pixelCenterUV, 0, 1), vec4(1), maskAlpha);
+  //gl_FragColor = color;
+  //return;
+
   vec2 texelLookup = pixelCoord * pixelFrac + 0.5 * pixelFrac;
   vec4 texel = texture2D( tDiffuse, texelLookup );
 
@@ -563,19 +575,26 @@ void main() {
 #endif
 
   // display blend of texel and tiles
+  vec4 blendColor;
 #if 0 // multiply blend
   //gl_FragColor = overlay(tile, vec4(texel.rgb, uTileMixFactor));
   //gl_FragColor.rgb = mix(texel.rgb, multiply(tile.rgb, texel.rgb), uTileMixFactor);
 
   // todo: in this mode, use smooth gradient rather than blocky gradient
-  gl_FragColor.rgb = mix(multiply(tile.rgb, texel.rgb), tile.rgb, uTileMixFactor);
+  blendColor = vec4(mix(multiply(tile.rgb, texel.rgb), tile.rgb, uTileMixFactor), 1);
 #elif 0 // linear interpolation
-  gl_FragColor = mix(texel, tile, uTileMixFactor);
+  blendColor = mix(texel, tile, uTileMixFactor);
 #elif 0 // luminosity blend
-  gl_FragColor = vec4(luminosityBlend(texel.rgb, tile.rgb), 1.0);
+  blendColor = vec4(luminosityBlend(texel.rgb, tile.rgb), 1);
 #else // overlay blend
-  gl_FragColor = vec4(overlay(tile.rgb, texel.rgb), 1.0);
+  blendColor = vec4(overlay(tile.rgb, texel.rgb), 1);
 #endif
+
+  // masking test
+#if 1
+  blendColor = mix(blendColor, vec4(1), maskAlpha);
+#endif
+  gl_FragColor = blendColor;
 
   // show mix between texel and blend (see above)
   gl_FragColor = mix(texel, gl_FragColor, uTileMixFactor);
