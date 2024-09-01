@@ -547,7 +547,11 @@ void main() {
 
   vec2 pixelCenterUVScaled = (pixelCoord + 0.5);// * pixelFrac;
 
+  // make sure to position window centered on a pixel to ensure consistent
+  // and symmetric outlines all around.
   vec2 windowCenter = uResolution * 0.5;
+  windowCenter = floor(windowCenter) + 0.5;
+
   float windowHeight = uResolution.y * 0.8;
   float windowWidth = windowHeight / 2.0;
   float sphereRadius = windowWidth / 3.0;
