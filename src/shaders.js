@@ -545,7 +545,7 @@ void main() {
   float maskAlpha = 0.0;
   vec2 viewCenter = 0.5 * uResolution;
 
-  vec2 pixelCenterUVScaled = (pixelCoord + 0.5);// * pixelFrac;
+  vec2 pixelCenterUVScaled = (pixelCoord + 0.5);
 
   // make sure to position window centered on a pixel to ensure consistent
   // and symmetric outlines all around.
