@@ -500,21 +500,22 @@ void main() {
   vec2 pixelCoord = floor(vUv / pixelFrac);
 
   // masking calculation
-#if 1
+#if 0
+  float maskAlpha = 0.0;
   vec2 viewScale = normalize(uResolution);
   vec2 pixelCenterUVScaled = (pixelCoord + 0.5) * pixelFrac;
   pixelCenterUVScaled *= viewScale;
 
-  vec2 sphereCenterUV[4];
+  vec2 sphereCenterUV[5];
   sphereCenterUV[0] = vec2(0.45, 0.7);
   sphereCenterUV[1] = vec2(0.55, 0.7);
   sphereCenterUV[2] = vec2(0.45, 0.3);
   sphereCenterUV[3] = vec2(0.55, 0.3);
+  sphereCenterUV[4] = vec2(0.2, 0.2);
 
   float sphereRadius = 0.2;
   sphereRadius *= min(viewScale.x, viewScale.y);
-  float maskAlpha = 0.0;
-  for (int i = 0; i < 4; ++i)
+  for (int i = 0; i < 5; ++i)
   {
     sphereCenterUV[i] *= viewScale;
     maskAlpha = max(maskAlpha, step(length(pixelCenterUVScaled - sphereCenterUV[i]), sphereRadius));  
@@ -540,6 +541,46 @@ void main() {
 
   //gl_FragColor = mix(vec4(1), vec4(pixelCenterUV, 0, 1), maskAlpha);;
   //return;
+#elif 1
+  float maskAlpha = 0.0;
+  vec2 viewCenter = 0.5 * uResolution;
+
+  vec2 pixelCenterUVScaled = (pixelCoord + 0.5);// * pixelFrac;
+
+  vec2 windowCenter = uResolution * 0.5;
+  float windowHeight = uResolution.y * 0.8;
+  float windowWidth = windowHeight / 2.0;
+  float sphereRadius = windowWidth / 3.0;
+  vec2 windowHalfSize = 0.5 * vec2(windowWidth, windowHeight);
+  vec2 sphereCenterUV[4];
+  sphereCenterUV[0] = windowCenter + vec2(-windowHalfSize.x + sphereRadius, windowHalfSize.y - sphereRadius);
+  sphereCenterUV[1] = windowCenter + vec2(windowHalfSize.x - sphereRadius, windowHalfSize.y - sphereRadius);
+  sphereCenterUV[2] = windowCenter + vec2(-windowHalfSize.x + sphereRadius, -windowHalfSize.y + sphereRadius);
+  sphereCenterUV[3] = windowCenter + vec2(windowHalfSize.x - sphereRadius, -windowHalfSize.y + sphereRadius);
+
+  for (int i = 0; i < 4; ++i)
+  {
+    maskAlpha = max(maskAlpha, step(length(pixelCenterUVScaled - sphereCenterUV[i]), sphereRadius));  
+  }
+
+  // Aabb format: vec4(min_x, min_y, max_x, max_y)
+  vec4 rectAabbUV[2];
+  rectAabbUV[0] = vec4(sphereCenterUV[2].x - sphereRadius, sphereCenterUV[2].y,
+    sphereCenterUV[1].x + sphereRadius, sphereCenterUV[1].y);
+  rectAabbUV[1] = vec4(sphereCenterUV[2].x, sphereCenterUV[2].y - sphereRadius,
+    sphereCenterUV[1].x, sphereCenterUV[1].y + sphereRadius);
+
+  for (int i = 0; i < 2; ++i)
+  {
+    vec4 aabb = rectAabbUV[i];
+    vec2 minAabb = vec2(aabb.x, aabb.y);
+    vec2 maxAabb = vec2(aabb.z, aabb.w);
+    vec2 minStep = step(minAabb, pixelCenterUVScaled);
+    vec2 maxStep = step(pixelCenterUVScaled, maxAabb);
+    maskAlpha = max(maskAlpha, min(minStep.x, min(minStep.y, min(maxStep.x, maxStep.y))));
+  }
+#else
+  float maskAlpha = 1.0;
 #endif
 
   vec2 texelLookup = pixelCoord * pixelFrac + 0.5 * pixelFrac;
