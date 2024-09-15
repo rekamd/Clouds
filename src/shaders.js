@@ -556,6 +556,10 @@ void main() {
   float windowWidth = windowHeight / 2.0;
   float windowOffset = windowWidth * 0.5;
 
+  // todo: make sure we have consistent outlines. This is not enough...
+  windowWidth = floor(windowWidth);
+  windowOffset = floor(windowOffset);
+
   float sphereRadius = windowWidth / 3.0;
   vec2 windowHalfSize = 0.5 * vec2(windowWidth, windowHeight);
   vec2 sphereCenterUV[4];
