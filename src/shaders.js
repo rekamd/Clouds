@@ -554,11 +554,12 @@ void main() {
 
   float windowHeight = uResolution.y * 0.8;
   float windowWidth = windowHeight / 2.0;
-  float windowOffset = windowWidth * 0.5;
 
-  // todo: make sure we have consistent outlines. This is not enough...
-  windowWidth = floor(windowWidth);
-  windowOffset = floor(windowOffset);
+  float windowOffset = windowWidth * 0.5;
+  float windowDistance = windowWidth + windowOffset;
+  // make sure to position repeated windows also centered on a pixel by enforcing
+  // distances in full pixels only
+  windowDistance = floor(windowDistance);
 
   float sphereRadius = windowWidth / 3.0;
   vec2 windowHalfSize = 0.5 * vec2(windowWidth, windowHeight);
@@ -568,11 +569,8 @@ void main() {
   sphereCenterUV[2] = windowCenter + vec2(-windowHalfSize.x + sphereRadius, -windowHalfSize.y + sphereRadius);
   sphereCenterUV[3] = windowCenter + vec2(windowHalfSize.x - sphereRadius, -windowHalfSize.y + sphereRadius);
 
-  float pixelCenterCoordRepeatX = mod(pixelCenterUVScaled.x, windowWidth + windowOffset) + 0.5 * uResolution.x;
-  //gl_FragColor = vec4(pixelCenterCoordRepeatX * pixelFrac.x, pixelCenterUVScaled.y * pixelFrac.y, 0.0, 1.0);
-  //return;
-
-  pixelCenterUVScaled = vec2(pixelCenterCoordRepeatX - 0.5 * (windowWidth + windowOffset), pixelCenterUVScaled.y);
+  float pixelCenterCoordRepeatX = mod(pixelCenterUVScaled.x, windowDistance) + windowCenter.x;
+  pixelCenterUVScaled = vec2(pixelCenterCoordRepeatX - 0.5 * windowDistance, pixelCenterUVScaled.y);
  
   for (int i = 0; i < 4; ++i)
   {
