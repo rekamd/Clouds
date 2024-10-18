@@ -627,9 +627,17 @@ void main() {
 #else
   int chosenTileSetCount = 16;
 #endif
-  int tileIndex = int(mod((1.0-luminance) * float(chosenTileSetCount), float(chosenTileSetCount)));
-  float tileFactor = float(tileIndex) / float(chosenTileSetCount);
 
+  int tileIndex = int(mod((1.0-luminance) * float(chosenTileSetCount), float(chosenTileSetCount)));
+  if (maskAlpha == 0.0)
+  {
+    maskAlpha = 1.0;
+    tileIndex = chosenTileSetCount / 2;
+    texel.rgb = vec3(0.3, 0.3, 0.3);
+  }
+
+  float tileFactor = float(tileIndex) / float(chosenTileSetCount);
+  
   // todo: add parameter for noise
   float seed = sin(floor(uTime * 20.0));
   float noise = 1.0 - 2.0 * random(texelLookup, seed); // in [-1,1]
@@ -648,16 +656,16 @@ void main() {
   texel.g += float(uUVTest) * vUv.y;
   //gl_FragColor = vec4(vUv, 1.0, 1.0);
 
- 
-  // desaturate tile if it is cloud
 #if 0
+  // desaturate tile if it is cloud
   tile.rgb = mix(tile.rgb, vec3(dot(tile.rgb, luminanceWeights)), cloudFlag);
 #elif 1
+  // always desaturate
   tile.rgb = vec3(dot(tile.rgb, luminanceWeights));
 #endif
 
-  // mix tile with gradient using the overlay blend mode
 #if 0
+  // mix tile with gradient using the overlay blend mode
   vec3 gradient = vec3(1.0-tileFactor);
   // todo: use smooth gradient rather than blocky gradient
   tile.rgb = overlay(tile.rgb, gradient);
