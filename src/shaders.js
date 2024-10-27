@@ -597,6 +597,16 @@ void main() {
   float maskAlpha = 1.0;
 #endif
 
+  // gradient test
+#if 1
+  float gradientAngle = radians(45.0);
+  float gradientPos = 0.3;
+  vec2 gradientNormal = vec2(sin(gradientAngle), cos(gradientAngle));
+  float alpha = dot(gradientNormal, vUv) - gradientPos;
+  gl_FragColor = vec4(1.0, alpha, alpha, 1.0);
+  return;
+#endif
+
   vec2 texelLookup = pixelCoord * pixelFrac + 0.5 * pixelFrac;
   vec4 texel = texture2D( tDiffuse, texelLookup );
 
