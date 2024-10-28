@@ -500,48 +500,7 @@ void main() {
   vec2 pixelCoord = floor(vUv / pixelFrac);
 
   // masking calculation
-#if 0
-  float maskAlpha = 0.0;
-  vec2 viewScale = normalize(uResolution);
-  vec2 pixelCenterUVScaled = (pixelCoord + 0.5) * pixelFrac;
-  pixelCenterUVScaled *= viewScale;
-
-  vec2 sphereCenterUV[5];
-  sphereCenterUV[0] = vec2(0.45, 0.7);
-  sphereCenterUV[1] = vec2(0.55, 0.7);
-  sphereCenterUV[2] = vec2(0.45, 0.3);
-  sphereCenterUV[3] = vec2(0.55, 0.3);
-  sphereCenterUV[4] = vec2(0.2, 0.2);
-
-  float sphereRadius = 0.2;
-  sphereRadius *= min(viewScale.x, viewScale.y);
-  for (int i = 0; i < 5; ++i)
-  {
-    sphereCenterUV[i] *= viewScale;
-    maskAlpha = max(maskAlpha, step(length(pixelCenterUVScaled - sphereCenterUV[i]), sphereRadius));  
-  }
-
-  // Aabb format: vec4(min_x, min_y, max_x, max_y)
-  vec4 rectAabbUV[2];
-  rectAabbUV[0] = vec4(sphereCenterUV[2].x - sphereRadius, sphereCenterUV[2].y,
-    sphereCenterUV[1].x + sphereRadius, sphereCenterUV[1].y);
-  rectAabbUV[1] = vec4(sphereCenterUV[2].x, sphereCenterUV[2].y - sphereRadius,
-    sphereCenterUV[1].x, sphereCenterUV[1].y + sphereRadius);
-
-  for (int i = 0; i < 2; ++i)
-  {
-    vec4 aabb = rectAabbUV[i];
-    vec2 minAabb = vec2(aabb.x, aabb.y);
-    vec2 maxAabb = vec2(aabb.z, aabb.w);
-    vec2 minStep = step(minAabb, pixelCenterUVScaled);
-    vec2 maxStep = step(pixelCenterUVScaled, maxAabb);
-    maskAlpha = max(maskAlpha, min(minStep.x, min(minStep.y, min(maxStep.x, maxStep.y))));
-  }
-  
-
-  //gl_FragColor = mix(vec4(1), vec4(pixelCenterUV, 0, 1), maskAlpha);;
-  //return;
-#elif 1
+#if 1
   float maskAlpha = 0.0;
   vec2 viewCenter = 0.5 * uResolution;
 
@@ -552,10 +511,10 @@ void main() {
   vec2 windowCenter = uResolution * 0.5;
   windowCenter = floor(windowCenter) + 0.5;
 
-  float windowHeight = uResolution.y * 0.8;
+  float windowHeight = uResolution.y * 0.7;
   float windowWidth = windowHeight / 2.0;
 
-  float windowOffset = windowWidth * 0.5;
+  float windowOffset = windowWidth * 0.75;
   float windowDistance = windowWidth + windowOffset;
   // make sure to position repeated windows also centered on a pixel by enforcing
   // distances in full pixels only
@@ -593,21 +552,51 @@ void main() {
     vec2 maxStep = step(pixelCenterUVScaled, maxAabb);
     maskAlpha = max(maskAlpha, min(minStep.x, min(minStep.y, min(maxStep.x, maxStep.y))));
   }
+
+  // test for scaled window
+  float scaledWindowMaskAlpha = 0.0;
+  float scale = 1.2f;
+  float sphereRadiusScaled = sphereRadius * scale;
+  vec2 sphereCenterUVScaled[4];
+  for (int i = 0; i < 4; ++i)
+  {
+    sphereCenterUVScaled[i] = (sphereCenterUV[i] - windowCenter) * scale + windowCenter;
+    scaledWindowMaskAlpha = max(scaledWindowMaskAlpha, step(length(pixelCenterUVScaled - sphereCenterUVScaled[i]), sphereRadiusScaled));  
+  }
+
+  // Aabb format: vec4(min_x, min_y, max_x, max_y)
+  vec4 rectAabbUVScaled[2];
+  rectAabbUVScaled[0] = vec4(sphereCenterUVScaled[2].x - sphereRadiusScaled, sphereCenterUVScaled[2].y,
+    sphereCenterUVScaled[1].x + sphereRadiusScaled, sphereCenterUVScaled[1].y);
+  rectAabbUVScaled[1] = vec4(sphereCenterUV[2].x, sphereCenterUVScaled[2].y - sphereRadiusScaled,
+    sphereCenterUVScaled[1].x, sphereCenterUVScaled[1].y + sphereRadiusScaled);
+
+  for (int i = 0; i < 2; ++i)
+  {
+    vec4 aabb = rectAabbUVScaled[i];
+    vec2 minAabb = vec2(aabb.x, aabb.y);
+    vec2 maxAabb = vec2(aabb.z, aabb.w);
+    vec2 minStep = step(minAabb, pixelCenterUVScaled);
+    vec2 maxStep = step(pixelCenterUVScaled, maxAabb);
+    scaledWindowMaskAlpha = max(scaledWindowMaskAlpha, min(minStep.x, min(minStep.y, min(maxStep.x, maxStep.y))));
+  }
+
+
 #else
   float maskAlpha = 1.0;
 #endif
 
   // gradient test
 #if 1
-  float gradientAngle = radians(10.0);
+  float gradientAngle = radians(20.0);
   float gradientPos = 0.1;
   vec2 gradientNormal = vec2(sin(gradientAngle), cos(gradientAngle));
   float alpha = dot(gradientNormal, vUv) - gradientPos;
   //gl_FragColor = vec4(1.0, alpha, alpha, 1.0);
   //return;
-  vec3 gradientColorStart = vec3(0.3, 0.3, 0.3);
-  vec3 gradientColorEnd = vec3(0.7, 0.7, 0.7);
-  vec3 gradientMixColor = mix(gradientColorStart, gradientColorEnd, alpha);
+  vec3 gradientColorStart = vec3(0.9, 0.9, 0.9);
+  vec3 gradientColorEnd = vec3(0.95, 0.95, 0.95);
+  vec3 gradientMixColor = mix(gradientColorStart, gradientColorEnd, scaledWindowMaskAlpha != 0.0 ? alpha : 1.0-alpha);
   //gl_FragColor = vec4(gradientMixColor, 1);
   //return;
 #endif
