@@ -555,21 +555,21 @@ void main() {
 
   // test for scaled window
   float scaledWindowMaskAlpha = 0.0;
-  float scale = 1.2f;
+  float scale = 1.4f;
   float sphereRadiusScaled = sphereRadius * scale;
-  vec2 sphereCenterUVScaled[4];
+  //vec2 sphereCenterUVScaled[4];
   for (int i = 0; i < 4; ++i)
   {
-    sphereCenterUVScaled[i] = (sphereCenterUV[i] - windowCenter) * scale + windowCenter;
-    scaledWindowMaskAlpha = max(scaledWindowMaskAlpha, step(length(pixelCenterUVScaled - sphereCenterUVScaled[i]), sphereRadiusScaled));  
+    //sphereCenterUVScaled[i] = (sphereCenterUV[i] - windowCenter) * scale + windowCenter;
+    scaledWindowMaskAlpha = max(scaledWindowMaskAlpha, step(length(pixelCenterUVScaled - sphereCenterUV[i]), sphereRadiusScaled));  
   }
 
   // Aabb format: vec4(min_x, min_y, max_x, max_y)
   vec4 rectAabbUVScaled[2];
-  rectAabbUVScaled[0] = vec4(sphereCenterUVScaled[2].x - sphereRadiusScaled, sphereCenterUVScaled[2].y,
-    sphereCenterUVScaled[1].x + sphereRadiusScaled, sphereCenterUVScaled[1].y);
-  rectAabbUVScaled[1] = vec4(sphereCenterUV[2].x, sphereCenterUVScaled[2].y - sphereRadiusScaled,
-    sphereCenterUVScaled[1].x, sphereCenterUVScaled[1].y + sphereRadiusScaled);
+  rectAabbUVScaled[0] = vec4(sphereCenterUV[2].x - sphereRadiusScaled, sphereCenterUV[2].y,
+    sphereCenterUV[1].x + sphereRadiusScaled, sphereCenterUV[1].y);
+  rectAabbUVScaled[1] = vec4(sphereCenterUV[2].x, sphereCenterUV[2].y - sphereRadiusScaled,
+    sphereCenterUV[1].x, sphereCenterUV[1].y + sphereRadiusScaled);
 
   for (int i = 0; i < 2; ++i)
   {
