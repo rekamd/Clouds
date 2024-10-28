@@ -599,12 +599,17 @@ void main() {
 
   // gradient test
 #if 1
-  float gradientAngle = radians(45.0);
-  float gradientPos = 0.3;
+  float gradientAngle = radians(10.0);
+  float gradientPos = 0.1;
   vec2 gradientNormal = vec2(sin(gradientAngle), cos(gradientAngle));
   float alpha = dot(gradientNormal, vUv) - gradientPos;
-  gl_FragColor = vec4(1.0, alpha, alpha, 1.0);
-  return;
+  //gl_FragColor = vec4(1.0, alpha, alpha, 1.0);
+  //return;
+  vec3 gradientColorStart = vec3(0.3, 0.3, 0.3);
+  vec3 gradientColorEnd = vec3(0.7, 0.7, 0.7);
+  vec3 gradientMixColor = mix(gradientColorStart, gradientColorEnd, alpha);
+  //gl_FragColor = vec4(gradientMixColor, 1);
+  //return;
 #endif
 
   vec2 texelLookup = pixelCoord * pixelFrac + 0.5 * pixelFrac;
@@ -643,7 +648,7 @@ void main() {
   {
     maskAlpha = 1.0;
     tileIndex = chosenTileSetCount / 2;
-    texel.rgb = vec3(0.3, 0.3, 0.3);
+    texel.rgb = gradientMixColor;//vec3(0.3, 0.3, 0.3);
   }
 
   float tileFactor = float(tileIndex) / float(chosenTileSetCount);
@@ -662,9 +667,11 @@ void main() {
   vec4 tile = int(cloudFlag) == 0 ? texture2D( tTileAtlasSky, uvLookup) : texture2D( tTileAtlasCloud, uvLookup);
 
   // mix in uv test color
+#if 0
   texel.r += float(uUVTest) * vUv.x;
   texel.g += float(uUVTest) * vUv.y;
   //gl_FragColor = vec4(vUv, 1.0, 1.0);
+#endif
 
 #if 0
   // desaturate tile if it is cloud
