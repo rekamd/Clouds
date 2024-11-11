@@ -352,6 +352,7 @@ uniform sampler2D tDiffuse;
 uniform sampler2D tTileAtlasSky;
 uniform sampler2D tTileAtlasCloud;
 uniform sampler2D tTileAtlasHull;
+uniform float uWindowFrameScale;
 uniform vec2 uResolution;
 uniform float uTileMixFactor;
 uniform float uTime;
@@ -499,7 +500,7 @@ void main() {
   vec2 pixelFrac = 1.0 / uResolution;
   vec2 pixelCoord = floor(vUv / pixelFrac);
 
-  // masking calculation
+  // window masking
 #if 1
   float maskAlpha = 0.0;
   vec2 viewCenter = 0.5 * uResolution;
@@ -553,14 +554,11 @@ void main() {
     maskAlpha = max(maskAlpha, min(minStep.x, min(minStep.y, min(maxStep.x, maxStep.y))));
   }
 
-  // test for scaled window
+  // window frame:
   float scaledWindowMaskAlpha = 0.0;
-  float scale = 1.4f;
-  float sphereRadiusScaled = sphereRadius * scale;
-  //vec2 sphereCenterUVScaled[4];
+  float sphereRadiusScaled = sphereRadius * (1.0 + uWindowFrameScale);
   for (int i = 0; i < 4; ++i)
   {
-    //sphereCenterUVScaled[i] = (sphereCenterUV[i] - windowCenter) * scale + windowCenter;
     scaledWindowMaskAlpha = max(scaledWindowMaskAlpha, step(length(pixelCenterUVScaled - sphereCenterUV[i]), sphereRadiusScaled));  
   }
 
@@ -580,7 +578,6 @@ void main() {
     vec2 maxStep = step(pixelCenterUVScaled, maxAabb);
     scaledWindowMaskAlpha = max(scaledWindowMaskAlpha, min(minStep.x, min(minStep.y, min(maxStep.x, maxStep.y))));
   }
-
 
 #else
   float maskAlpha = 1.0;

@@ -40,6 +40,7 @@ class Cloud extends Pass {
       pixelWidth = 10,
       pixelHeight = 10,
       tileMixFactor = 1.0,
+      windowFrameScale = 0.4,
       blur = false,
       cameraAngle = 45.0,
       cloudOffset = 8.0,
@@ -179,6 +180,7 @@ class Cloud extends Pass {
 
     this.tiles = new Tiles();
     this.tileMixFactor = tileMixFactor;
+    this.windowFrameScale = windowFrameScale;
     this.resolution = new THREE.Vector2();
     this.pixelMultiplier = [pixelWidth, pixelHeight];
     this.cloudFullScreenQuad = new Pass.FullScreenQuad(this.cloudMaterial);
@@ -559,6 +561,7 @@ class Cloud extends Pass {
     const uniforms = this.passThroughMaterial.uniforms;
     uniforms.tDiffuse.value = this.cloudRenderTarget.texture;
     uniforms.uTileMixFactor.value = this.tileMixFactor;
+    uniforms.uWindowFrameScale.value = this.windowFrameScale;
 
     if (this.renderToScreen) {
       //console.log("render to screen");
@@ -584,6 +587,7 @@ class Cloud extends Pass {
         uTime: { value: 0 },
         uResolution: { value: new THREE.Vector2() },
         uTileMixFactor: { value: 0.5 },
+        uWindowFrameScale: { value: 0.4 },
       },
       vertexShader: Shaders.tileVertexShader,
       fragmentShader: Shaders.tileFragmentShader,
