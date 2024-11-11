@@ -416,6 +416,8 @@ parameters.addColor(cloud, "skyColor");
 parameters.addColor(cloud, "skyColorFade");
 parameters.addColor(cloud, "cloudColor");
 parameters.addColor(cloud, "sunColor");
+parameters.addColor(cloud, "hullColorStart");
+parameters.addColor(cloud, "hullColorEnd");
 
 parameters
   .add(params, "sunPositionX")

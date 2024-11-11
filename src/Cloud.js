@@ -26,6 +26,8 @@ class Cloud extends Pass {
       sunPosition = new THREE.Vector3(4.0, 3.5, -1.0),
       cloudColor = 0xeabf6b,
       skyColor = 0x337fff,
+      hullColorStart = new THREE.Color(),
+      hullColorEnd = new THREE.Color(),
       skyColorFade = 0xffffff,
       skyFadeFactor = 0.5,
       skyFadeShift = 0.7,
@@ -191,6 +193,9 @@ class Cloud extends Pass {
     this._hullTileIndex = hullTileIndex;
     this.updateTileTextureSamplers();
 
+    this.hullColorStart = hullColorStart;
+    this.hullColorEnd = hullColorEnd;
+
     this.passThroughFullScreenQuad = new Pass.FullScreenQuad(
       this.passThroughMaterial
     );
@@ -340,6 +345,26 @@ class Cloud extends Pass {
 
   set skyColor(value) {
     this.material.uniforms.uSkyColor.value = new THREE.Color(value);
+  }
+
+  get hullColorStart() {
+    return this.passThroughMaterial.uniforms.uHullColorStart.value.getHex();
+  }
+
+  set hullColorStart(value) {
+    this.passThroughMaterial.uniforms.uHullColorStart.value = new THREE.Color(
+      value
+    );
+  }
+
+  get hullColorEnd() {
+    return this.passThroughMaterial.uniforms.uHullColorEnd.value.getHex();
+  }
+
+  set hullColorEnd(value) {
+    this.passThroughMaterial.uniforms.uHullColorEnd.value = new THREE.Color(
+      value
+    );
   }
 
   get skyColorFade() {
@@ -584,6 +609,8 @@ class Cloud extends Pass {
         tTileAtlasSky: { value: null },
         tTileAtlasCloud: { value: null },
         tTileAtlasHull: { value: null },
+        uHullColorStart: { value: new THREE.Color() },
+        uHullColorEnd: { value: new THREE.Color() },
         uTime: { value: 0 },
         uResolution: { value: new THREE.Vector2() },
         uTileMixFactor: { value: 0.5 },

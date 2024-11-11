@@ -352,6 +352,8 @@ uniform sampler2D tDiffuse;
 uniform sampler2D tTileAtlasSky;
 uniform sampler2D tTileAtlasCloud;
 uniform sampler2D tTileAtlasHull;
+uniform vec3 uHullColorStart;
+uniform vec3 uHullColorEnd;
 uniform float uWindowFrameScale;
 uniform vec2 uResolution;
 uniform float uTileMixFactor;
@@ -591,8 +593,8 @@ void main() {
   float alpha = dot(gradientNormal, vUv) - gradientPos;
   //gl_FragColor = vec4(1.0, alpha, alpha, 1.0);
   //return;
-  vec3 gradientColorStart = vec3(0.9, 0.9, 0.9);
-  vec3 gradientColorEnd = vec3(0.95, 0.95, 0.95);
+  vec3 gradientColorStart = uHullColorStart; //vec3(0.9, 0.9, 0.9)
+  vec3 gradientColorEnd = uHullColorEnd;   //vec3(0.95, 0.95, 0.95)
   vec3 gradientMixColor = mix(gradientColorStart, gradientColorEnd, scaledWindowMaskAlpha != 0.0 ? alpha : 1.0-alpha);
   //gl_FragColor = vec4(gradientMixColor, 1);
   //return;
