@@ -351,7 +351,7 @@ export const tileFragmentShader = /* glsl */ `
 uniform sampler2D tDiffuse;
 uniform sampler2D tTileAtlasSky;
 uniform sampler2D tTileAtlasCloud;
-uniform bool uUVTest;
+uniform sampler2D tTileAtlasHull;
 uniform vec2 uResolution;
 uniform float uTileMixFactor;
 uniform float uTime;
@@ -586,7 +586,7 @@ void main() {
   float maskAlpha = 1.0;
 #endif
 
-  // gradient test
+  // hull gradient
 #if 1
   float gradientAngle = radians(20.0);
   float gradientPos = 0.1;
@@ -621,46 +621,47 @@ void main() {
   float luminance = dot(luminanceWeights, texel.rgb);
 
   vec2 uvLookup = vUv * uResolution;
-  //int tileCount = 32;
-  int tileCount = 16;
-  uvLookup.x /= float(tileCount);
-  float maxCoordX = 1.0 / float(tileCount);
-  uvLookup.x = mod(uvLookup.x, maxCoordX);
-#if 0 // use full tile set for sky
-  int chosenTileSetCount = int(forceCloudFactor) * tileCount / 2; // choose either 16 or 32. 16 if we want to force clouds (forceCloudFactor == 1.0)
-#else
-  int chosenTileSetCount = 16;
-#endif
+  const int kTileSetCount = 16;
+  const float kTileSetCountF = float(kTileSetCount);
+  const float kMaxCoordX = 1.0 / kTileSetCountF;
+  uvLookup.x /= kTileSetCountF;
+  uvLookup.x = mod(uvLookup.x, kMaxCoordX);
 
-  int tileIndex = int(mod((1.0-luminance) * float(chosenTileSetCount), float(chosenTileSetCount)));
-  if (maskAlpha == 0.0)
+
+  int tileIndex = int(mod((1.0-luminance) * kTileSetCountF, kTileSetCountF));
+  float hullFactor = 1.0 - maskAlpha;
+  if (hullFactor == 1.0)
   {
+    // reset mask to render the tile
     maskAlpha = 1.0;
-    tileIndex = chosenTileSetCount / 2;
-    texel.rgb = gradientMixColor;//vec3(0.3, 0.3, 0.3);
-  }
 
-  float tileFactor = float(tileIndex) / float(chosenTileSetCount);
+    // always pick center tile on which random offset is added below
+    const int kHullTileIndex = kTileSetCount / 2;
+    tileIndex = kHullTileIndex;
+    texel.rgb = gradientMixColor;
+  }
   
   // todo: add parameter for noise
   float seed = sin(floor(uTime * 20.0));
   float noise = 1.0 - 2.0 * random(texelLookup, seed); // in [-1,1]
-  float maxNoiseTileOffsetFactor = 0.1;
-  float maxNoiseTileOffset = ceil(maxNoiseTileOffsetFactor * float(chosenTileSetCount));
+  const float kMaxNoiseTileOffsetFactor = 0.1;
+  const float kMaxNoiseTileOffsetNonHull = ceil(kMaxNoiseTileOffsetFactor * kTileSetCountF);
+  const float kMaxNoiseTileOffsetHull = kTileSetCountF / 2.0;
 
-  float tileOffset = maxNoiseTileOffset * noise;
+  float tileOffset = mix(kMaxNoiseTileOffsetNonHull, kMaxNoiseTileOffsetHull, hullFactor) * noise;
   int finalTileIndex = tileIndex + int(tileOffset);
-  finalTileIndex = max(0, min(finalTileIndex, chosenTileSetCount-1));
-  uvLookup.x += float(finalTileIndex) * maxCoordX;
+  finalTileIndex = max(0, min(finalTileIndex, kTileSetCount-1));
+  uvLookup.x += float(finalTileIndex) * kMaxCoordX;
 
-  vec4 tile = int(cloudFlag) == 0 ? texture2D( tTileAtlasSky, uvLookup) : texture2D( tTileAtlasCloud, uvLookup);
-
-  // mix in uv test color
-#if 0
-  texel.r += float(uUVTest) * vUv.x;
-  texel.g += float(uUVTest) * vUv.y;
-  //gl_FragColor = vec4(vUv, 1.0, 1.0);
-#endif
+  vec4 tile;
+  if (hullFactor == 1.0)
+  {
+    tile = texture2D( tTileAtlasHull, uvLookup);
+  }
+  else
+  {
+    tile = int(cloudFlag) == 0 ? texture2D( tTileAtlasSky, uvLookup) : texture2D( tTileAtlasCloud, uvLookup);
+  }
 
 #if 0
   // desaturate tile if it is cloud
@@ -672,6 +673,7 @@ void main() {
 
 #if 0
   // mix tile with gradient using the overlay blend mode
+  float tileFactor = float(tileIndex) / kTileSetCountF;
   vec3 gradient = vec3(1.0-tileFactor);
   // todo: use smooth gradient rather than blocky gradient
   tile.rgb = overlay(tile.rgb, gradient);

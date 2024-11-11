@@ -10,6 +10,7 @@ class Cloud extends Pass {
     {
       skyTileIndex = 0,
       cloudTileIndex = 0,
+      hullTileIndex = 0,
       cloudSeed = 83.0,
       cloudCount = 8,
       cloudSize = new THREE.Vector3(2, 1, 2),
@@ -40,12 +41,11 @@ class Cloud extends Pass {
       pixelHeight = 10,
       tileMixFactor = 1.0,
       blur = false,
-      UVTest = false,
       cameraAngle = 45.0,
       cloudOffset = 8.0,
       backgroundCloudOffset = 8.0,
       backgroundCloudUpShift = -12.0,
-    } = {},
+    } = {}
   ) {
     super();
 
@@ -178,23 +178,20 @@ class Cloud extends Pass {
     this.cloudPosition = initialCameraPosition;
 
     this.tiles = new Tiles();
-    this.UVTest = UVTest;
     this.tileMixFactor = tileMixFactor;
     this.resolution = new THREE.Vector2();
     this.pixelMultiplier = [pixelWidth, pixelHeight];
     this.cloudFullScreenQuad = new Pass.FullScreenQuad(this.cloudMaterial);
     this.passThroughMaterial = this.createPassThroughMaterial();
-    this.passThroughMaterial.uniforms.tTileAtlasSky.value =
-      this.tiles.tileTextureAtlasArray[skyTileIndex];
-    this.passThroughMaterial.uniforms.tTileAtlasCloud.value =
-      this.tiles.tileTextureAtlasArray[cloudTileIndex];
-
-    this.passThroughFullScreenQuad = new Pass.FullScreenQuad(
-      this.passThroughMaterial,
-    );
 
     this._skyTileIndex = skyTileIndex;
     this._cloudTileIndex = cloudTileIndex;
+    this._hullTileIndex = hullTileIndex;
+    this.updateTileTextureSamplers();
+
+    this.passThroughFullScreenQuad = new Pass.FullScreenQuad(
+      this.passThroughMaterial
+    );
 
     this.cloudRenderTarget = new THREE.WebGLRenderTarget();
     const filter = blur ? THREE.LinearFilter : THREE.NearestFilter;
@@ -455,15 +452,7 @@ class Cloud extends Pass {
 
   set skyTileIndex(value) {
     this._skyTileIndex = value;
-  }
-
-  get skyTileIndex() {
-    return this._skyTileIndex;
-  }
-
-  set skyTileIndex(value) {
-    this._skyTileIndex = value;
-    this.setTileTextureIndex(true, value);
+    this.updateTileTextureSamplers();
   }
 
   get skyTileIndex() {
@@ -472,22 +461,29 @@ class Cloud extends Pass {
 
   set cloudTileIndex(value) {
     this._cloudTileIndex = value;
-    this.setTileTextureIndex(false, value);
+    this.updateTileTextureSamplers();
   }
 
   get cloudTileIndex() {
     return this._cloudTileIndex;
   }
 
-  setTileTextureIndex(skyTiles, tileIndex) {
-    let tiles = new Tiles();
-    if (skyTiles) {
-      this.passThroughMaterial.uniforms.tTileAtlasSky.value =
-        tiles.tileTextureAtlasArray[tileIndex];
-    } else {
-      this.passThroughMaterial.uniforms.tTileAtlasCloud.value =
-        tiles.tileTextureAtlasArray[tileIndex];
-    }
+  set hullTileIndex(value) {
+    this._hullTileIndex = value;
+    this.updateTileTextureSamplers();
+  }
+
+  get hullTileIndex() {
+    return this._hullTileIndex;
+  }
+
+  updateTileTextureSamplers(skyTiles, tileIndex) {
+    this.passThroughMaterial.uniforms.tTileAtlasSky.value =
+      this.tiles.tileTextureAtlasArray[this._skyTileIndex];
+    this.passThroughMaterial.uniforms.tTileAtlasCloud.value =
+      this.tiles.tileTextureAtlasArray[this._cloudTileIndex];
+    this.passThroughMaterial.uniforms.tTileAtlasHull.value =
+      this.tiles.tileTextureAtlasArray[this._hullTileIndex];
   }
 
   set cameraAngle(value) {
@@ -497,7 +493,7 @@ class Cloud extends Pass {
     let direction = new THREE.Vector3(
       0,
       Math.sin(cameraAngleRad),
-      -Math.cos(cameraAngleRad),
+      -Math.cos(cameraAngleRad)
     );
 
     let lookAtPosition = new THREE.Vector3();
@@ -507,7 +503,7 @@ class Cloud extends Pass {
     this.cameraControls.target.set(
       lookAtPosition.x,
       lookAtPosition.y,
-      lookAtPosition.z,
+      lookAtPosition.z
     );
 
     this.cameraControls.update();
@@ -562,7 +558,6 @@ class Cloud extends Pass {
 
     const uniforms = this.passThroughMaterial.uniforms;
     uniforms.tDiffuse.value = this.cloudRenderTarget.texture;
-    uniforms.uUVTest.value = this.UVTest;
     uniforms.uTileMixFactor.value = this.tileMixFactor;
 
     if (this.renderToScreen) {
@@ -585,7 +580,7 @@ class Cloud extends Pass {
         tDiffuse: { value: null },
         tTileAtlasSky: { value: null },
         tTileAtlasCloud: { value: null },
-        uUVTest: { value: false },
+        tTileAtlasHull: { value: null },
         uTime: { value: 0 },
         uResolution: { value: new THREE.Vector2() },
         uTileMixFactor: { value: 0.5 },
