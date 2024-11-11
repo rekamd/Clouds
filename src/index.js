@@ -389,6 +389,9 @@ properties.push(
   new MinMaxProperty(0.8, 1.2, cloud, "tileMixFactor").addGUI(parameters)
 );
 properties.push(
+  new MinMaxProperty(0.0, 1.0, cloud, "windowFrameScale").addGUI(parameters)
+);
+properties.push(
   new MinMaxProperty(0, 17, cloud, "skyTileIndex", false, false).addGUI(
     parameters
   )
