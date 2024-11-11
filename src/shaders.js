@@ -494,8 +494,113 @@ vec4 overlay(vec4 baseColor, vec4 layerColor)
 }
 
 void main() {
+  //gl_FragColor = vec4(vUv,0,1);
+  //return;
   vec2 pixelFrac = 1.0 / uResolution;
   vec2 pixelCoord = floor(vUv / pixelFrac);
+
+  // masking calculation
+#if 1
+  float maskAlpha = 0.0;
+  vec2 viewCenter = 0.5 * uResolution;
+
+  vec2 pixelCenterUVScaled = (pixelCoord + 0.5);
+
+  // make sure to position window centered on a pixel to ensure consistent
+  // and symmetric outlines all around.
+  vec2 windowCenter = uResolution * 0.5;
+  windowCenter = floor(windowCenter) + 0.5;
+
+  float windowHeight = uResolution.y * 0.7;
+  float windowWidth = windowHeight / 2.0;
+
+  float windowOffset = windowWidth * 0.75;
+  float windowDistance = windowWidth + windowOffset;
+  // make sure to position repeated windows also centered on a pixel by enforcing
+  // distances in full pixels only
+  windowDistance = floor(windowDistance);
+
+  float sphereRadius = windowWidth / 3.0;
+  vec2 windowHalfSize = 0.5 * vec2(windowWidth, windowHeight);
+  vec2 sphereCenterUV[4];
+  sphereCenterUV[0] = windowCenter + vec2(-windowHalfSize.x + sphereRadius, windowHalfSize.y - sphereRadius);
+  sphereCenterUV[1] = windowCenter + vec2(windowHalfSize.x - sphereRadius, windowHalfSize.y - sphereRadius);
+  sphereCenterUV[2] = windowCenter + vec2(-windowHalfSize.x + sphereRadius, -windowHalfSize.y + sphereRadius);
+  sphereCenterUV[3] = windowCenter + vec2(windowHalfSize.x - sphereRadius, -windowHalfSize.y + sphereRadius);
+
+  float pixelCenterCoordRepeatX = mod(pixelCenterUVScaled.x, windowDistance) + windowCenter.x;
+  pixelCenterUVScaled = vec2(pixelCenterCoordRepeatX - 0.5 * windowDistance, pixelCenterUVScaled.y);
+ 
+  for (int i = 0; i < 4; ++i)
+  {
+    maskAlpha = max(maskAlpha, step(length(pixelCenterUVScaled - sphereCenterUV[i]), sphereRadius));  
+  }
+
+  // Aabb format: vec4(min_x, min_y, max_x, max_y)
+  vec4 rectAabbUV[2];
+  rectAabbUV[0] = vec4(sphereCenterUV[2].x - sphereRadius, sphereCenterUV[2].y,
+    sphereCenterUV[1].x + sphereRadius, sphereCenterUV[1].y);
+  rectAabbUV[1] = vec4(sphereCenterUV[2].x, sphereCenterUV[2].y - sphereRadius,
+    sphereCenterUV[1].x, sphereCenterUV[1].y + sphereRadius);
+
+  for (int i = 0; i < 2; ++i)
+  {
+    vec4 aabb = rectAabbUV[i];
+    vec2 minAabb = vec2(aabb.x, aabb.y);
+    vec2 maxAabb = vec2(aabb.z, aabb.w);
+    vec2 minStep = step(minAabb, pixelCenterUVScaled);
+    vec2 maxStep = step(pixelCenterUVScaled, maxAabb);
+    maskAlpha = max(maskAlpha, min(minStep.x, min(minStep.y, min(maxStep.x, maxStep.y))));
+  }
+
+  // test for scaled window
+  float scaledWindowMaskAlpha = 0.0;
+  float scale = 1.4f;
+  float sphereRadiusScaled = sphereRadius * scale;
+  //vec2 sphereCenterUVScaled[4];
+  for (int i = 0; i < 4; ++i)
+  {
+    //sphereCenterUVScaled[i] = (sphereCenterUV[i] - windowCenter) * scale + windowCenter;
+    scaledWindowMaskAlpha = max(scaledWindowMaskAlpha, step(length(pixelCenterUVScaled - sphereCenterUV[i]), sphereRadiusScaled));  
+  }
+
+  // Aabb format: vec4(min_x, min_y, max_x, max_y)
+  vec4 rectAabbUVScaled[2];
+  rectAabbUVScaled[0] = vec4(sphereCenterUV[2].x - sphereRadiusScaled, sphereCenterUV[2].y,
+    sphereCenterUV[1].x + sphereRadiusScaled, sphereCenterUV[1].y);
+  rectAabbUVScaled[1] = vec4(sphereCenterUV[2].x, sphereCenterUV[2].y - sphereRadiusScaled,
+    sphereCenterUV[1].x, sphereCenterUV[1].y + sphereRadiusScaled);
+
+  for (int i = 0; i < 2; ++i)
+  {
+    vec4 aabb = rectAabbUVScaled[i];
+    vec2 minAabb = vec2(aabb.x, aabb.y);
+    vec2 maxAabb = vec2(aabb.z, aabb.w);
+    vec2 minStep = step(minAabb, pixelCenterUVScaled);
+    vec2 maxStep = step(pixelCenterUVScaled, maxAabb);
+    scaledWindowMaskAlpha = max(scaledWindowMaskAlpha, min(minStep.x, min(minStep.y, min(maxStep.x, maxStep.y))));
+  }
+
+
+#else
+  float maskAlpha = 1.0;
+#endif
+
+  // gradient test
+#if 1
+  float gradientAngle = radians(20.0);
+  float gradientPos = 0.1;
+  vec2 gradientNormal = vec2(sin(gradientAngle), cos(gradientAngle));
+  float alpha = dot(gradientNormal, vUv) - gradientPos;
+  //gl_FragColor = vec4(1.0, alpha, alpha, 1.0);
+  //return;
+  vec3 gradientColorStart = vec3(0.9, 0.9, 0.9);
+  vec3 gradientColorEnd = vec3(0.95, 0.95, 0.95);
+  vec3 gradientMixColor = mix(gradientColorStart, gradientColorEnd, scaledWindowMaskAlpha != 0.0 ? alpha : 1.0-alpha);
+  //gl_FragColor = vec4(gradientMixColor, 1);
+  //return;
+#endif
+
   vec2 texelLookup = pixelCoord * pixelFrac + 0.5 * pixelFrac;
   vec4 texel = texture2D( tDiffuse, texelLookup );
 
@@ -526,9 +631,17 @@ void main() {
 #else
   int chosenTileSetCount = 16;
 #endif
-  int tileIndex = int(mod((1.0-luminance) * float(chosenTileSetCount), float(chosenTileSetCount)));
-  float tileFactor = float(tileIndex) / float(chosenTileSetCount);
 
+  int tileIndex = int(mod((1.0-luminance) * float(chosenTileSetCount), float(chosenTileSetCount)));
+  if (maskAlpha == 0.0)
+  {
+    maskAlpha = 1.0;
+    tileIndex = chosenTileSetCount / 2;
+    texel.rgb = gradientMixColor;//vec3(0.3, 0.3, 0.3);
+  }
+
+  float tileFactor = float(tileIndex) / float(chosenTileSetCount);
+  
   // todo: add parameter for noise
   float seed = sin(floor(uTime * 20.0));
   float noise = 1.0 - 2.0 * random(texelLookup, seed); // in [-1,1]
@@ -543,39 +656,48 @@ void main() {
   vec4 tile = int(cloudFlag) == 0 ? texture2D( tTileAtlasSky, uvLookup) : texture2D( tTileAtlasCloud, uvLookup);
 
   // mix in uv test color
+#if 0
   texel.r += float(uUVTest) * vUv.x;
   texel.g += float(uUVTest) * vUv.y;
   //gl_FragColor = vec4(vUv, 1.0, 1.0);
+#endif
 
- 
-  // desaturate tile if it is cloud
 #if 0
+  // desaturate tile if it is cloud
   tile.rgb = mix(tile.rgb, vec3(dot(tile.rgb, luminanceWeights)), cloudFlag);
 #elif 1
+  // always desaturate
   tile.rgb = vec3(dot(tile.rgb, luminanceWeights));
 #endif
 
-  // mix tile with gradient using the overlay blend mode
 #if 0
+  // mix tile with gradient using the overlay blend mode
   vec3 gradient = vec3(1.0-tileFactor);
   // todo: use smooth gradient rather than blocky gradient
   tile.rgb = overlay(tile.rgb, gradient);
 #endif
 
   // display blend of texel and tiles
+  vec4 blendColor;
 #if 0 // multiply blend
   //gl_FragColor = overlay(tile, vec4(texel.rgb, uTileMixFactor));
   //gl_FragColor.rgb = mix(texel.rgb, multiply(tile.rgb, texel.rgb), uTileMixFactor);
 
   // todo: in this mode, use smooth gradient rather than blocky gradient
-  gl_FragColor.rgb = mix(multiply(tile.rgb, texel.rgb), tile.rgb, uTileMixFactor);
+  blendColor = vec4(mix(multiply(tile.rgb, texel.rgb), tile.rgb, uTileMixFactor), 1);
 #elif 0 // linear interpolation
-  gl_FragColor = mix(texel, tile, uTileMixFactor);
+  blendColor = mix(texel, tile, uTileMixFactor);
 #elif 0 // luminosity blend
-  gl_FragColor = vec4(luminosityBlend(texel.rgb, tile.rgb), 1.0);
+  blendColor = vec4(luminosityBlend(texel.rgb, tile.rgb), 1);
 #else // overlay blend
-  gl_FragColor = vec4(overlay(tile.rgb, texel.rgb), 1.0);
+  blendColor = vec4(overlay(tile.rgb, texel.rgb), 1);
 #endif
+
+  // masking test
+#if 1
+  blendColor = mix(vec4(1), blendColor, maskAlpha);
+#endif
+  gl_FragColor = blendColor;
 
   // show mix between texel and blend (see above)
   gl_FragColor = mix(texel, gl_FragColor, uTileMixFactor);
