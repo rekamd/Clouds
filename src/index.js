@@ -142,7 +142,7 @@ class MinMaxProperty {
     propertyName,
     randomizable = false,
     autoStepSize = true,
-    customStepSize = 1,
+    customStepSize = 1
   ) {
     this.min = min;
     this.max = max;
@@ -165,7 +165,7 @@ class MinMaxProperty {
   set value(val) {
     this.object[this.propertyName] = Math.max(
       this.min,
-      Math.min(val, this.max),
+      Math.min(val, this.max)
     );
 
     if (this.controller != undefined) {
@@ -209,7 +209,7 @@ class MinMaxProperty {
 
     if (this.autoStepSize)
       controller.step(
-        (this.max - this.min) / MinMaxProperty.kAutoStepSizeResolution,
+        (this.max - this.min) / MinMaxProperty.kAutoStepSizeResolution
       );
     else controller.step(this.customStepSize);
 
@@ -218,7 +218,7 @@ class MinMaxProperty {
       this.applyBounds();
       if (this.autoStepSize)
         controller.step(
-          (this.max - this.min) / MinMaxProperty.kAutoStepSizeResolution,
+          (this.max - this.min) / MinMaxProperty.kAutoStepSizeResolution
         );
       controller.updateDisplay();
     });
@@ -228,7 +228,7 @@ class MinMaxProperty {
       this.applyBounds();
       if (this.autoStepSize)
         controller.step(
-          (this.max - this.min) / MinMaxProperty.kAutoStepSizeResolution,
+          (this.max - this.min) / MinMaxProperty.kAutoStepSizeResolution
         );
       controller.updateDisplay();
     });
@@ -339,72 +339,74 @@ parameterIO.setParameterGUI(parameters);
 
 parameters.close();
 properties.push(
-  new MinMaxProperty(0.1, 10, cloud, "shift").addGUI(parameters, false),
+  new MinMaxProperty(0.1, 10, cloud, "shift").addGUI(parameters, false)
 );
 properties.push(
   new MinMaxProperty(-1, 1, cloud, "shiftDirection", false, false, 2).addGUI(
-    parameters,
-  ),
+    parameters
+  )
 );
 properties.push(
-  new MinMaxProperty(1, 32000, cloud, "cloudSeed").addGUI(parameters),
+  new MinMaxProperty(1, 32000, cloud, "cloudSeed").addGUI(parameters)
 );
 properties.push(
-  new MinMaxProperty(-5, 5, cloud, "cloudShape", true).addGUI(
-    parameters,
-    false,
-  ),
+  new MinMaxProperty(-5, 5, cloud, "cloudShape", true).addGUI(parameters, false)
 );
 properties.push(
   new MinMaxProperty(1, 30, cloud, "cloudCount", false, false, 1).addGUI(
-    parameters,
-  ),
+    parameters
+  )
 );
 properties.push(
-  new MinMaxProperty(0.8, 3, cloud, "cloudSizeFactor").addGUI(parameters),
+  new MinMaxProperty(0.8, 3, cloud, "cloudSizeFactor").addGUI(parameters)
 );
 properties.push(
-  new MinMaxProperty(0, 3, cloud, "cloudMinimumDensity").addGUI(parameters),
+  new MinMaxProperty(0, 3, cloud, "cloudMinimumDensity").addGUI(parameters)
 );
 properties.push(
-  new MinMaxProperty(0, 3, cloud, "cloudRoughness").addGUI(parameters),
+  new MinMaxProperty(0, 3, cloud, "cloudRoughness").addGUI(parameters)
 );
 properties.push(
-  new MinMaxProperty(1.5, 6, cloud, "cloudScatter").addGUI(parameters),
+  new MinMaxProperty(1.5, 6, cloud, "cloudScatter").addGUI(parameters)
 );
 properties.push(
-  new MinMaxProperty(0, 5, cloud, "cloudAnimationSpeed").addGUI(parameters),
+  new MinMaxProperty(0, 5, cloud, "cloudAnimationSpeed").addGUI(parameters)
 );
 properties.push(
-  new MinMaxProperty(0, 5, cloud, "cloudAnimationStrength").addGUI(parameters),
+  new MinMaxProperty(0, 5, cloud, "cloudAnimationStrength").addGUI(parameters)
 );
 properties.push(
-  new MinMaxProperty(0, 1, cloud, "sunIntensity").addGUI(parameters),
+  new MinMaxProperty(0, 1, cloud, "sunIntensity").addGUI(parameters)
 );
 properties.push(new MinMaxProperty(-2, 2, cloud, "sunSize").addGUI(parameters));
 properties.push(
-  new MinMaxProperty(0, 10, cloud, "skyFadeFactor").addGUI(parameters),
+  new MinMaxProperty(0, 10, cloud, "skyFadeFactor").addGUI(parameters)
 );
 properties.push(
-  new MinMaxProperty(-4, 4, cloud, "skyFadeShift").addGUI(parameters),
+  new MinMaxProperty(-4, 4, cloud, "skyFadeShift").addGUI(parameters)
 );
 properties.push(
-  new MinMaxProperty(0.8, 1.2, cloud, "tileMixFactor").addGUI(parameters),
+  new MinMaxProperty(0.8, 1.2, cloud, "tileMixFactor").addGUI(parameters)
 );
 properties.push(
   new MinMaxProperty(0, 17, cloud, "skyTileIndex", false, false).addGUI(
-    parameters,
-  ),
+    parameters
+  )
 );
 properties.push(
   new MinMaxProperty(0, 17, cloud, "cloudTileIndex", false, false).addGUI(
-    parameters,
-  ),
+    parameters
+  )
+);
+properties.push(
+  new MinMaxProperty(0, 17, cloud, "hullTileIndex", false, false).addGUI(
+    parameters
+  )
 );
 properties.push(
   new MinMaxProperty(2, 128, cloud, "pixelSize", false, false, 2).addGUI(
-    parameters,
-  ),
+    parameters
+  )
 );
 
 parameters.addColor(cloud, "skyColor");
