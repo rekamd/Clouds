@@ -354,6 +354,8 @@ uniform sampler2D tTileAtlasCloud;
 uniform sampler2D tTileAtlasHull;
 uniform vec3 uHullColorStart;
 uniform vec3 uHullColorEnd;
+uniform float uHullGradientShift;
+uniform float uHullGradientAngle;
 uniform float uWindowFrameScale;
 uniform vec2 uResolution;
 uniform float uTileMixFactor;
@@ -361,6 +363,8 @@ uniform float uTime;
 varying vec2 vUv;
 
 ${random}
+
+#define GLSL_PI 3.1415926535897932384626433832795
 
 float minColor(vec3 c)
 {
@@ -585,21 +589,6 @@ void main() {
   float maskAlpha = 1.0;
 #endif
 
-  // hull gradient
-#if 1
-  float gradientAngle = radians(20.0);
-  float gradientPos = 0.1;
-  vec2 gradientNormal = vec2(sin(gradientAngle), cos(gradientAngle));
-  float alpha = dot(gradientNormal, vUv) - gradientPos;
-  //gl_FragColor = vec4(1.0, alpha, alpha, 1.0);
-  //return;
-  vec3 gradientColorStart = uHullColorStart; //vec3(0.9, 0.9, 0.9)
-  vec3 gradientColorEnd = uHullColorEnd;   //vec3(0.95, 0.95, 0.95)
-  vec3 gradientMixColor = mix(gradientColorStart, gradientColorEnd, scaledWindowMaskAlpha != 0.0 ? alpha : 1.0-alpha);
-  //gl_FragColor = vec4(gradientMixColor, 1);
-  //return;
-#endif
-
   vec2 texelLookup = pixelCoord * pixelFrac + 0.5 * pixelFrac;
   vec4 texel = texture2D( tDiffuse, texelLookup );
 
@@ -637,7 +626,7 @@ void main() {
     // always pick center tile on which random offset is added below
     const int kHullTileIndex = kTileSetCount / 2;
     tileIndex = kHullTileIndex;
-    texel.rgb = gradientMixColor;
+    texel.rgb = uHullColorStart;
   }
   
   // todo: add parameter for noise
@@ -670,14 +659,6 @@ void main() {
   tile.rgb = vec3(dot(tile.rgb, luminanceWeights));
 #endif
 
-#if 0
-  // mix tile with gradient using the overlay blend mode
-  float tileFactor = float(tileIndex) / kTileSetCountF;
-  vec3 gradient = vec3(1.0-tileFactor);
-  // todo: use smooth gradient rather than blocky gradient
-  tile.rgb = overlay(tile.rgb, gradient);
-#endif
-
   // display blend of texel and tiles
   vec4 blendColor;
 #if 0 // multiply blend
@@ -693,6 +674,22 @@ void main() {
 #else // overlay blend
   blendColor = vec4(overlay(tile.rgb, texel.rgb), 1);
 #endif
+
+  if (hullFactor == 1.0)
+  {
+    float gradientAngle = radians(uHullGradientAngle);
+    float gradientPos = uHullGradientShift;
+    vec2 gradientNormal = vec2(sin(gradientAngle), cos(gradientAngle));
+    float gradientAlpha = dot(gradientNormal, vUv) - gradientPos;
+    gradientAlpha = max(0.0, min(gradientAlpha, 1.0));
+    if (scaledWindowMaskAlpha != 0.0)
+    {
+      gradientAlpha = 1.0 - gradientAlpha;
+    }
+    blendColor = mix(vec4(uHullColorEnd, 1), blendColor, gradientAlpha);
+    //gl_FragColor = vec4(gradientAlpha, gradientAlpha, gradientAlpha, 1);
+    //return;
+  }
 
   // masking test
 #if 1

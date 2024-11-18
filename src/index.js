@@ -419,6 +419,13 @@ parameters.addColor(cloud, "sunColor");
 parameters.addColor(cloud, "hullColorStart");
 parameters.addColor(cloud, "hullColorEnd");
 
+properties.push(
+  new MinMaxProperty(-1, 1, cloud, "hullGradientShift").addGUI(parameters)
+);
+properties.push(
+  new MinMaxProperty(-180, 180, cloud, "hullGradientAngle").addGUI(parameters)
+);
+
 parameters
   .add(params, "sunPositionX")
   .onChange((value) => {

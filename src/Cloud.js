@@ -26,8 +26,10 @@ class Cloud extends Pass {
       sunPosition = new THREE.Vector3(4.0, 3.5, -1.0),
       cloudColor = 0xeabf6b,
       skyColor = 0x337fff,
-      hullColorStart = new THREE.Color(),
-      hullColorEnd = new THREE.Color(),
+      hullColorStart = new THREE.Color(0.8, 0.8, 0.8),
+      hullColorEnd = new THREE.Color(1, 1, 1),
+      hullGradientShift = 0.0,
+      hullGradientAngle = 0.0,
       skyColorFade = 0xffffff,
       skyFadeFactor = 0.5,
       skyFadeShift = 0.7,
@@ -195,6 +197,8 @@ class Cloud extends Pass {
 
     this.hullColorStart = hullColorStart;
     this.hullColorEnd = hullColorEnd;
+    this.hullGradientShift = hullGradientShift;
+    this.hullGradientAngle = hullGradientAngle;
 
     this.passThroughFullScreenQuad = new Pass.FullScreenQuad(
       this.passThroughMaterial
@@ -365,6 +369,22 @@ class Cloud extends Pass {
     this.passThroughMaterial.uniforms.uHullColorEnd.value = new THREE.Color(
       value
     );
+  }
+
+  get hullGradientShift() {
+    return this.passThroughMaterial.uniforms.uHullGradientShift.value;
+  }
+
+  set hullGradientShift(value) {
+    this.passThroughMaterial.uniforms.uHullGradientShift.value = value;
+  }
+
+  get hullGradientAngle() {
+    return this.passThroughMaterial.uniforms.uHullGradientAngle.value;
+  }
+
+  set hullGradientAngle(value) {
+    this.passThroughMaterial.uniforms.uHullGradientAngle.value = value;
   }
 
   get skyColorFade() {
@@ -611,6 +631,8 @@ class Cloud extends Pass {
         tTileAtlasHull: { value: null },
         uHullColorStart: { value: new THREE.Color() },
         uHullColorEnd: { value: new THREE.Color() },
+        uHullGradientShift: { value: 0.0 },
+        uHullGradientAngle: { value: 0.0 },
         uTime: { value: 0 },
         uResolution: { value: new THREE.Vector2() },
         uTileMixFactor: { value: 0.5 },
