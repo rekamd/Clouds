@@ -678,14 +678,14 @@ void main() {
   if (hullFactor == 1.0)
   {
     float gradientAngle = radians(uHullGradientAngle);
-    float gradientPos = uHullGradientShift;
     vec2 gradientNormal = vec2(sin(gradientAngle), cos(gradientAngle));
-    float gradientAlpha = dot(gradientNormal, vUv) - gradientPos;
+    float gradientOffset = dot(gradientNormal, vec2(0.5, 0.5));
+    float gradientAlpha = 0.5 - dot(gradientNormal, vUv) + gradientOffset;
+    gradientAlpha += uHullGradientShift;
+    gradientAlpha = mix(1.0 - gradientAlpha, gradientAlpha, scaledWindowMaskAlpha);
+
     gradientAlpha = max(0.0, min(gradientAlpha, 1.0));
-    if (scaledWindowMaskAlpha != 0.0)
-    {
-      gradientAlpha = 1.0 - gradientAlpha;
-    }
+
     blendColor = mix(vec4(uHullColorEnd, 1), blendColor, gradientAlpha);
     //gl_FragColor = vec4(gradientAlpha, gradientAlpha, gradientAlpha, 1);
     //return;
