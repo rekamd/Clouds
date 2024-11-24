@@ -629,14 +629,20 @@ void main() {
     texel.rgb = uHullColorStart;
   }
   
-  // todo: add parameter for noise
+  // todo: add parameters for noise tile offset range and for strength
   float seed = sin(floor(uTime * 20.0));
   float noise = 1.0 - 2.0 * random(texelLookup, seed); // in [-1,1]
-  const float kMaxNoiseTileOffsetFactor = 0.1;
-  const float kMaxNoiseTileOffsetNonHull = ceil(kMaxNoiseTileOffsetFactor * kTileSetCountF);
-  const float kMaxNoiseTileOffsetHull = kTileSetCountF / 2.0;
 
-  float tileOffset = mix(kMaxNoiseTileOffsetNonHull, kMaxNoiseTileOffsetHull, hullFactor) * noise;
+  const float kMaxNoiseTileOffsetFactor = 1.0;
+  const float kMaxNoiseTileOffset = ceil(kMaxNoiseTileOffsetFactor * kTileSetCountF);
+#if 0  
+  // different noise offset factors for hull vs sky (full for hull)
+  const float kMaxNoiseTileOffsetHull = kTileSetCountF / 2.0;
+  float tileOffset = mix(kMaxNoiseTileOffset, kMaxNoiseTileOffsetHull, hullFactor) * noise;
+#else
+  float tileOffset = kMaxNoiseTileOffset * noise;
+#endif
+
   int finalTileIndex = tileIndex + int(tileOffset);
   finalTileIndex = max(0, min(finalTileIndex, kTileSetCount-1));
   uvLookup.x += float(finalTileIndex) * kMaxCoordX;
