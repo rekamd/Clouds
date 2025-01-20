@@ -32,6 +32,7 @@ class Cloud extends Pass {
       hullGradientAngle = 0.0,
       hullDoubleResolution = true,
       cloudDoubleResolution = true,
+      skyDoubleResolution = false,
       skyColorFade = 0xffffff,
       skyFadeFactor = 0.5,
       skyFadeShift = 0.7,
@@ -203,6 +204,7 @@ class Cloud extends Pass {
     this.hullGradientAngle = hullGradientAngle;
     this.hullDoubleResolution = hullDoubleResolution;
     this.cloudDoubleResolution = cloudDoubleResolution;
+    this.skyDoubleResolution = skyDoubleResolution;
 
     this.passThroughFullScreenQuad = new Pass.FullScreenQuad(
       this.passThroughMaterial
@@ -403,6 +405,14 @@ class Cloud extends Pass {
 
   set cloudDoubleResolution(value) {
     this.passThroughMaterial.uniforms.uCloudDoubleResolution.value = value;
+  }
+
+  get skyDoubleResolution() {
+    return this.passThroughMaterial.uniforms.uSkyDoubleResolution.value;
+  }
+
+  set skyDoubleResolution(value) {
+    this.passThroughMaterial.uniforms.uSkyDoubleResolution.value = value;
   }
 
   get skyColorFade() {
@@ -653,6 +663,7 @@ class Cloud extends Pass {
         uHullGradientAngle: { value: 0.0 },
         uHullDoubleResolution: { value: true },
         uCloudDoubleResolution: { value: true },
+        uSkyDoubleResolution: { value: true },
         uTime: { value: 0 },
         uResolution: { value: new THREE.Vector2() },
         uTileMixFactor: { value: 0.5 },

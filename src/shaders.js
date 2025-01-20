@@ -358,6 +358,7 @@ uniform float uHullGradientShift;
 uniform float uHullGradientAngle;
 uniform bool uHullDoubleResolution;
 uniform bool uCloudDoubleResolution;
+uniform bool uSkyDoubleResolution;
 uniform float uWindowFrameScale;
 uniform vec2 uResolution;
 uniform float uTileMixFactor;
@@ -670,6 +671,7 @@ void main() {
     }
     else
     {
+      uvLookup = mix(uvLookup, uvLookup * 2.0, float(int(uSkyDoubleResolution)));
       tile = texture2D( tTileAtlasSky, uvLookup);
     }
   }

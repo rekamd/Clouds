@@ -442,6 +442,17 @@ properties.push(
     1
   ).addGUI(parameters)
 );
+properties.push(
+  new MinMaxProperty(
+    0,
+    1,
+    cloud,
+    "skyDoubleResolution",
+    false,
+    false,
+    1
+  ).addGUI(parameters)
+);
 
 properties.push(
   new MinMaxProperty(-1, 1, cloud, "hullGradientShift").addGUI(parameters)
