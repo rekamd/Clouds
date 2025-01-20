@@ -589,6 +589,8 @@ void main() {
   float maskAlpha = 1.0;
 #endif
 
+  float hullFactor = 1.0 - maskAlpha;
+
   vec2 texelLookup = pixelCoord * pixelFrac + 0.5 * pixelFrac;
   vec4 texel = texture2D( tDiffuse, texelLookup );
 
@@ -608,16 +610,15 @@ void main() {
   vec3 luminanceWeights = vec3(0.299, 0.587, 0.114);
   float luminance = dot(luminanceWeights, texel.rgb);
 
-  vec2 uvLookup = vUv * uResolution;
   const int kTileSetCount = 16;
   const float kTileSetCountF = float(kTileSetCount);
   const float kMaxCoordX = 1.0 / kTileSetCountF;
+
+  vec2 uvLookup = vUv * uResolution;
   uvLookup.x /= kTileSetCountF;
   uvLookup.x = mod(uvLookup.x, kMaxCoordX);
 
-
   int tileIndex = int(mod((1.0-luminance) * kTileSetCountF, kTileSetCountF));
-  float hullFactor = 1.0 - maskAlpha;
   if (hullFactor == 1.0)
   {
     // reset mask to render the tile
@@ -627,6 +628,9 @@ void main() {
     const int kHullTileIndex = kTileSetCount / 2;
     tileIndex = kHullTileIndex;
     texel.rgb = uHullColorStart;
+
+    // double tile resolution for hull
+    uvLookup *= 2.0;
   }
   
   // todo: add parameters for noise tile offset range and for strength
@@ -650,6 +654,7 @@ void main() {
   vec4 tile;
   if (hullFactor == 1.0)
   {
+    uvLookup.y *= 2.0;
     tile = texture2D( tTileAtlasHull, uvLookup);
   }
   else
