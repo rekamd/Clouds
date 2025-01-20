@@ -356,6 +356,8 @@ uniform vec3 uHullColorStart;
 uniform float uHullAlphaEnd;
 uniform float uHullGradientShift;
 uniform float uHullGradientAngle;
+uniform bool uHullDoubleResolution;
+uniform bool uCloudDoubleResolution;
 uniform float uWindowFrameScale;
 uniform vec2 uResolution;
 uniform float uTileMixFactor;
@@ -630,7 +632,10 @@ void main() {
     texel.rgb = uHullColorStart;
 
     // double tile resolution for hull
-    uvLookup *= 2.0;
+    if (uHullDoubleResolution)
+    {
+      uvLookup *= 2.0;
+    }
   }
   
   // todo: add parameters for noise tile offset range and for strength
@@ -654,11 +659,15 @@ void main() {
   vec4 tile;
   if (hullFactor == 1.0)
   {
-    uvLookup.y *= 2.0;
     tile = texture2D( tTileAtlasHull, uvLookup);
   }
   else
   {
+    if (int(cloudFlag) != 0 && uCloudDoubleResolution)
+    {
+      uvLookup *= 2.0;
+    }
+  
     tile = int(cloudFlag) == 0 ? texture2D( tTileAtlasSky, uvLookup) : texture2D( tTileAtlasCloud, uvLookup);
   }
 
