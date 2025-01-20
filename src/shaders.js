@@ -352,6 +352,10 @@ uniform sampler2D tDiffuse;
 uniform sampler2D tTileAtlasSky;
 uniform sampler2D tTileAtlasCloud;
 uniform sampler2D tTileAtlasHull;
+uniform vec3 uHullColorStart;
+uniform float uHullAlphaEnd;
+uniform float uHullGradientShift;
+uniform float uHullGradientAngle;
 uniform float uWindowFrameScale;
 uniform vec2 uResolution;
 uniform float uTileMixFactor;
@@ -359,6 +363,8 @@ uniform float uTime;
 varying vec2 vUv;
 
 ${random}
+
+#define GLSL_PI 3.1415926535897932384626433832795
 
 float minColor(vec3 c)
 {
@@ -583,21 +589,6 @@ void main() {
   float maskAlpha = 1.0;
 #endif
 
-  // hull gradient
-#if 1
-  float gradientAngle = radians(20.0);
-  float gradientPos = 0.1;
-  vec2 gradientNormal = vec2(sin(gradientAngle), cos(gradientAngle));
-  float alpha = dot(gradientNormal, vUv) - gradientPos;
-  //gl_FragColor = vec4(1.0, alpha, alpha, 1.0);
-  //return;
-  vec3 gradientColorStart = vec3(0.9, 0.9, 0.9);
-  vec3 gradientColorEnd = vec3(0.95, 0.95, 0.95);
-  vec3 gradientMixColor = mix(gradientColorStart, gradientColorEnd, scaledWindowMaskAlpha != 0.0 ? alpha : 1.0-alpha);
-  //gl_FragColor = vec4(gradientMixColor, 1);
-  //return;
-#endif
-
   vec2 texelLookup = pixelCoord * pixelFrac + 0.5 * pixelFrac;
   vec4 texel = texture2D( tDiffuse, texelLookup );
 
@@ -635,17 +626,23 @@ void main() {
     // always pick center tile on which random offset is added below
     const int kHullTileIndex = kTileSetCount / 2;
     tileIndex = kHullTileIndex;
-    texel.rgb = gradientMixColor;
+    texel.rgb = uHullColorStart;
   }
   
-  // todo: add parameter for noise
+  // todo: add parameters for noise tile offset range and for strength
   float seed = sin(floor(uTime * 20.0));
   float noise = 1.0 - 2.0 * random(texelLookup, seed); // in [-1,1]
-  const float kMaxNoiseTileOffsetFactor = 0.1;
-  const float kMaxNoiseTileOffsetNonHull = ceil(kMaxNoiseTileOffsetFactor * kTileSetCountF);
-  const float kMaxNoiseTileOffsetHull = kTileSetCountF / 2.0;
 
-  float tileOffset = mix(kMaxNoiseTileOffsetNonHull, kMaxNoiseTileOffsetHull, hullFactor) * noise;
+  const float kMaxNoiseTileOffsetFactor = 1.0;
+  const float kMaxNoiseTileOffset = ceil(kMaxNoiseTileOffsetFactor * kTileSetCountF);
+#if 0  
+  // different noise offset factors for hull vs sky (full for hull)
+  const float kMaxNoiseTileOffsetHull = kTileSetCountF / 2.0;
+  float tileOffset = mix(kMaxNoiseTileOffset, kMaxNoiseTileOffsetHull, hullFactor) * noise;
+#else
+  float tileOffset = kMaxNoiseTileOffset * noise;
+#endif
+
   int finalTileIndex = tileIndex + int(tileOffset);
   finalTileIndex = max(0, min(finalTileIndex, kTileSetCount-1));
   uvLookup.x += float(finalTileIndex) * kMaxCoordX;
@@ -668,14 +665,6 @@ void main() {
   tile.rgb = vec3(dot(tile.rgb, luminanceWeights));
 #endif
 
-#if 0
-  // mix tile with gradient using the overlay blend mode
-  float tileFactor = float(tileIndex) / kTileSetCountF;
-  vec3 gradient = vec3(1.0-tileFactor);
-  // todo: use smooth gradient rather than blocky gradient
-  tile.rgb = overlay(tile.rgb, gradient);
-#endif
-
   // display blend of texel and tiles
   vec4 blendColor;
 #if 0 // multiply blend
@@ -692,14 +681,25 @@ void main() {
   blendColor = vec4(overlay(tile.rgb, texel.rgb), 1);
 #endif
 
-  // masking test
-#if 1
+  if (hullFactor == 1.0)
+  {
+    float gradientAngle = radians(uHullGradientAngle);
+    vec2 gradientNormal = vec2(sin(gradientAngle), cos(gradientAngle));
+    float gradientOffset = dot(gradientNormal, vec2(0.5, 0.5));
+    float gradientAlpha = 0.5 - dot(gradientNormal, vUv) + gradientOffset;
+    gradientAlpha += uHullGradientShift;
+    gradientAlpha = mix(1.0 - gradientAlpha, gradientAlpha, scaledWindowMaskAlpha);
+
+    gradientAlpha = max(0.0, min(gradientAlpha, 1.0));
+
+    vec4 colorEnd = mix(vec4(1), blendColor, uHullAlphaEnd);
+    blendColor = mix(vec4(colorEnd.rgb, 1), blendColor, gradientAlpha);
+  }
+
   blendColor = mix(vec4(1), blendColor, maskAlpha);
-#endif
-  gl_FragColor = blendColor;
 
   // show mix between texel and blend (see above)
-  gl_FragColor = mix(texel, gl_FragColor, uTileMixFactor);
+  gl_FragColor = mix(texel, blendColor, uTileMixFactor);
 
   // show mix between texel and tile
   //gl_FragColor = mix(texel, tile, uTileMixFactor);

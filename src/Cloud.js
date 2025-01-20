@@ -26,6 +26,10 @@ class Cloud extends Pass {
       sunPosition = new THREE.Vector3(4.0, 3.5, -1.0),
       cloudColor = 0xeabf6b,
       skyColor = 0x337fff,
+      hullColorStart = new THREE.Color(0.8, 0.8, 0.8),
+      hullAlphaEnd = 0,
+      hullGradientShift = 0.0,
+      hullGradientAngle = 0.0,
       skyColorFade = 0xffffff,
       skyFadeFactor = 0.5,
       skyFadeShift = 0.7,
@@ -191,6 +195,11 @@ class Cloud extends Pass {
     this._hullTileIndex = hullTileIndex;
     this.updateTileTextureSamplers();
 
+    this.hullColorStart = hullColorStart;
+    this.hullAlphaEnd = hullAlphaEnd;
+    this.hullGradientShift = hullGradientShift;
+    this.hullGradientAngle = hullGradientAngle;
+
     this.passThroughFullScreenQuad = new Pass.FullScreenQuad(
       this.passThroughMaterial
     );
@@ -340,6 +349,40 @@ class Cloud extends Pass {
 
   set skyColor(value) {
     this.material.uniforms.uSkyColor.value = new THREE.Color(value);
+  }
+
+  get hullColorStart() {
+    return this.passThroughMaterial.uniforms.uHullColorStart.value.getHex();
+  }
+
+  set hullColorStart(value) {
+    this.passThroughMaterial.uniforms.uHullColorStart.value = new THREE.Color(
+      value
+    );
+  }
+
+  get hullAlphaEnd() {
+    return this.passThroughMaterial.uniforms.uHullAlphaEnd.value;
+  }
+
+  set hullAlphaEnd(value) {
+    this.passThroughMaterial.uniforms.uHullAlphaEnd.value = value;
+  }
+
+  get hullGradientShift() {
+    return this.passThroughMaterial.uniforms.uHullGradientShift.value;
+  }
+
+  set hullGradientShift(value) {
+    this.passThroughMaterial.uniforms.uHullGradientShift.value = value;
+  }
+
+  get hullGradientAngle() {
+    return this.passThroughMaterial.uniforms.uHullGradientAngle.value;
+  }
+
+  set hullGradientAngle(value) {
+    this.passThroughMaterial.uniforms.uHullGradientAngle.value = value;
   }
 
   get skyColorFade() {
@@ -584,6 +627,10 @@ class Cloud extends Pass {
         tTileAtlasSky: { value: null },
         tTileAtlasCloud: { value: null },
         tTileAtlasHull: { value: null },
+        uHullColorStart: { value: new THREE.Color() },
+        uHullAlphaEnd: { value: 0.0 },
+        uHullGradientShift: { value: 0.0 },
+        uHullGradientAngle: { value: 0.0 },
         uTime: { value: 0 },
         uResolution: { value: new THREE.Vector2() },
         uTileMixFactor: { value: 0.5 },
