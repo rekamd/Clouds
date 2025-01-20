@@ -420,6 +420,50 @@ parameters.addColor(cloud, "hullColorStart");
 properties.push(
   new MinMaxProperty(0, 1, cloud, "hullAlphaEnd").addGUI(parameters)
 );
+properties.push(
+  new MinMaxProperty(
+    0,
+    1,
+    cloud,
+    "hullDoubleResolution",
+    false,
+    false,
+    1
+  ).addGUI(parameters)
+);
+properties.push(
+  new MinMaxProperty(
+    0,
+    1,
+    cloud,
+    "frameDoubleResolution",
+    false,
+    false,
+    1
+  ).addGUI(parameters)
+);
+properties.push(
+  new MinMaxProperty(
+    0,
+    1,
+    cloud,
+    "cloudDoubleResolution",
+    false,
+    false,
+    1
+  ).addGUI(parameters)
+);
+properties.push(
+  new MinMaxProperty(
+    0,
+    1,
+    cloud,
+    "skyDoubleResolution",
+    false,
+    false,
+    1
+  ).addGUI(parameters)
+);
 
 properties.push(
   new MinMaxProperty(-1, 1, cloud, "hullGradientShift").addGUI(parameters)

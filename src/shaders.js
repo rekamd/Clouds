@@ -356,6 +356,10 @@ uniform vec3 uHullColorStart;
 uniform float uHullAlphaEnd;
 uniform float uHullGradientShift;
 uniform float uHullGradientAngle;
+uniform bool uHullDoubleResolution;
+uniform bool uFrameDoubleResolution;
+uniform bool uCloudDoubleResolution;
+uniform bool uSkyDoubleResolution;
 uniform float uWindowFrameScale;
 uniform vec2 uResolution;
 uniform float uTileMixFactor;
@@ -589,6 +593,9 @@ void main() {
   float maskAlpha = 1.0;
 #endif
 
+  float hullFactor = 1.0 - maskAlpha;
+  float frameFactor = scaledWindowMaskAlpha;
+
   vec2 texelLookup = pixelCoord * pixelFrac + 0.5 * pixelFrac;
   vec4 texel = texture2D( tDiffuse, texelLookup );
 
@@ -608,16 +615,15 @@ void main() {
   vec3 luminanceWeights = vec3(0.299, 0.587, 0.114);
   float luminance = dot(luminanceWeights, texel.rgb);
 
-  vec2 uvLookup = vUv * uResolution;
   const int kTileSetCount = 16;
   const float kTileSetCountF = float(kTileSetCount);
   const float kMaxCoordX = 1.0 / kTileSetCountF;
+
+  vec2 uvLookup = vUv * uResolution;
   uvLookup.x /= kTileSetCountF;
   uvLookup.x = mod(uvLookup.x, kMaxCoordX);
 
-
   int tileIndex = int(mod((1.0-luminance) * kTileSetCountF, kTileSetCountF));
-  float hullFactor = 1.0 - maskAlpha;
   if (hullFactor == 1.0)
   {
     // reset mask to render the tile
@@ -627,6 +633,16 @@ void main() {
     const int kHullTileIndex = kTileSetCount / 2;
     tileIndex = kHullTileIndex;
     texel.rgb = uHullColorStart;
+
+    // double tile resolution for hull and frame
+    if (frameFactor == 1.0)
+    {
+      uvLookup = mix(uvLookup, uvLookup * 2.0, float(int(uFrameDoubleResolution)));      
+    }
+    else
+    {
+      uvLookup = mix(uvLookup, uvLookup * 2.0, float(int(uHullDoubleResolution)));
+    }
   }
   
   // todo: add parameters for noise tile offset range and for strength
@@ -654,7 +670,16 @@ void main() {
   }
   else
   {
-    tile = int(cloudFlag) == 0 ? texture2D( tTileAtlasSky, uvLookup) : texture2D( tTileAtlasCloud, uvLookup);
+    if (int(cloudFlag) != 0)
+    {
+      uvLookup = mix(uvLookup, uvLookup * 2.0, float(int(uCloudDoubleResolution)));
+      tile = texture2D( tTileAtlasCloud, uvLookup);
+    }
+    else
+    {
+      uvLookup = mix(uvLookup, uvLookup * 2.0, float(int(uSkyDoubleResolution)));
+      tile = texture2D( tTileAtlasSky, uvLookup);
+    }
   }
 
 #if 0
@@ -699,7 +724,8 @@ void main() {
   blendColor = mix(vec4(1), blendColor, maskAlpha);
 
   // show mix between texel and blend (see above)
-  gl_FragColor = mix(texel, blendColor, uTileMixFactor);
+  float tileMixFactor = mix(uTileMixFactor, 1.0, hullFactor);
+  gl_FragColor = mix(texel, blendColor, tileMixFactor);
 
   // show mix between texel and tile
   //gl_FragColor = mix(texel, tile, uTileMixFactor);
