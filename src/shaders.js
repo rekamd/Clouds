@@ -716,7 +716,8 @@ void main() {
   blendColor = mix(vec4(1), blendColor, maskAlpha);
 
   // show mix between texel and blend (see above)
-  gl_FragColor = mix(texel, blendColor, uTileMixFactor);
+  float tileMixFactor = mix(uTileMixFactor, 1.0, hullFactor);
+  gl_FragColor = mix(texel, blendColor, tileMixFactor);
 
   // show mix between texel and tile
   //gl_FragColor = mix(texel, tile, uTileMixFactor);
