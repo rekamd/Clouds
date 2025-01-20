@@ -436,6 +436,17 @@ properties.push(
     0,
     1,
     cloud,
+    "frameDoubleResolution",
+    false,
+    false,
+    1
+  ).addGUI(parameters)
+);
+properties.push(
+  new MinMaxProperty(
+    0,
+    1,
+    cloud,
     "cloudDoubleResolution",
     false,
     false,

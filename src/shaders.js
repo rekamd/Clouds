@@ -357,6 +357,7 @@ uniform float uHullAlphaEnd;
 uniform float uHullGradientShift;
 uniform float uHullGradientAngle;
 uniform bool uHullDoubleResolution;
+uniform bool uFrameDoubleResolution;
 uniform bool uCloudDoubleResolution;
 uniform bool uSkyDoubleResolution;
 uniform float uWindowFrameScale;
@@ -593,6 +594,7 @@ void main() {
 #endif
 
   float hullFactor = 1.0 - maskAlpha;
+  float frameFactor = scaledWindowMaskAlpha;
 
   vec2 texelLookup = pixelCoord * pixelFrac + 0.5 * pixelFrac;
   vec4 texel = texture2D( tDiffuse, texelLookup );
@@ -632,10 +634,14 @@ void main() {
     tileIndex = kHullTileIndex;
     texel.rgb = uHullColorStart;
 
-    // double tile resolution for hull
-    if (uHullDoubleResolution)
+    // double tile resolution for hull and frame
+    if (frameFactor == 1.0)
     {
-      uvLookup *= 2.0;
+      uvLookup = mix(uvLookup, uvLookup * 2.0, float(int(uFrameDoubleResolution)));      
+    }
+    else
+    {
+      uvLookup = mix(uvLookup, uvLookup * 2.0, float(int(uHullDoubleResolution)));
     }
   }
   
