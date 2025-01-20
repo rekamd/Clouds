@@ -663,12 +663,15 @@ void main() {
   }
   else
   {
-    if (int(cloudFlag) != 0 && uCloudDoubleResolution)
+    if (int(cloudFlag) != 0)
     {
-      uvLookup *= 2.0;
+      uvLookup = mix(uvLookup, uvLookup * 2.0, float(int(uCloudDoubleResolution)));
+      tile = texture2D( tTileAtlasCloud, uvLookup);
     }
-  
-    tile = int(cloudFlag) == 0 ? texture2D( tTileAtlasSky, uvLookup) : texture2D( tTileAtlasCloud, uvLookup);
+    else
+    {
+      tile = texture2D( tTileAtlasSky, uvLookup);
+    }
   }
 
 #if 0
