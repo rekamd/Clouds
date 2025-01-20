@@ -417,7 +417,9 @@ parameters.addColor(cloud, "skyColorFade");
 parameters.addColor(cloud, "cloudColor");
 parameters.addColor(cloud, "sunColor");
 parameters.addColor(cloud, "hullColorStart");
-parameters.addColor(cloud, "hullColorEnd");
+properties.push(
+  new MinMaxProperty(0, 1, cloud, "hullAlphaEnd").addGUI(parameters)
+);
 
 properties.push(
   new MinMaxProperty(-1, 1, cloud, "hullGradientShift").addGUI(parameters)

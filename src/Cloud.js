@@ -27,7 +27,7 @@ class Cloud extends Pass {
       cloudColor = 0xeabf6b,
       skyColor = 0x337fff,
       hullColorStart = new THREE.Color(0.8, 0.8, 0.8),
-      hullColorEnd = new THREE.Color(1, 1, 1),
+      hullAlphaEnd = 0,
       hullGradientShift = 0.0,
       hullGradientAngle = 0.0,
       skyColorFade = 0xffffff,
@@ -196,7 +196,7 @@ class Cloud extends Pass {
     this.updateTileTextureSamplers();
 
     this.hullColorStart = hullColorStart;
-    this.hullColorEnd = hullColorEnd;
+    this.hullAlphaEnd = hullAlphaEnd;
     this.hullGradientShift = hullGradientShift;
     this.hullGradientAngle = hullGradientAngle;
 
@@ -361,14 +361,12 @@ class Cloud extends Pass {
     );
   }
 
-  get hullColorEnd() {
-    return this.passThroughMaterial.uniforms.uHullColorEnd.value.getHex();
+  get hullAlphaEnd() {
+    return this.passThroughMaterial.uniforms.uHullAlphaEnd.value;
   }
 
-  set hullColorEnd(value) {
-    this.passThroughMaterial.uniforms.uHullColorEnd.value = new THREE.Color(
-      value
-    );
+  set hullAlphaEnd(value) {
+    this.passThroughMaterial.uniforms.uHullAlphaEnd.value = value;
   }
 
   get hullGradientShift() {
@@ -630,7 +628,7 @@ class Cloud extends Pass {
         tTileAtlasCloud: { value: null },
         tTileAtlasHull: { value: null },
         uHullColorStart: { value: new THREE.Color() },
-        uHullColorEnd: { value: new THREE.Color() },
+        uHullAlphaEnd: { value: 0.0 },
         uHullGradientShift: { value: 0.0 },
         uHullGradientAngle: { value: 0.0 },
         uTime: { value: 0 },

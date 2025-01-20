@@ -353,7 +353,7 @@ uniform sampler2D tTileAtlasSky;
 uniform sampler2D tTileAtlasCloud;
 uniform sampler2D tTileAtlasHull;
 uniform vec3 uHullColorStart;
-uniform vec3 uHullColorEnd;
+uniform float uHullAlphaEnd;
 uniform float uHullGradientShift;
 uniform float uHullGradientAngle;
 uniform float uWindowFrameScale;
@@ -692,19 +692,14 @@ void main() {
 
     gradientAlpha = max(0.0, min(gradientAlpha, 1.0));
 
-    blendColor = mix(vec4(uHullColorEnd, 1), blendColor, gradientAlpha);
-    //gl_FragColor = vec4(gradientAlpha, gradientAlpha, gradientAlpha, 1);
-    //return;
+    vec4 colorEnd = mix(vec4(1), blendColor, uHullAlphaEnd);
+    blendColor = mix(vec4(colorEnd.rgb, 1), blendColor, gradientAlpha);
   }
 
-  // masking test
-#if 1
   blendColor = mix(vec4(1), blendColor, maskAlpha);
-#endif
-  gl_FragColor = blendColor;
 
   // show mix between texel and blend (see above)
-  gl_FragColor = mix(texel, gl_FragColor, uTileMixFactor);
+  gl_FragColor = mix(texel, blendColor, uTileMixFactor);
 
   // show mix between texel and tile
   //gl_FragColor = mix(texel, tile, uTileMixFactor);
