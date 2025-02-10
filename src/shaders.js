@@ -364,6 +364,7 @@ uniform float uWindowFrameScale;
 uniform vec2 uResolution;
 uniform float uTileMixFactor;
 uniform float uTime;
+uniform int uWindowType;
 varying vec2 vUv;
 
 ${random}
@@ -511,7 +512,6 @@ void main() {
   vec2 pixelCoord = floor(vUv / pixelFrac);
 
   // window masking
-#if 1
   float maskAlpha = 0.0;
   vec2 viewCenter = 0.5 * uResolution;
 
@@ -524,6 +524,23 @@ void main() {
 
   float windowHeight = uResolution.y * 0.7;
   float windowWidth = windowHeight / 2.0;
+  float sphereRadius = windowWidth / 3.0;
+
+  if (uWindowType == 0)
+  {
+    sphereRadius = windowHeight / 3.6;
+    windowWidth = sphereRadius * 2.4;
+  }
+  else if (uWindowType == 1)
+  {
+    sphereRadius = windowHeight / 3.6;
+    windowWidth = sphereRadius * 2.0;
+  }
+  else if (uWindowType == 2)
+  {
+    windowWidth = (windowHeight / 6.8) * 5.0;
+    sphereRadius = (windowWidth / 5.0) * 1.4;
+  }
 
   float windowOffset = windowWidth * 0.75;
   float windowDistance = windowWidth + windowOffset;
@@ -531,7 +548,6 @@ void main() {
   // distances in full pixels only
   windowDistance = floor(windowDistance);
 
-  float sphereRadius = windowWidth / 3.0;
   vec2 windowHalfSize = 0.5 * vec2(windowWidth, windowHeight);
   vec2 sphereCenterUV[4];
   sphereCenterUV[0] = windowCenter + vec2(-windowHalfSize.x + sphereRadius, windowHalfSize.y - sphereRadius);
@@ -588,10 +604,6 @@ void main() {
     vec2 maxStep = step(pixelCenterUVScaled, maxAabb);
     scaledWindowMaskAlpha = max(scaledWindowMaskAlpha, min(minStep.x, min(minStep.y, min(maxStep.x, maxStep.y))));
   }
-
-#else
-  float maskAlpha = 1.0;
-#endif
 
   float hullFactor = 1.0 - maskAlpha;
   float frameFactor = scaledWindowMaskAlpha;
