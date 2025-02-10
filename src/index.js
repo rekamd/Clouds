@@ -385,11 +385,15 @@ properties.push(
 properties.push(
   new MinMaxProperty(-4, 4, cloud, "skyFadeShift").addGUI(parameters)
 );
+
+// tile configuration:
 properties.push(
-  new MinMaxProperty(0.8, 1.2, cloud, "tileMixFactor").addGUI(parameters)
+  new MinMaxProperty(2, 128, cloud, "pixelSize", false, false, 2).addGUI(
+    parameters
+  )
 );
 properties.push(
-  new MinMaxProperty(0.0, 1.0, cloud, "windowFrameScale").addGUI(parameters)
+  new MinMaxProperty(0.8, 1.2, cloud, "tileMixFactor").addGUI(parameters)
 );
 properties.push(
   new MinMaxProperty(0, 17, cloud, "skyTileIndex", false, false).addGUI(
@@ -407,18 +411,26 @@ properties.push(
   )
 );
 properties.push(
-  new MinMaxProperty(2, 128, cloud, "pixelSize", false, false, 2).addGUI(
-    parameters
-  )
+  new MinMaxProperty(
+    0,
+    1,
+    cloud,
+    "skyDoubleResolution",
+    false,
+    false,
+    1
+  ).addGUI(parameters)
 );
-
-parameters.addColor(cloud, "skyColor");
-parameters.addColor(cloud, "skyColorFade");
-parameters.addColor(cloud, "cloudColor");
-parameters.addColor(cloud, "sunColor");
-parameters.addColor(cloud, "hullColorStart");
 properties.push(
-  new MinMaxProperty(0, 1, cloud, "hullAlphaEnd").addGUI(parameters)
+  new MinMaxProperty(
+    0,
+    1,
+    cloud,
+    "cloudDoubleResolution",
+    false,
+    false,
+    1
+  ).addGUI(parameters)
 );
 properties.push(
   new MinMaxProperty(
@@ -442,35 +454,32 @@ properties.push(
     1
   ).addGUI(parameters)
 );
-properties.push(
-  new MinMaxProperty(
-    0,
-    1,
-    cloud,
-    "cloudDoubleResolution",
-    false,
-    false,
-    1
-  ).addGUI(parameters)
-);
-properties.push(
-  new MinMaxProperty(
-    0,
-    1,
-    cloud,
-    "skyDoubleResolution",
-    false,
-    false,
-    1
-  ).addGUI(parameters)
-);
 
+// windows:
+properties.push(
+  new MinMaxProperty(0, 2, cloud, "windowType", false, false, 1).addGUI(
+    parameters
+  )
+);
+properties.push(
+  new MinMaxProperty(0.0, 1.0, cloud, "windowFrameScale").addGUI(parameters)
+);
+parameters.addColor(cloud, "hullColorStart");
+properties.push(
+  new MinMaxProperty(0, 1, cloud, "hullAlphaEnd").addGUI(parameters)
+);
 properties.push(
   new MinMaxProperty(-1, 1, cloud, "hullGradientShift").addGUI(parameters)
 );
 properties.push(
   new MinMaxProperty(-180, 180, cloud, "hullGradientAngle").addGUI(parameters)
 );
+
+// colors:
+parameters.addColor(cloud, "skyColor");
+parameters.addColor(cloud, "skyColorFade");
+parameters.addColor(cloud, "cloudColor");
+parameters.addColor(cloud, "sunColor");
 
 parameters
   .add(params, "sunPositionX")
