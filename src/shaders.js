@@ -511,9 +511,22 @@ void main() {
   vec2 pixelFrac = 1.0 / uResolution;
   vec2 pixelCoord = floor(vUv / pixelFrac);
 
+#if 0
+  if (pixelCoord.y < 10.0)
+  {
+    gl_FragColor = vec4(1.0,0.0,0.0,1.0);
+
+    if (pixelCoord.y < 5.0)
+    {
+      gl_FragColor = vec4(vUv.x, 0.0, 0.0, 1.0);
+    }
+
+    return;
+  }
+#endif
+
   // window masking
   float maskAlpha = 0.0;
-  vec2 viewCenter = 0.5 * uResolution;
 
   vec2 pixelCenterUVScaled = (pixelCoord + 0.5);
 
@@ -550,13 +563,24 @@ void main() {
 
   vec2 windowHalfSize = 0.5 * vec2(windowWidth, windowHeight);
   vec2 sphereCenterUV[4];
-  sphereCenterUV[0] = windowCenter + vec2(-windowHalfSize.x + sphereRadius, windowHalfSize.y - sphereRadius);
-  sphereCenterUV[1] = windowCenter + vec2(windowHalfSize.x - sphereRadius, windowHalfSize.y - sphereRadius);
-  sphereCenterUV[2] = windowCenter + vec2(-windowHalfSize.x + sphereRadius, -windowHalfSize.y + sphereRadius);
-  sphereCenterUV[3] = windowCenter + vec2(windowHalfSize.x - sphereRadius, -windowHalfSize.y + sphereRadius);
+  sphereCenterUV[0] = vec2(windowDistance*0.5, windowCenter.y) + vec2(-windowHalfSize.x + sphereRadius, windowHalfSize.y - sphereRadius);
+  sphereCenterUV[1] = vec2(windowDistance*0.5, windowCenter.y) + vec2(windowHalfSize.x - sphereRadius, windowHalfSize.y - sphereRadius);
+  sphereCenterUV[2] = vec2(windowDistance*0.5, windowCenter.y) + vec2(-windowHalfSize.x + sphereRadius, -windowHalfSize.y + sphereRadius);
+  sphereCenterUV[3] = vec2(windowDistance*0.5, windowCenter.y) + vec2(windowHalfSize.x - sphereRadius, -windowHalfSize.y + sphereRadius);
 
-  float pixelCenterCoordRepeatX = mod(pixelCenterUVScaled.x, windowDistance) + windowCenter.x;
-  pixelCenterUVScaled = vec2(pixelCenterCoordRepeatX - 0.5 * windowDistance, pixelCenterUVScaled.y);
+  float pixelCenterCoordRepeatX = mod(pixelCenterUVScaled.x - uResolution.x * 0.5 + windowDistance * 0.5, windowDistance);
+  pixelCenterUVScaled = vec2(pixelCenterCoordRepeatX, pixelCenterUVScaled.y);
+
+#if 0
+  if (pixelCoord.y < 20.0)
+  {
+    gl_FragColor = vec4(pixelCenterCoordRepeatX / uResolution.x, 0.0, 0.0, 1.0);
+    return;
+  }
+#endif
+
+
+  
  
   for (int i = 0; i < 4; ++i)
   {
