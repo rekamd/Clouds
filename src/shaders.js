@@ -356,6 +356,8 @@ uniform vec3 uHullColorStart;
 uniform float uHullAlphaEnd;
 uniform float uHullGradientShift;
 uniform float uHullGradientAngle;
+uniform float uWindowHeightScale;
+uniform float uWindowOffsetScale;
 uniform bool uHullDoubleResolution;
 uniform bool uFrameDoubleResolution;
 uniform bool uCloudDoubleResolution;
@@ -535,7 +537,7 @@ void main() {
   vec2 windowCenter = uResolution * 0.5;
   windowCenter = floor(windowCenter) + 0.5;
 
-  float windowHeight = uResolution.y * 0.7;
+  float windowHeight = uResolution.y * uWindowHeightScale;
   float windowWidth = windowHeight / 2.0;
   float sphereRadius = windowWidth / 3.0;
 
@@ -555,7 +557,7 @@ void main() {
     sphereRadius = (windowWidth / 5.0) * 1.4;
   }
 
-  float windowOffset = windowWidth * 0.75;
+  float windowOffset = windowWidth * uWindowOffsetScale;
   float windowDistance = windowWidth + windowOffset;
   // make sure to position repeated windows also centered on a pixel by enforcing
   // distances in full pixels only
