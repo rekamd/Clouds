@@ -464,6 +464,13 @@ properties.push(
 properties.push(
   new MinMaxProperty(0.0, 1.0, cloud, "windowFrameScale").addGUI(parameters)
 );
+properties.push(
+  new MinMaxProperty(0.0, 1.0, cloud, "windowHeightScale").addGUI(parameters)
+);
+properties.push(
+  new MinMaxProperty(0.0, 1.0, cloud, "windowOffsetScale").addGUI(parameters)
+);
+
 parameters.addColor(cloud, "hullColorStart");
 properties.push(
   new MinMaxProperty(0, 1, cloud, "hullAlphaEnd").addGUI(parameters)
